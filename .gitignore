@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # System
 .DS_Store
 Thumbs.db
@@ -35,3 +36,6 @@ terraform.tfvars
 *.gz
 *.bak
 *.swp
+=======
+.DS_Store
+>>>>>>> Stashed changes
