@@ -67,6 +67,9 @@ spring:
     password: gatewayApp
   thymeleaf:
     cache: false
+  docker:
+    compose:
+      lifecycle-management: START_AND_STOP
 
 server:
   port: 8080
