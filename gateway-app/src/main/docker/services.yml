@@ -1,0 +1,21 @@
+name: gatewayapp
+services:
+  consul:
+    image: consul:1.15.4
+    ports:
+      - "8500:8500"
+    command: consul agent -server -bootstrap -ui -client=0.0.0.0 -data-dir=/consul/data
+    volumes:
+      - consul-data:/consul/data
+
+  postgresql:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gatewayApp
+      POSTGRES_USER: gatewayApp
+      POSTGRES_PASSWORD: gatewayApp
+
+volumes:
+  consul-data:
