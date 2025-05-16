@@ -10,17 +10,28 @@ All development adheres to real-world GitOps principles, CI/CD practices, secret
 
 ## ✅ Goals by Environment
 
-### DEV ENVIRONMENT
+### DEV ENVIRONMENT v1.3
+    
+* Scaffold gateway app and all core microservices (student, course, enrollment, grade) using JHipster
 
-* Scaffold microservices and gateway app using JHipster
-* Build REST endpoints for `student`, `course`, `enrollment`, and `grade`
-* Develop a frontend (React or Vue) integrated via API Gateway
-* Use H2 or Docker-based PostgreSQL locally
-* Implement full validation, exception handling, and test coverage
-* Create `dev.sh`, `reset-db.sh` for local automation
-* GitHub Actions CI for build, test, and Docker image tagging
-* Optional: Deploy to preview environments via Docker Compose
-* Secrets managed locally using `.env.dev`
+* Wire up Spring Cloud Consul for service discovery; each microservice self-registers via Docker-aware config
+
+* Create REST endpoints and verify health via a dedicated, dev-only TestController (/api/test) in the gateway
+
+* Secure endpoints with JWT-based Spring Security; selectively open certain endpoints (permitAll) for dev testing
+
+* Use H2 or Docker-based PostgreSQL for local development and Liquibase for schema evolution
+
+* Automate local runtime setup with dev.sh, reset-db.sh
+
+* Lint, format, and dependency-upgrade automation integrated using ESLint, Prettier, and npm-check-updates
+
+* Scaffold GitHub Actions workflows: initial focus on lint/test/build pipelines scoped to gateway and shared infra
+
+* Postpone service-specific CI logic until all services are scaffolded, then refactor into a centralized, commit-aware pipeline
+
+* Secrets and dev credentials managed using .env.dev, excluded via hardened .gitignore
+
 
 ### STAGING ENVIRONMENT
 
@@ -60,6 +71,16 @@ All development adheres to real-world GitOps principles, CI/CD practices, secret
 * Deploy each microservice and frontend as independent pods
 * Set up NGINX Ingress with TLS and DNS routing
 * Enable Horizontal Pod Autoscaling and rollout strategies
+
+### V1.3 Revisions
+
+* Smart CI/CD Triggering via Commit Diffs or Scopes
+* Introduce a centralized gateway-aware CI pipeline that dynamically:
+* Detects changed microservice directories (e.g. studentApp/)
+* Parses commit messages (e.g. ci:student)
+* Selectively runs lint, test, Docker, and deploy stages
+* Leverages GitHub Actions job matrix + conditional logic for efficient build targeting
+* Ensures fault tolerance and service independence while maintaining CI simplicity
 
 ---
 

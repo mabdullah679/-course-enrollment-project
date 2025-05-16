@@ -1,0 +1,128 @@
+PROJECT_PLAN_V1.3  
+Project Plan: Abdullah's Course Enrollment & Grade Management System  
+Overall Start Date: May 13, 2025  
+Estimated Full Completion: September 7, 2025 (17 weeks, 119 days)  
+
+---
+
+PHASE 1 — PLAN FINALIZATION & INITIALIZATION (May 13–16)
+
+Goals:
+• Finalize architectural blueprint  
+• Set up GitHub repo with 3 main branches: dev, staging, main  
+• Establish clean branch-based working tree logic (not subdir-based)  
+• Draft and push PROJECT_PLAN_V1.2 and GOALS_AND_ROADMAP.md  
+
+Output:
+• Branches created and merged: dev, staging, main  
+• Planning committed to `/planning` and merged to dev  
+• Initial roadmap and strategy committed
+
+---
+
+PHASE 2 — DEV ENVIRONMENT BUILD + AUTOMATION SETUP (May 17 – June 7)
+
+Tech Stack:
+• JHipster for scaffolding gateway and microservices  
+• Java 21 + Spring Boot 3.4.x  
+• PostgreSQL (Docker-local dev DB)  
+• R2DBC (reactive driver)  
+• Maven (build tool)  
+• React or Vue with Vite (frontend, phased in later)  
+• Axios (HTTP client)  
+• JUnit, Mockito (unit tests)  
+• ESLint, Prettier, `npm-check-updates` (tooling)  
+• Docker + Docker Compose (local orchestration)  
+• GitHub Actions (CI/CD for dev/staging/prod)  
+• Minikube (local Kubernetes testing)  
+• Scripts: `dev.sh`, `reset-db.sh`, `prod-deployment.sh`
+
+Milestones:
+• ✅ May 17–20: Gateway app scaffolded via JHipster; ESLint + Prettier configured  
+• ✅ May 21–24: Consul service registry stabilized; PostgreSQL container automation confirmed  
+• ✅ May 25–28: Dev-only test endpoint added at `/api/test` (security-scoped to `permitAll`)  
+• ✅ May 28–30: JWT flow confirmed; token auth working across endpoints  
+• 🔜 May 31–June 4: Unit test expansion, frontend bootstrap, Dockerization refinements  
+• 🔜 June 5–7: GitHub Actions CI for build, lint, test, docker tag (per-service scope TBD)
+
+Additions:
+• `.gitignore` hardened (e.g. `.vscode/`, `target/`, `*.log`, etc.)  
+• Project root CI scope planning introduced  
+• Smart pipeline draft: detect service-level diffs and conditionally trigger build/test jobs
+
+---
+
+PHASE 3 — STAGING ENVIRONMENT & QA CI/CD (June 8 – July 1)
+
+Pipeline:
+• Triggered by successful `dev` builds or merge into `staging`  
+• App deployed via Terraform to EC2 (App) + AWS RDS (PostgreSQL)  
+• E2E tests via Playwright or Cypress  
+• Vault or GitHub Secrets for sensitive config  
+• Auto blame tagging logic (QA vs Dev source of failure)  
+• Slack/email alerting for failed CI runs
+
+Milestones:
+• June 8–14: Terraform manifests for EC2 + RDS setup  
+• June 15–19: Staging pipeline CI/CD + auto rollback  
+• June 20–27: End-to-end test suite  
+• June 28–July 1: Blame resolver logic + alert integration
+
+---
+
+PHASE 4 — PRODUCTION ENVIRONMENT BUILD & DEPLOYMENT (July 2 – August 1)
+
+Pipeline:
+• Triggered via release tag, manual approval, or merge to `main`  
+• Deployed using Kubernetes (EKS preferred)  
+• PostgreSQL via AWS RDS (prod instance)  
+• Certbot + NGINX for HTTPS  
+• DNS masking with DuckDNS or custom domain  
+• Vault or AWS SSM for production secrets  
+• Smoke testing + rollback safety net
+
+Milestones:
+• July 2–10: Prod infra provisioned, TLS + DNS masked  
+• July 11–18: Secrets wiring + Vault injection  
+• July 19–26: App deployment: gateway + all microservices + frontend  
+• July 27–Aug 1: Infra cleanup + telemetry hooks
+
+---
+
+PHASE 5 — DOCUMENTATION, POLISH & EDGE CASE COVERAGE (Aug 2 – Aug 16)
+
+Outputs:
+• `/docs/dev`, `/docs/staging`, `/docs/prod` generated and maintained  
+• `ERRORS_AND_LIMITATIONS.md`, `EDGE_CASES.md`, `SPRINT_LOG.md`, `RETROS.md`  
+• Diagrams: system architecture, CI/CD flow, DB structure  
+• Edge case checklist logged and validated  
+• Finalization of JDL visual artifacts (if applicable)
+
+---
+
+PHASE 6 — FINAL AUDIT & DEMO READINESS (Aug 17 – Sept 7)
+
+Goals:
+• Full CI/CD dry-run across environments  
+• Final walkthrough: branch-to-environment (dev → staging → prod)  
+• Public deployment showcase (GitHub README, LinkedIn post, Resume links)  
+• Optional: Load test results + metrics dashboard (Grafana/Prometheus)  
+• Prepare job-ready project bundle
+
+---
+
+🔁 Updated Overall Timeline:
+
+| Phase               | Date Range       | Duration   |
+|--------------------|------------------|------------|
+| Planning & Init     | May 13 – May 16  | 4 days     |
+| Dev Build + CI      | May 17 – June 7  | 3 weeks    |
+| Staging QA + CD     | June 8 – July 1  | 3 weeks    |
+| Prod Infra + CD     | July 2 – Aug 1   | 1 month    |
+| Docs + Edge Cases   | Aug 2 – Aug 16   | 2 weeks    |
+| Final Audit + Demo  | Aug 17 – Sept 7  | 3 weeks    |
+
+---
+
+
+
