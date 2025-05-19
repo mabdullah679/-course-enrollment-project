@@ -1,0 +1,14 @@
+# Minikube Kubernetes Service Port Mapping
+# ----------------------------------------
+# This mapping aligns each microservice to its internal container port
+# and an external NodePort or ingress reference (to be used post-setup).
+
+SERVICE         INTERNAL_PORT   NODE_PORT    PROTOCOL
+-------------------------------------------------------
+gatewayApp      8080            30080        HTTP
+courseApp       8082            30082        HTTP
+studentApp      8081            30081        HTTP
+gradeApp        8083            30083        HTTP
+consul          8500            30500        HTTP
+postgresql      5432            30432        TCP
+zipkin          9411            30941        HTTP
