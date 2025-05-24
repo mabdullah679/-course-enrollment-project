@@ -1,128 +1,216 @@
-PROJECT_PLAN_V1.3  
-Project Plan: Abdullah's Course Enrollment & Grade Management System  
-Overall Start Date: May 13, 2025  
-Estimated Full Completion: September 7, 2025 (17 weeks, 119 days)  
-
----
+📄 PROJECT_PLAN_V1.4.txt
+Project Plan: Abdullah's Course Enrollment & Grade Management System
+ Start Date: May 13, 2025
+ Updated: May 24, 2025
+ Estimated Completion: September 7, 2025 (17 weeks, 119 days)
 
 PHASE 1 — PLAN FINALIZATION & INITIALIZATION (May 13–16)
-
 Goals:
-• Finalize architectural blueprint  
-• Set up GitHub repo with 3 main branches: dev, staging, main  
-• Establish clean branch-based working tree logic (not subdir-based)  
-• Draft and push PROJECT_PLAN_V1.2 and GOALS_AND_ROADMAP.md  
+Finalize architectural blueprint
+
+
+Set up GitHub repo with 3 main branches: dev, staging, main
+
+
+Establish clean branch-based working tree
+
+
+Draft and push PROJECT_PLAN_V1.2 and GOALS_AND_ROADMAP_V1.2.md
+
 
 Output:
-• Branches created and merged: dev, staging, main  
-• Planning committed to `/planning` and merged to dev  
-• Initial roadmap and strategy committed
+Branches created and merged
 
----
+
+Planning committed under /planning
+
+
+Initial roadmap committed and version-tracked
+
+
 
 PHASE 2 — DEV ENVIRONMENT BUILD + AUTOMATION SETUP (May 17 – June 7)
+Stack:
+JHipster (gateway, microservices)
 
-Tech Stack:
-• JHipster for scaffolding gateway and microservices  
-• Java 21 + Spring Boot 3.4.x  
-• PostgreSQL (Docker-local dev DB)  
-• R2DBC (reactive driver)  
-• Maven (build tool)  
-• React or Vue with Vite (frontend, phased in later)  
-• Axios (HTTP client)  
-• JUnit, Mockito (unit tests)  
-• ESLint, Prettier, `npm-check-updates` (tooling)  
-• Docker + Docker Compose (local orchestration)  
-• GitHub Actions (CI/CD for dev/staging/prod)  
-• Minikube (local Kubernetes testing)  
-• Scripts: `dev.sh`, `reset-db.sh`, `prod-deployment.sh`
+
+Java 21 + Spring Boot 3.4.x
+
+
+PostgreSQL via Docker (local dev)
+
+
+R2DBC, Maven, ESLint, Prettier, JUnit
+
+
+React/Vue (TBD, Vite-based)
+
+
+Axios, GitHub Actions, Docker Compose
+
+
+Minikube (local Kubernetes dev)
+
+
+Tooling scripts: build-and-deploy.sh, purge-minikube.sh, forward-port.sh, curl-endpoint.sh
+
 
 Milestones:
-• ✅ May 17–20: Gateway app scaffolded via JHipster; ESLint + Prettier configured  
-• ✅ May 21–24: Consul service registry stabilized; PostgreSQL container automation confirmed  
-• ✅ May 25–28: Dev-only test endpoint added at `/api/test` (security-scoped to `permitAll`)  
-• ✅ May 28–30: JWT flow confirmed; token auth working across endpoints  
-• 🔜 May 31–June 4: Unit test expansion, frontend bootstrap, Dockerization refinements  
-• 🔜 June 5–7: GitHub Actions CI for build, lint, test, docker tag (per-service scope TBD)
+✅ May 17–20: Gateway app scaffolded, ESLint config hardened
+
+
+✅ May 21–24:
+
+
+Consul + PostgreSQL containers tested
+
+
+Helm chart overrides integrated
+
+
+Token auth + security flows scaffolded
+
+
+Fully operational: purge-minikube.sh (cluster reset), forward-port.sh (auto-waits, self-heals)
+
+
+curl-endpoint.sh integrated with JWT-aware headers
+
+
+🔜 May 25–28: /api/test + unit tests
+
+
+🔜 May 29–June 4: Frontend, Dockerization, CI pipeline setup
+
+
+🔜 June 5–7: GitHub Actions (build, lint, docker, deploy)
+
 
 Additions:
-• `.gitignore` hardened (e.g. `.vscode/`, `target/`, `*.log`, etc.)  
-• Project root CI scope planning introduced  
-• Smart pipeline draft: detect service-level diffs and conditionally trigger build/test jobs
+Hardened .gitignore
 
----
+
+Tokenized, script-driven runtime orchestration
+
+
+Smart pipeline concept: service-level triggers in CI/CD
+
+
 
 PHASE 3 — STAGING ENVIRONMENT & QA CI/CD (June 8 – July 1)
+Pipeline Plan:
+CI: Trigger on dev → staging
 
-Pipeline:
-• Triggered by successful `dev` builds or merge into `staging`  
-• App deployed via Terraform to EC2 (App) + AWS RDS (PostgreSQL)  
-• E2E tests via Playwright or Cypress  
-• Vault or GitHub Secrets for sensitive config  
-• Auto blame tagging logic (QA vs Dev source of failure)  
-• Slack/email alerting for failed CI runs
 
-Milestones:
-• June 8–14: Terraform manifests for EC2 + RDS setup  
-• June 15–19: Staging pipeline CI/CD + auto rollback  
-• June 20–27: End-to-end test suite  
-• June 28–July 1: Blame resolver logic + alert integration
+CD: Terraform → EC2 + RDS (Postgres)
 
----
+
+Secrets: GitHub or Vault
+
+
+QA logs → Slack/email alerts
+
+
+Failure blame logic (dev vs test origin)
+
+
+Targets:
+June 8–14: EC2 + RDS provisioning
+
+
+June 15–19: GitHub Actions CI/CD staging
+
+
+June 20–27: Playwright or Cypress test suite
+
+
+June 28–July 1: QA alert + blame pipeline
+
+
 
 PHASE 4 — PRODUCTION ENVIRONMENT BUILD & DEPLOYMENT (July 2 – August 1)
+Infra:
+Trigger: main merge or release tag
 
-Pipeline:
-• Triggered via release tag, manual approval, or merge to `main`  
-• Deployed using Kubernetes (EKS preferred)  
-• PostgreSQL via AWS RDS (prod instance)  
-• Certbot + NGINX for HTTPS  
-• DNS masking with DuckDNS or custom domain  
-• Vault or AWS SSM for production secrets  
-• Smoke testing + rollback safety net
+
+Deploy: AWS EKS + RDS
+
+
+Secure: Vault or SSM + NGINX + HTTPS
+
+
+Domain: DuckDNS or mapped custom domain
+
 
 Milestones:
-• July 2–10: Prod infra provisioned, TLS + DNS masked  
-• July 11–18: Secrets wiring + Vault injection  
-• July 19–26: App deployment: gateway + all microservices + frontend  
-• July 27–Aug 1: Infra cleanup + telemetry hooks
+July 2–10: EKS + TLS + DNS
 
----
+
+July 11–18: Vault secrets wiring
+
+
+July 19–26: Full app deploy
+
+
+July 27–Aug 1: Telemetry + cleanup
+
+
 
 PHASE 5 — DOCUMENTATION, POLISH & EDGE CASE COVERAGE (Aug 2 – Aug 16)
+Artifacts:
+/docs/dev, /docs/staging, /docs/prod
 
-Outputs:
-• `/docs/dev`, `/docs/staging`, `/docs/prod` generated and maintained  
-• `ERRORS_AND_LIMITATIONS.md`, `EDGE_CASES.md`, `SPRINT_LOG.md`, `RETROS.md`  
-• Diagrams: system architecture, CI/CD flow, DB structure  
-• Edge case checklist logged and validated  
-• Finalization of JDL visual artifacts (if applicable)
 
----
+SCRIPT_BEHAVIOR_V1.0.md, EXECUTION_WORKFLOW_DEV_V1.0.md
+
+
+Diagrams: DB, CI/CD, gateway flow
+
+
+SPRINT_LOG.md, RETROS.md, ERRORS_AND_LIMITATIONS.md
+
+
+Edge test checklist
+
+
 
 PHASE 6 — FINAL AUDIT & DEMO READINESS (Aug 17 – Sept 7)
+Final Push:
+Full environment dry-run
 
-Goals:
-• Full CI/CD dry-run across environments  
-• Final walkthrough: branch-to-environment (dev → staging → prod)  
-• Public deployment showcase (GitHub README, LinkedIn post, Resume links)  
-• Optional: Load test results + metrics dashboard (Grafana/Prometheus)  
-• Prepare job-ready project bundle
 
----
+README → GitHub Pages or public dashboard
 
-🔁 Updated Overall Timeline:
 
-| Phase               | Date Range       | Duration   |
-|--------------------|------------------|------------|
-| Planning & Init     | May 13 – May 16  | 4 days     |
-| Dev Build + CI      | May 17 – June 7  | 3 weeks    |
-| Staging QA + CD     | June 8 – July 1  | 3 weeks    |
-| Prod Infra + CD     | July 2 – Aug 1   | 1 month    |
-| Docs + Edge Cases   | Aug 2 – Aug 16   | 2 weeks    |
-| Final Audit + Demo  | Aug 17 – Sept 7  | 3 weeks    |
+Resume-ready output bundle
 
----
+
+Optional: Grafana/Prometheus load test snapshot
+
+
+
+🔁 Updated Timeline Overview
+Phase
+Date Range
+Duration
+Planning & Init
+May 13 – May 16
+4 days
+Dev Build + CI
+May 17 – June 7
+3 weeks
+Staging QA + CD
+June 8 – July 1
+3 weeks
+Prod Infra + CD
+July 2 – Aug 1
+1 month
+Docs + Edge Cases
+Aug 2 – Aug 16
+2 weeks
+Final Audit + Demo
+Aug 17 – Sept 7
+3 weeks
 
 
 
