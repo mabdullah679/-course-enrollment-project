@@ -7,7 +7,7 @@ logging:
     ROOT: DEBUG
     tech.jhipster: DEBUG
     org.hibernate.SQL: DEBUG
-    com.mabdullah.courseapp.courseapp: DEBUG
+    com.mabdullah.courseapp.gateway: DEBUG
 
 management:
   zipkin:
@@ -19,7 +19,7 @@ management:
 
 spring:
   application:
-    name: courseApp
+    name: gatewayApp
 
   devtools:
     restart:
@@ -72,25 +72,48 @@ spring:
   messages:
     cache-duration: PT1S
 
+  mail:
+    host: consul
+    port: 25
+    username:
+    password:
+
   thymeleaf:
     cache: false
 
+  docker:
+    compose:
+      lifecycle-management: START_AND_STOP
+
 server:
-  port: 8082
+  port: 8080
   forward-headers-strategy: native
 
 jhipster:
-  cache:
-    caffeine:
-      time-to-live-seconds: 3600
-      max-entries: 100
+  gateway:
+    rate-limiting:
+      enabled: false
+      limit: 100000
+      duration-in-seconds: 3600
+
+  cors:
+    allowed-origins: 'http://consul:8100,https://consul:8100'
+    allowed-origin-patterns: 'https://*.githubpreview.dev'
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-gatewayApp-alert,X-gatewayApp-error,X-gatewayApp-params'
+    allow-credentials: true
+    max-age: 1800
 
   security:
     authentication:
       jwt:
-        base64-secret: M2UwZTZhNzYyZmY2ZWYwMjEyMjhlMDI0NzM1NDkyYWMzYWQyM2U3MmY5OTNmMWEzY2MyMGI2OTVmYTQ0ODA0NmYyNjc3MTNiNjY4ODhiZTMwNDkyNjI0Nzk0NzM5MWRkZDhiNjM3M2MyYzZjOTU4MzZjNjAyZDFiMjA5YWVlYWI=
+        base64-secret: MTJhMjQ1ZmFlMjg3MjVmMzBmNTkyNTllZTMwNmFjYWQyZjgyNTZiNmEzMmE2ZmY3MzJhYzYwZGI2OWZiMjUxMjA4NTFjZGY5NDQzNTA2YWQ1ZmUxYWUzZmMyNjA5OGRkM2UyN2U0NjUyYzcxZWRkN2JlZjdhMjFjNWE3ZTgzZDY=
         token-validity-in-seconds: 86400
         token-validity-in-seconds-for-remember-me: 2592000
+
+  mail:
+    base-url: http://consul:8080
 
   logging:
     use-json-format: false

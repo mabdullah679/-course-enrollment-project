@@ -1,0 +1,71 @@
+Name:             studentapp-64b977f57d-rcpf5
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Mon, 02 Jun 2025 14:06:54 -0400
+Labels:           app=studentapp
+                  pod-template-hash=64b977f57d
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.24
+IPs:
+  IP:           10.244.0.24
+Controlled By:  ReplicaSet/studentapp-64b977f57d
+Containers:
+  studentapp:
+    Container ID:   docker://35e3bd99faabd2fc8bd217af9900ad666d963fe00b93d5230747090b663e12c7
+    Image:          studentapp:latest
+    Image ID:       docker://sha256:4d8f6ce261522586ad15c4ecd1f4bc5cc5c5016f8dacec2bec11b82fa4bf5296
+    Port:           8081/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Mon, 02 Jun 2025 14:06:54 -0400
+    Ready:          False
+    Restart Count:  0
+    Limits:
+      cpu:     500m
+      memory:  512Mi
+    Requests:
+      cpu:      100m
+      memory:   256Mi
+    Liveness:   http-get http://:8081/actuator/health delay=45s timeout=5s period=10s #success=1 #failure=6
+    Readiness:  http-get http://:8081/actuator/health delay=20s timeout=5s period=5s #success=1 #failure=3
+    Environment:
+      SPRING_PROFILES_ACTIVE:                 dev
+      SPRING_DATASOURCE_URL:                  jdbc:postgresql://studentapp-db:5432/studentdb
+      SPRING_DATASOURCE_USERNAME:             <set to the key 'username' in secret 'studentapp-db-secret'>  Optional: false
+      SPRING_DATASOURCE_PASSWORD:             <set to the key 'password' in secret 'studentapp-db-secret'>  Optional: false
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME:    org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM:           org.hibernate.dialect.PostgreSQLDialect
+      SPRING_CLOUD_CONSUL_ENABLED:            false
+      SPRING_CLOUD_CONSUL_CONFIG_ENABLED:     false
+      SPRING_CLOUD_CONSUL_DISCOVERY_ENABLED:  false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-sf5sf (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-sf5sf:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age               From               Message
+  ----     ------     ----              ----               -------
+  Normal   Scheduled  37s               default-scheduler  Successfully assigned default/studentapp-64b977f57d-rcpf5 to minikube
+  Normal   Pulled     37s               kubelet            Container image "studentapp:latest" already present on machine
+  Normal   Created    37s               kubelet            Created container: studentapp
+  Normal   Started    37s               kubelet            Started container studentapp
+  Warning  Unhealthy  0s (x4 over 15s)  kubelet            Readiness probe failed: Get "http://10.244.0.24:8081/actuator/health": dial tcp 10.244.0.24:8081: connect: connection refused

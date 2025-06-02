@@ -1,0 +1,73 @@
+🔍 Debugging pod: studentapp-546fc9f8b8-96mhb
+
+📋 Describe output:
+Name:             studentapp-546fc9f8b8-96mhb
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Sat, 24 May 2025 09:54:50 -0400
+Labels:           app=studentapp
+                  pod-template-hash=546fc9f8b8
+Annotations:      <none>
+Status:           Pending
+IP:               10.244.0.4
+IPs:
+  IP:           10.244.0.4
+Controlled By:  ReplicaSet/studentapp-546fc9f8b8
+Containers:
+  studentapp:
+    Container ID:   
+    Image:          studentapp:latest
+    Image ID:       
+    Port:           8081/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       ImagePullBackOff
+    Ready:          False
+    Restart Count:  0
+    Limits:
+      cpu:     500m
+      memory:  512Mi
+    Requests:
+      cpu:      100m
+      memory:   256Mi
+    Liveness:   http-get http://:8081/actuator/health delay=45s timeout=5s period=10s #success=1 #failure=6
+    Readiness:  http-get http://:8081/actuator/health delay=20s timeout=5s period=5s #success=1 #failure=3
+    Environment:
+      SPRING_PROFILES_ACTIVE:                 dev
+      SPRING_DATASOURCE_URL:                  jdbc:postgresql://studentapp-db:5432/studentApp
+      SPRING_DATASOURCE_USERNAME:             studentApp
+      SPRING_DATASOURCE_PASSWORD:             studentApp
+      SPRING_CLOUD_CONSUL_ENABLED:            false
+      SPRING_CLOUD_CONSUL_CONFIG_ENABLED:     false
+      SPRING_CLOUD_CONSUL_DISCOVERY_ENABLED:  false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-rv7rw (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-rv7rw:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason   Age                       From     Message
+  ----     ------   ----                      ----     -------
+  Normal   BackOff  2m43s (x1807 over 6h52m)  kubelet  Back-off pulling image "studentapp:latest"
+  Warning  Failed   2m43s (x1807 over 6h52m)  kubelet  Error: ImagePullBackOff
+
+🧾 Logs output:
+Error from server (BadRequest): container "studentapp" in pod "studentapp-546fc9f8b8-96mhb" is waiting to start: trying and failing to pull image
+✅ Debug info dumped to logs/studentapp-debug.log

@@ -1,0 +1,8 @@
+app:
+  image: gatewayapp-dev-image
+  name: gatewayApp
+  port: 8080
+db:
+  port: 5430
+service:
+  nodePort: 30000

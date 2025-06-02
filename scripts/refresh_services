@@ -1,0 +1,27 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+ENV_FILE="$PROJECT_ROOT/.env"
+VENV_ACTIVATE="$PROJECT_ROOT/.venv/bin/activate"
+
+# 🧠 Auto-activate venv if it exists
+if [ -f "$VENV_ACTIVATE" ]; then
+    echo "🐍 Activating virtual environment..."
+    source "$VENV_ACTIVATE"
+else
+    echo "⚠️  No virtual environment found at .venv/. Please run:"
+    echo "    python3 -m venv .venv && source .venv/bin/activate && pip install PyYAML"
+    exit 1
+fi
+
+echo "🔁 Refreshing service ports and image tags..."
+python3 "$SCRIPT_DIR/generate_env.py"
+
+echo "📦 Generating Helm values..."
+python3 "$SCRIPT_DIR/generate_helm_values.py"
+
+echo ""
+echo "✅ .env file updated. Current contents:"
+echo "--------------------------------------"
+cat "$ENV_FILE"

@@ -7,7 +7,7 @@ logging:
     ROOT: DEBUG
     tech.jhipster: DEBUG
     org.hibernate.SQL: DEBUG
-    com.mabdullah.courseapp.courseapp: DEBUG
+    com.mabdullah.courseapp.gradeapp: DEBUG
 
 management:
   zipkin:
@@ -19,7 +19,7 @@ management:
 
 spring:
   application:
-    name: courseApp
+    name: gradeApp
 
   devtools:
     restart:
@@ -61,11 +61,6 @@ spring:
       poolName: Hikari
       auto-commit: false
 
-  r2dbc:
-    url: r2dbc:postgresql://postgres:5432/postgres
-    username: postgres
-    password: postgres
-
   liquibase:
     contexts: dev, faker
 
@@ -76,7 +71,7 @@ spring:
     cache: false
 
 server:
-  port: 8082
+  port: 8083
   forward-headers-strategy: native
 
 jhipster:

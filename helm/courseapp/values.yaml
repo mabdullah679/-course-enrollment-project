@@ -1,0 +1,8 @@
+app:
+  image: courseapp-dev-image
+  name: courseApp
+  port: 8083
+db:
+  port: 5433
+service:
+  nodePort: 30003

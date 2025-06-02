@@ -1,0 +1,58 @@
+package com.mabdullah.courseapp.student.config;
+
+import static org.springframework.security.config.Customizer.withDefaults;
+
+import com.mabdullah.courseapp.student.security.AuthoritiesConstants;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+import tech.jhipster.config.JHipsterProperties;
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true)
+public class SecurityConfiguration {
+
+    private final JHipsterProperties jHipsterProperties;
+
+    public SecurityConfiguration(JHipsterProperties jHipsterProperties) {
+        this.jHipsterProperties = jHipsterProperties;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, MvcRequestMatcher.Builder mvc) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/authenticate")).permitAll()
+                .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/authenticate")).permitAll()
+                .requestMatchers(mvc.pattern("/actuator/**")).permitAll()
+                .requestMatchers(mvc.pattern("/api/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
+                .requestMatchers(mvc.pattern("/v3/api-docs/**")).hasAuthority(AuthoritiesConstants.ADMIN)
+                .requestMatchers(mvc.pattern("/api/**")).authenticated()
+                .anyRequest().permitAll()
+            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
+                .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()));
+
+        return http.build();
+    }
+
+    @Bean
+    public MvcRequestMatcher.Builder mvc(HandlerMappingIntrospector introspector) {
+        return new MvcRequestMatcher.Builder(introspector);
+    }
+}

@@ -1,0 +1,200 @@
+# ===================================================================
+# Spring Boot base configuration.
+# Will be overridden by profile-specific files like application-dev.yml
+# ===================================================================
+
+---
+# Conditionally disable springdoc when api-docs profile is not active
+spring:
+  config:
+    activate:
+      on-profile: '!api-docs'
+springdoc:
+  api-docs:
+    enabled: false
+---
+feign:
+  circuitbreaker:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include:
+          - configprops
+          - env
+          - health
+          - info
+          - jhimetrics
+          - jhiopenapigroups
+          - logfile
+          - loggers
+          - prometheus
+          - threaddump
+          - caches
+          - liquibase
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+  jhimetrics:
+    enabled: true
+  info:
+    git:
+      mode: full
+    env:
+      enabled: true
+  health:
+    mail:
+      enabled: false
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 60
+  observations:
+    key-values:
+      application: ${spring.application.name}
+  metrics:
+    enable:
+      http: true
+      jvm: true
+      logback: true
+      process: true
+      system: true
+    distribution:
+      percentiles-histogram:
+        all: true
+      percentiles:
+        all: 0, 0.5, 0.75, 0.95, 0.99, 1.0
+    data:
+      repository:
+        autotime:
+          enabled: true
+    tags:
+      application: ${spring.application.name}
+
+spring:
+  application:
+    name: studentApp
+  cloud:
+    consul:
+      enabled: false        # Disable Consul globally
+      discovery:
+        enabled: false
+        healthCheckPath: /actuator/health
+        instanceId: studentapp:${spring.application.instance-id:${random.value}}
+        service-name: studentapp
+      config:
+        enabled: false
+        fail-fast: false
+        watch:
+          enabled: false
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: start-only
+      file: src/main/docker/postgresql.yml
+  profiles:
+    active: '@spring.profiles.active@'
+    group:
+      dev:
+        - dev
+        - api-docs
+  jmx:
+    enabled: false
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.timezone.default_storage: NORMALIZE
+      hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
+      hibernate.id.new_generator_mappings: true
+      hibernate.connection.provider_disables_autocommit: true
+      hibernate.cache.use_second_level_cache: true
+      hibernate.cache.use_query_cache: false
+      hibernate.generate_statistics: false
+      hibernate.jdbc.batch_size: 25
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+      hibernate.query.fail_on_pagination_over_collection_fetch: true
+      hibernate.query.in_clause_parameter_padding: true
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+  messages:
+    basename: i18n/messages
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    problemdetails:
+      enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          authority-prefix: ''
+          authorities-claim-name: auth
+  task:
+    execution:
+      thread-name-prefix: student-app-task-
+      pool:
+        core-size: 2
+        max-size: 50
+        queue-capacity: 10000
+    scheduling:
+      thread-name-prefix: student-app-scheduling-
+      pool:
+        size: 2
+  thymeleaf:
+    mode: HTML
+  output:
+    ansi:
+      console-available: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+
+springdoc:
+  show-actuator: true
+
+info:
+  display-ribbon-on-profiles: 'dev'
+
+# ===================================================================
+# JHipster specific properties
+# ===================================================================
+
+jhipster:
+  clientApp:
+    name: 'studentApp'
+  mail:
+    from: studentApp@localhost
+  api-docs:
+    default-include-pattern: /api/**
+    management-include-pattern: /management/**
+    title: Student App API
+    description: Student App API documentation
+    version: 0.0.1
+
+# jhipster-needle-add-application-yaml-document
+---
+# ===================================================================
+# Application-specific properties (loaded by ApplicationProperties.java)
+# ===================================================================
+
+# application:

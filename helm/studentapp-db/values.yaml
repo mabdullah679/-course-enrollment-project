@@ -1,0 +1,24 @@
+fullnameOverride: studentapp-db
+
+# -------------------------------------------------------------------
+# Dynamic DB Credentials (also used in secret.yaml)
+# -------------------------------------------------------------------
+db:
+  user: studentuser
+  password: studentpass
+  name: studentdb
+
+# -------------------------------------------------------------------
+# PostgreSQL Helm Chart Config
+# -------------------------------------------------------------------
+postgresql:
+  auth:
+    enablePostgresUser: false
+    username: studentuser   # ← must repeat
+    password: studentpass
+    database: studentdb
+
+  primary:
+    service:
+      ports:
+        postgresql: 5432

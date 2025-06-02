@@ -1,0 +1,10 @@
+extends: default
+
+rules:
+  line-length:
+    max: 120       # increase max length to avoid errors on long lines
+    level: warning # just warning, not error
+
+  # Optionally you can disable it entirely
+  # line-length:
+  #   disable: true

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name | lower }}
+spec:
+  replicas: {{ .Values.app.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.name | lower }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.name | lower }}
+    spec:
+      containers:
+        - name: {{ .Values.app.name | lower }}
+          image: "{{ .Values.app.image.repository | default "studentapp-dev-image" }}{{ if .Values.app.image.tag }}:{{ .Values.app.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "{{ .Values.env.SPRING_PROFILES_ACTIVE | default "dev" }}"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://studentapp-db:5432/studentdb"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: studentapp-db-secret
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: studentapp-db-secret
+                  key: password
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: "{{ .Values.env.SPRING_DATASOURCE_DRIVER_CLASS_NAME }}"
+            - name: SPRING_JPA_DATABASE_PLATFORM
+              value: "{{ .Values.env.SPRING_JPA_DATABASE_PLATFORM }}"
+            - name: SPRING_CLOUD_CONSUL_ENABLED
+              value: "false"
+            - name: SPRING_CLOUD_CONSUL_CONFIG_ENABLED
+              value: "false"
+            - name: SPRING_CLOUD_CONSUL_DISCOVERY_ENABLED
+              value: "false"
+          resources:
+            requests:
+              memory: {{ .Values.app.resources.requests.memory | default "256Mi" }}
+              cpu: {{ .Values.app.resources.requests.cpu | default "100m" }}
+            limits:
+              memory: {{ .Values.app.resources.limits.memory | default "512Mi" }}
+              cpu: {{ .Values.app.resources.limits.cpu | default "500m" }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3

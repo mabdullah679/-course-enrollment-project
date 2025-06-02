@@ -1,0 +1,7 @@
+🩺 Health Check - studentApp [20250524-172219]
+---------------------------------------------
+📦 Pod Name: studentapp-546fc9f8b8-mr282
+📌 Status: Pending🔁 Restart Count: 0🧪 Ready Status: false
+🔍 Last 10 log lines:
+Error from server (BadRequest): container "studentapp" in pod "studentapp-546fc9f8b8-mr282" is waiting to start: trying and failing to pull image
+Unable to fetch logs

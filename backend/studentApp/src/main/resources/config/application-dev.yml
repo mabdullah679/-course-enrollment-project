@@ -1,25 +1,27 @@
-# ===================================================================
-# Spring Boot configuration for the "dev" profile.
-# ===================================================================
-
 logging:
   level:
     ROOT: DEBUG
     tech.jhipster: DEBUG
     org.hibernate.SQL: DEBUG
-    com.mabdullah.courseapp.courseapp: DEBUG
+    com.mabdullah.courseapp.student: DEBUG
+    org.springframework.boot.autoconfigure.security: DEBUG
+    org.springframework.security: DEBUG
 
 management:
-  zipkin:
-    tracing:
-      endpoint: http://consul:9411/api/v2/spans
-  tracing:
-    sampling:
-      probability: 1.0
+  server:
+    port: 8081
+    base-path: /actuator
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
 
 spring:
   application:
-    name: courseApp
+    name: studentApp
 
   devtools:
     restart:
@@ -34,37 +36,22 @@ spring:
 
   cloud:
     consul:
-      enabled: true
-      host: consul
-      port: 8500
+      enabled: false
       config:
-        enabled: true
+        enabled: false
         fail-fast: false
-        format: yaml
-        profile-separator: '-'
       discovery:
-        enabled: true
-        prefer-ip-address: true
-        tags:
-          - profile=dev
-          - version='@project.version@'
-          - git-version=${git.commit.id.describe:}
-          - git-commit=${git.commit.id.abbrev:}
-          - git-branch=${git.branch:}
+        enabled: false
+        prefer-ip-address: false
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://postgres:5432/postgres
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://studentapp-db:5432/studentdb
+    username: studentuser
+    password: studentpass
     hikari:
       poolName: Hikari
       auto-commit: false
-
-  r2dbc:
-    url: r2dbc:postgresql://postgres:5432/postgres
-    username: postgres
-    password: postgres
 
   liquibase:
     contexts: dev, faker
@@ -75,8 +62,19 @@ spring:
   thymeleaf:
     cache: false
 
+  security:
+    user:
+      name: actuator
+      password: actuator123
+    oauth2:
+      resourceserver:
+        jwt:
+          authority-prefix: ''
+          authorities-claim-name: auth
+
 server:
-  port: 8082
+  port: 8081
+  address: 0.0.0.0
   forward-headers-strategy: native
 
 jhipster:
@@ -96,6 +94,3 @@ jhipster:
     use-json-format: false
     logstash:
       enabled: false
-      host: consul
-      port: 5000
-      ring-buffer-size: 512

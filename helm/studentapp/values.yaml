@@ -1,0 +1,28 @@
+app:
+  name: studentapp
+  replicaCount: 1
+  image:
+    repository: studentapp
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8081
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+env:
+  SPRING_PROFILES_ACTIVE: dev
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+  SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+
+db:
+  host: studentapp-db
+  port: 5432
+  name: studentdb
+
+service:
+  nodePort: 30001

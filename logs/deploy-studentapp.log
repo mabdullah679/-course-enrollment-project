@@ -1,0 +1,14 @@
+⚠️ Warning: Docker context may not be Minikube. Run: eval "$(minikube docker-env)"
+📦 Ensuring studentapp-db is installed...
+Release "studentapp-db" has been upgraded. Happy Helming!
+NAME: studentapp-db
+LAST DEPLOYED: Sat May 24 17:21:17 2025
+NAMESPACE: default
+STATUS: deployed
+REVISION: 6
+TEST SUITE: None
+🔍 Waiting for studentapp-db pod to be ready...
+✅ studentapp-db is ready.
+🔨 Building Docker image: studentapp-dev-image
+🚀 Deploying Helm chart: studentapp
+✅ Done. 'studentApp' deployed via chart 'studentapp'.
