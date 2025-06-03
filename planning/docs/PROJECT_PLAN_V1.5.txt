@@ -212,5 +212,10 @@ Final Audit + Demo
 Aug 17 – Sept 7
 3 weeks
 
-
-
+=== Update Log (2025-06-03 UTC) ===
+- ✅ Switched to Helm-based PostgreSQL DB deployment with dynamic secret injection.
+- ✅ Verified dynamic secret population from `studentapp-db-secret` and `studentapp-secrets`.
+- ✅ Integrated and confirmed JWT_BASE64_SECRET environment variable injection works.
+- ✅ Validated /actuator/health, /env, and /info exposure through `kubectl port-forward` and `curl`.
+- ☐ Prometheus-compatible /actuator/metrics endpoint exposure (pending).
+- ☐ Finalize readiness for Grafana dashboards and API gateway monitoring.
