@@ -14,15 +14,15 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name | lower }}
-          image: "{{ .Values.app.image.repository | default "studentapp-dev-image" }}{{ if .Values.app.image.tag }}:{{ .Values.app.image.tag }}{{ end }}"
+          image: "{{ .Values.app.image.repository }}{{ if .Values.app.image.tag }}:{{ .Values.app.image.tag }}{{ end }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: {{ .Values.app.port }}
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "{{ .Values.env.SPRING_PROFILES_ACTIVE | default "dev" }}"
+              value: "{{ .Values.env.SPRING_PROFILES_ACTIVE }}"
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://studentapp-db:5432/studentdb"
+              value: "jdbc:postgresql://{{ .Values.db.host }}:{{ .Values.db.port }}/{{ .Values.db.name }}"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -43,13 +43,18 @@ spec:
               value: "false"
             - name: SPRING_CLOUD_CONSUL_DISCOVERY_ENABLED
               value: "false"
+            - name: JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: studentapp-secrets
+                  key: jwt-base64-secret
           resources:
             requests:
-              memory: {{ .Values.app.resources.requests.memory | default "256Mi" }}
-              cpu: {{ .Values.app.resources.requests.cpu | default "100m" }}
+              memory: {{ .Values.app.resources.requests.memory }}
+              cpu: {{ .Values.app.resources.requests.cpu }}
             limits:
-              memory: {{ .Values.app.resources.limits.memory | default "512Mi" }}
-              cpu: {{ .Values.app.resources.limits.cpu | default "500m" }}
+              memory: {{ .Values.app.resources.limits.memory }}
+              cpu: {{ .Values.app.resources.limits.cpu }}
           livenessProbe:
             httpGet:
               path: /actuator/health

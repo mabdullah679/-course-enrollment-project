@@ -86,7 +86,7 @@ jhipster:
   security:
     authentication:
       jwt:
-        base64-secret: M2UwZTZhNzYyZmY2ZWYwMjEyMjhlMDI0NzM1NDkyYWMzYWQyM2U3MmY5OTNmMWEzY2MyMGI2OTVmYTQ0ODA0NmYyNjc3MTNiNjY4ODhiZTMwNDkyNjI0Nzk0NzM5MWRkZDhiNjM3M2MyYzZjOTU4MzZjNjAyZDFiMjA5YWVlYWI=
+        base64-secret: ${JWT_BASE64_SECRET}
         token-validity-in-seconds: 86400
         token-validity-in-seconds-for-remember-me: 2592000
 

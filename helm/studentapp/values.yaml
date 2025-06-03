@@ -26,3 +26,6 @@ db:
 
 service:
   nodePort: 30001
+
+# ✅ Set this via --set jwtSecret=... or in your CI/CD pipeline
+jwtSecret: ""
