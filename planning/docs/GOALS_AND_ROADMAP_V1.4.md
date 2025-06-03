@@ -55,3 +55,11 @@ _Last Updated: May 24, 2025_
 - [ ] `health-dashboard.html` or `logs/summary.txt` as quick-glance deployment status
 - [ ] CI → staging pipeline implementation using Terraform + GitHub Actions
 - [ ] Dedicated frontend GitHub repo (or monorepo subdir) based on chosen framework
+
+### Helm Migration and Secret Management
+
+- [x] PostgreSQL Helm DB setup
+- [x] Inject config using Helm secret templates
+- [x] Validate /actuator/info and /actuator/env exposure
+- [ ] Expose /actuator/metrics and confirm Prometheus scraping
+- [ ] Deploy Prometheus + Grafana monitoring stack
