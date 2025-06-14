@@ -50,7 +50,3 @@ alias pf='./scripts/forward-port.sh'
 alias jwt='./scripts/curl-endpoint.sh'
 alias reset='./scripts/purge-minikube.sh'
 alias health='./scripts/check-health.sh'
-
-
-
-
