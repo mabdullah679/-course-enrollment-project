@@ -15,7 +15,7 @@ fi
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKEND_PATH="$PROJECT_ROOT/backend/${SERVICE_NAME}"
 CHART_PATH="$PROJECT_ROOT/helm/${SERVICE_SLUG}"
-IMAGE_NAME="${SERVICE_SLUG}-dev-image"
+IMAGE_NAME="${SERVICE_SLUG}:latest"
 
 # Check if Helm chart exists
 if [ ! -d "$CHART_PATH" ]; then
@@ -77,14 +77,27 @@ if [[ "$SERVICE_SLUG" == "studentapp" ]]; then
   fi
 fi
 
+# Load .env from backend folder
+if [ -f "$BACKEND_PATH/.env" ]; then
+  echo "📥 Loading .env from $BACKEND_PATH/.env"
+  export $(grep -v '^#' "$BACKEND_PATH/.env" | xargs)
+fi
+
+# Ensure jwtSecret is set
+if [[ -z "$JWT_BASE64_SECRET" ]]; then
+  echo "❌ JWT_BASE64_SECRET not found in .env. Please define it."
+  exit 1
+fi
+
 # Build backend image if applicable
 if [ "$BUILD_BACKEND" = true ]; then
   echo "🔨 Building Docker image: $IMAGE_NAME"
   docker build -t "$IMAGE_NAME" "$BACKEND_PATH"
 fi
 
-# Deploy via Helm
+# Deploy via Helm with jwtSecret
 echo "🚀 Deploying Helm chart: $SERVICE_SLUG"
-helm upgrade --install "$SERVICE_SLUG" "$CHART_PATH"
+helm upgrade --install "$SERVICE_SLUG" "$CHART_PATH" \
+  --set jwtSecret="$JWT_BASE64_SECRET"
 
 echo "✅ Done. '$SERVICE_NAME' deployed successfully."
