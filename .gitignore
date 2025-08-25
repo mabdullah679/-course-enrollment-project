@@ -10,4 +10,5 @@ infra/*.tfstate.*
 infra/plan.out
 infra/lambda.zip
 infra/modules/**/lambda.zip
-
+# keep docs out of dev
+infra/docs/
