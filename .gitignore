@@ -3,3 +3,11 @@
 .env
 node_modules/
 dist/
+# Terraform local state and providers
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/plan.out
+infra/lambda.zip
+infra/modules/**/lambda.zip
+
