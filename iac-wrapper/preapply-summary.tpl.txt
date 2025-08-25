@@ -1,0 +1,34 @@
+Deployment summary
+------------------
+Project: {{project_name}}
+Provider: {{provider}}
+Archetype: {{deploy_type}}
+Environment: {{env}}
+Region: {{region}}
+Budget profile: {{budget_profile}}
+
+Planned resources
+- Compute: {{compute_choice}}
+- Endpoint: {{endpoint_choice}}
+- Database: {{db_choice}}
+- CDN: {{cdn_choice}}
+- Logging: CloudWatch caps or provider defaults within free limits
+
+Cost characteristics (free_first hints)
+- Lambda Always Free: 1M requests and 400k GB-seconds per month
+- DynamoDB Always Free: 25 GB, 25 RCU, 25 WCU per region
+- CloudFront Always Free: 1 TB data transfer out, 10M HTTP/HTTPS requests
+- Regions DTO: 100 GB per month from Regions to internet, global
+- S3 Standard: 12-month free only, then billed
+- API Gateway: billed after 12 months, not Always Free
+
+Security and IAM
+- Least privilege roles for runtime and data access
+- Public endpoint: {{public_endpoint_mode}} (CORS {{cors_enabled}})
+
+TTL and teardown
+- TTL hours: {{ttl_hours}} (non prod only)
+- Resources tagged with ttl_expires_at: {{ttl_tag}}
+
+Confirmation gate
+Type to continue: deploy {{env}} {{provider}} {{deploy_type}}

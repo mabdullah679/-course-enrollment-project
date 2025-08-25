@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunctionUrl"
+      ],
+      "Resource": [
+        "arn:aws:lambda:us-east-1:025066259864:function:cegm-lambda"
+      ]
+    }
+  ]
+}

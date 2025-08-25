@@ -1,0 +1,24 @@
+project_name: course-enrollment-project
+infra_root: ../infra
+default_env: dev
+providers:
+  aws:
+    allow_regions: [us-east-1, us-east-2, us-west-2]
+    tfvars_dir: ../infra/tfvars/aws
+    free_first_file: free_first.tfvars
+  gcp:
+    allow_regions: [us-central1, us-east1, us-west1]
+    tfvars_dir: ../infra/tfvars/gcp
+    free_first_file: free_first.tfvars
+archetypes:
+  serverless_api:
+    aws_module: ../infra/modules/aws/serverless_api
+    gcp_module: ../infra/modules/gcp/serverless_api
+guardrails:
+  forbid_nat_gateway: true
+  forbid_api_gateway_in_free_first: true
+  free_first_cloudwatch_caps:
+    custom_metrics: 10
+    alarms: 10
+    log_ingest_gb: 5
+    api_requests_million: 1

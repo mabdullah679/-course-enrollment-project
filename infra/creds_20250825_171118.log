@@ -1,0 +1,14 @@
+== CREDS START Mon Aug 25 21:11:18 UTC 2025 ==
+[*] Unsetting stale AWS_* env vars
+[*] Loading keys from profile: aws-cli-client
+[*] Loading AWS credentials for profile: aws-cli-client
+[*] Exported AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY into env
+[*] Verifying identity (STS)
+{
+    "UserId": "AIDAQLVQQYWMG43A7YZFR",
+    "Account": "025066259864",
+    "Arn": "arn:aws:iam::025066259864:user/aws-cli-client"
+}
+== CREDS END Mon Aug 25 21:11:20 UTC 2025 ==
+Profile: aws-cli-client
+Log: infra/creds_20250825_171118.log
