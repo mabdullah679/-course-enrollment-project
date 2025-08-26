@@ -1,0 +1,50 @@
+{"message":"The security token included in the request is invalid."}
+[DDB] Checking for item id=smoke-20250826T014551Z
+{
+    "Items": [],
+    "Count": 0,
+    "ScannedCount": 0,
+    "ConsumedCapacity": null
+}
+
+[CWL] Recent logs from /aws/lambda/cegm-lambda
+
+[OK] Wrote .env.generated
+{"Message":null}{"Message":null}[curl] hitting [33m╷[0m[0m
+[33m│[0m [0m[1m[33mWarning: [0m[0m[1mNo outputs found[0m
+[33m│[0m [0m
+[33m│[0m [0m[0mThe state file either has no outputs defined, or all the defined
+[33m│[0m [0moutputs are empty. Please define an output in your configuration
+[33m│[0m [0mwith the `output` keyword and run `terraform refresh` for it to
+[33m│[0m [0mbecome available. If you are using interpolation, please verify
+[33m│[0m [0mthe interpolated value is not empty. You can use the `terraform
+[33m│[0m [0mconsole` command to assist.
+[33m╵[0m[0m with id=smoke-20250826T015647Z
+[dynamodb] get-item [33m╷[0m[0m
+[33m│[0m [0m[1m[33mWarning: [0m[0m[1mNo outputs found[0m
+[33m│[0m [0m
+[33m│[0m [0m[0mThe state file either has no outputs defined, or all the defined
+[33m│[0m [0moutputs are empty. Please define an output in your configuration
+[33m│[0m [0mwith the `output` keyword and run `terraform refresh` for it to
+[33m│[0m [0mbecome available. If you are using interpolation, please verify
+[33m│[0m [0mthe interpolated value is not empty. You can use the `terraform
+[33m│[0m [0mconsole` command to assist.
+[33m╵[0m[0m smoke-20250826T015647Z
+[dynamodb] scan last 5 (sanity)
+[cloudwatch] last 5m logs
+{"Message":null}{"message": "pong", "input": {"version": "2.0", "routeKey": "$default", "rawPath": "/", "rawQueryString": "", "headers": {"content-length": "57", "x-amzn-tls-version": "TLSv1.3", "x-amz-date": "20250826T021122Z", "x-forwarded-proto": "https", "x-forwarded-port": "443", "x-forwarded-for": "2600:1700:3d70:8d70:8891:7595:8e3b:396", "accept": "*/*", "x-amzn-tls-cipher-suite": "TLS_AES_128_GCM_SHA256", "x-amzn-trace-id": "Self=1-68ad17ca-2df83dac09643fc53371423b;Root=1-68ad17ca-68ecdb36186f91b075ff8073", "host": "7lvkebx2aaonvqyfc256qa3lua0tmocn.lambda-url.us-east-1.on.aws", "content-type": "application/json", "user-agent": "curl/8.7.1"}, "requestContext": {"accountId": "025066259864", "apiId": "7lvkebx2aaonvqyfc256qa3lua0tmocn", "authorizer": {"iam": {"accessKey": "AKIAQLVQQYWMLPTF2EE2", "accountId": "025066259864", "callerId": "AIDAQLVQQYWMG43A7YZFR", "cognitoIdentity": null, "principalOrgId": null, "userArn": "arn:aws:iam::025066259864:user/aws-cli-client", "userId": "AIDAQLVQQYWMG43A7YZFR"}}, "domainName": "7lvkebx2aaonvqyfc256qa3lua0tmocn.lambda-url.us-east-1.on.aws", "domainPrefix": "7lvkebx2aaonvqyfc256qa3lua0tmocn", "http": {"method": "POST", "path": "/", "protocol": "HTTP/1.1", "sourceIp": "2600:1700:3d70:8d70:8891:7595:8e3b:396", "userAgent": "curl/8.7.1"}, "requestId": "266c6607-446a-4f2e-b4fd-59b6122c2af2", "routeKey": "$default", "stage": "$default", "time": "26/Aug/2025:02:11:22 +0000", "timeEpoch": 1756174282971}, "body": "{\n  \"id\": \"smoke-20250826T021120Z\",\n  \"source\": \"smoke\"\n}", "isBase64Encoded": false}}{
+    "Items": [],
+    "Count": 0,
+    "ScannedCount": 0,
+    "ConsumedCapacity": null
+}
+{"message": "pong", "input": {"version": "2.0", "routeKey": "$default", "rawPath": "/", "rawQueryString": "", "headers": {"content-length": "57", "x-amzn-tls-version": "TLSv1.3", "x-amz-date": "20250826T021547Z", "x-forwarded-proto": "https", "x-forwarded-port": "443", "x-forwarded-for": "2600:1700:3d70:8d70:8891:7595:8e3b:396", "accept": "*/*", "x-amzn-tls-cipher-suite": "TLS_AES_128_GCM_SHA256", "x-amzn-trace-id": "Self=1-68ad18d3-4c7cd5dd27cc9d7b23e01160;Root=1-68ad18d3-4a0b0bb565c2774f35b8b083", "host": "7lvkebx2aaonvqyfc256qa3lua0tmocn.lambda-url.us-east-1.on.aws", "content-type": "application/json", "user-agent": "curl/8.7.1"}, "requestContext": {"accountId": "025066259864", "apiId": "7lvkebx2aaonvqyfc256qa3lua0tmocn", "authorizer": {"iam": {"accessKey": "AKIAQLVQQYWMLPTF2EE2", "accountId": "025066259864", "callerId": "AIDAQLVQQYWMG43A7YZFR", "cognitoIdentity": null, "principalOrgId": null, "userArn": "arn:aws:iam::025066259864:user/aws-cli-client", "userId": "AIDAQLVQQYWMG43A7YZFR"}}, "domainName": "7lvkebx2aaonvqyfc256qa3lua0tmocn.lambda-url.us-east-1.on.aws", "domainPrefix": "7lvkebx2aaonvqyfc256qa3lua0tmocn", "http": {"method": "POST", "path": "/", "protocol": "HTTP/1.1", "sourceIp": "2600:1700:3d70:8d70:8891:7595:8e3b:396", "userAgent": "curl/8.7.1"}, "requestId": "5b78628b-11bb-4c44-9f91-c84673f71921", "routeKey": "$default", "stage": "$default", "time": "26/Aug/2025:02:15:47 +0000", "timeEpoch": 1756174547743}, "body": "{\n  \"id\": \"smoke-20250826T021545Z\",\n  \"source\": \"smoke\"\n}", "isBase64Encoded": false}}{
+    "Items": [],
+    "Count": 0,
+    "ScannedCount": 0,
+    "ConsumedCapacity": null
+}
+2025-08-26T02:11:23 INIT_START Runtime Version: python:3.12.v75	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:aa140c0e9a9c41d993cb36eaf76013968a27ec935d7665a4368d6b0ba10a0f7e
+2025-08-26T02:11:23 START RequestId: 266c6607-446a-4f2e-b4fd-59b6122c2af2 Version: $LATEST
+2025-08-26T02:11:23 END RequestId: 266c6607-446a-4f2e-b4fd-59b6122c2af2
+2025-08-26T02:11:23 REPORT RequestId: 266c6607-446a-4f2e-b4fd-59b6122c2af2	Duration: 2.40 ms	Billed Duration: 3 ms	Memory Size: 128 MB	Max Memory Used: 36 MB	Init Duration: 92.59 ms

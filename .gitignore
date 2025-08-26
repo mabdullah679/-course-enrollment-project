@@ -12,3 +12,6 @@ infra/lambda.zip
 infra/modules/**/lambda.zip
 # keep docs out of dev
 infra/docs/
+
+# Never commit secrets
+infra/secret-access-key/

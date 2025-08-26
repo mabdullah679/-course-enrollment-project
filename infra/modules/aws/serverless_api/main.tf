@@ -1,167 +1,114 @@
-# Variables are in variables.tf — DO NOT redeclare here.
-
-# Deduplicate tags (AWS is case-insensitive)
 locals {
-  # Normalize keys: only use TitleCase once
-  base_tags = {
-    Project = var.name_prefix
-    Env     = var.env
-    Owner   = "abdullah"
-  }
-
-  common_tags = merge(local.base_tags, var.tags)
+  lambda_function_name = "${var.name_prefix}-${var.env}-lambda"
+  table_name           = var.nosql_table_or_collection
 }
 
-# DynamoDB table
-resource "aws_dynamodb_table" "this" {
-  name           = "${var.name_prefix}-${var.nosql_table_or_collection}"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 1
-  write_capacity = 1
-  hash_key       = "id"
+# DynamoDB table, on-demand, Always-Free friendly
+resource "aws_dynamodb_table" "events" {
+  name         = local.table_name
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"
     type = "S"
   }
 
-  tags = local.common_tags
-}
-
-# IAM role
-resource "aws_iam_role" "lambda_exec" {
-  name = "${var.name_prefix}-lambda-exec"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action    = "sts:AssumeRole",
-      Effect    = "Allow",
-      Principal = { Service = "lambda.amazonaws.com" }
-    }]
-  })
-  tags = local.common_tags
-}
-
-# Attach basic Lambda logging
-resource "aws_iam_role_policy_attachment" "lambda_basic_logs" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-# DynamoDB inline policy
-resource "aws_iam_role_policy" "lambda_dynamo_policy" {
-  name = "${var.name_prefix}-lambda-dynamo"
-  role = aws_iam_role.lambda_exec.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect   = "Allow",
-      Action   = ["dynamodb:PutItem", "dynamodb:GetItem"],
-      Resource = aws_dynamodb_table.this.arn
-    }]
+  tags = merge(var.tags, {
+    Name    = local.table_name
+    Purpose = "serverless-api-events"
   })
 }
 
-# CloudWatch log group
-resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${var.name_prefix}-lambda"
-  retention_in_days = var.log_retention_days
-  tags              = local.common_tags
-}
-
-# Lambda code archive
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  output_path = "${path.module}/lambda.zip"
-
-  source {
-    filename = "index.py"
-    content  = <<PY
-import json
-
-def _resp(code=200, body=None):
-    return {
-        "statusCode": code,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(body if body is not None else {})
+# IAM role for Lambda
+data "aws_iam_policy_document" "assume_lambda" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
     }
-
-def handler(event, context):
-    path   = event.get("rawPath", "/")
-    method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
-
-    if method == "GET" and path == "/health":
-        return _resp(200, {"ok": True})
-
-    if method == "POST" and path == "/echo":
-        body = event.get("body")
-        try:
-            data = json.loads(body) if body else {}
-        except Exception:
-            return _resp(400, {"error": "invalid JSON"})
-        return _resp(200, {"received": data})
-
-    if method == "POST" and path == "/enroll":
-        body = event.get("body")
-        data = json.loads(body) if body else {}
-        return _resp(201, {"enrolled": data})
-
-    return _resp(200, {"message": "pong", "input": event})
-PY
   }
 }
 
-# Lambda function
-resource "aws_lambda_function" "this" {
-  function_name    = "${var.name_prefix}-lambda"
-  role             = aws_iam_role.lambda_exec.arn
+resource "aws_iam_role" "lambda_exec" {
+  name               = "${local.lambda_function_name}-exec"
+  assume_role_policy = data.aws_iam_policy_document.assume_lambda.json
+  tags               = var.tags
+}
+
+# Policy: CloudWatch Logs + (optionally) DynamoDB PutItem on this table
+data "aws_iam_policy_document" "lambda_policy" {
+  statement {
+    sid     = "Logs"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = var.allow_ddb_putitem ? [1] : []
+    content {
+      sid     = "DDBPut"
+      actions = ["dynamodb:PutItem"]
+      resources = [aws_dynamodb_table.events.arn]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_inline" {
+  name   = "${local.lambda_function_name}-inline"
+  role   = aws_iam_role.lambda_exec.id
+  policy = data.aws_iam_policy_document.lambda_policy.json
+}
+
+# Package: expect lambda.zip colocated with this module
+# You are already placing a zip here per your repo tree.
+# Handler is handler.lambda_handler (Python).
+resource "aws_lambda_function" "fn" {
+  function_name = local.lambda_function_name
+  role          = aws_iam_role.lambda_exec.arn
+
+  filename         = "${path.module}/lambda.zip"
+  handler          = "handler.lambda_handler"
   runtime          = "python3.12"
-  handler          = "index.handler"
   memory_size      = var.memory
   timeout          = var.timeout_seconds
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  publish          = true
+  source_code_hash = filebase64sha256("${path.module}/lambda.zip")
 
-  depends_on = [aws_cloudwatch_log_group.lambda]
-  tags       = local.common_tags
+  environment {
+    variables = merge({
+      ENV       = var.env
+      REGION    = var.region
+      DDB_TABLE = local.table_name
+    }, var.environment)
+  }
+
+  tags = var.tags
 }
 
-# Lambda URL
-variable "public_access" {
-  description = "If true, sets Lambda Function URL auth to NONE (public). If false, uses AWS_IAM."
-  type        = bool
-  default     = false
+# Explicit log group to control retention
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${aws_lambda_function.fn.function_name}"
+  retention_in_days = var.log_retention_days
+  tags              = var.tags
 }
 
-resource "aws_lambda_function_url" "this" {
-  function_name      = aws_lambda_function.this.function_name
+# Function URL, default to AWS_IAM unless public_access=true
+resource "aws_lambda_function_url" "url" {
+  function_name      = aws_lambda_function.fn.function_name
   authorization_type = var.public_access ? "NONE" : "AWS_IAM"
+
+  cors {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "POST"]  # don't include OPTIONS
+    allow_headers = ["*"]
+    max_age       = 300
+  }
 }
 
-
-# Allow the provisioned exec role to invoke the function URL
-data "aws_caller_identity" "current" {}
-
-resource "aws_lambda_permission" "allow_user_invoke" {
-  statement_id           = "AllowUserInvoke"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.this.function_name
-  function_url_auth_type = "AWS_IAM"
-  principal              = "arn:aws:iam::025066259864:user/aws-cli-client"
-}
-
-
-
-# Outputs
-output "api_url" {
-  value = aws_lambda_function_url.this.function_url
-}
-
-output "dynamodb_table" {
-  value = aws_dynamodb_table.this.name
-}
-
-output "lambda_exec_role_arn" {
-  value = aws_iam_role.lambda_exec.arn
-}
 

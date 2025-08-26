@@ -1,0 +1,78 @@
+[1.1K Aug 26 13:42]  .
+├── [ 10K Aug 26 13:34]  .DS_Store
+├── [3.5K Aug 25 18:27]  .terraform.lock.hcl
+├── [  94 Aug 26 13:26]  acc-color.auto.tfvars
+├── [ 11K Aug 25 17:36]  all_infra_files.txt
+├── [ 516 Aug 25 17:36]  creds_20250825_171111.log
+├── [ 516 Aug 25 17:36]  creds_20250825_171118.log
+├── [ 516 Aug 25 18:25]  creds_20250825_182531.log
+├── [ 516 Aug 25 18:26]  creds_20250825_182635.log
+├── [ 516 Aug 25 18:29]  creds_20250825_182950.log
+├── [ 516 Aug 25 18:40]  creds_20250825_184027.log
+├── [ 128 Aug 25 17:32]  docs
+│   ├── [6.0K Aug 25 17:32]  .DS_Store
+│   └── [   0 Aug 25 17:32]  EXECUTION_ORDER.md
+├── [ 128 Aug 26 13:35]  infra
+│   ├── [ 155 Aug 26 13:34]  package_20250826_173443.log
+│   └── [1.2K Aug 26 13:35]  smoke_20250826_173516.log
+├── [   0 Aug 25 17:36]  infra_dump.txt
+├── [ 533 Aug 25 17:36]  lambda.zip
+├── [2.5K Aug 26 13:25]  main.tf
+├── [ 224 Aug 25 22:53]  modules
+│   ├── [6.0K Aug 25 22:53]  .DS_Store
+│   ├── [ 128 Aug 25 22:53]  aws
+│   │   ├── [6.0K Aug 25 22:53]  .DS_Store
+│   │   └── [ 256 Aug 25 23:20]  serverless_api
+│   │       ├── [1.4K Aug 25 23:20]  lambda.zip
+│   │       ├── [2.9K Aug 25 23:08]  main.tf
+│   │       ├── [2.9K Aug 25 17:36]  main.tf.bak
+│   │       ├── [ 295 Aug 25 22:46]  outputs.tf
+│   │       ├── [  37 Aug 25 17:36]  README.md
+│   │       └── [1.3K Aug 25 22:46]  variables.tf
+│   ├── [  96 Aug 25 17:36]  gcp
+│   │   └── [  96 Aug 25 17:36]  serverless_api
+│   │       └── [  37 Aug 25 17:36]  README.md
+│   ├── [  96 Aug 25 17:36]  guardrails
+│   │   └── [3.3K Aug 25 17:36]  always_free.tf
+│   └── [  96 Aug 25 17:36]  iam
+│       └── [ 128 Aug 25 17:36]  deployer
+│           ├── [ 773 Aug 25 17:36]  main.tf
+│           └── [ 224 Aug 25 17:36]  variables.tf
+├── [ 155 Aug 26 13:33]  package_20250826_173357.log
+├── [ 13K Aug 25 22:07]  plan.out
+├── [ 248 Aug 25 17:36]  policy.json
+├── [   0 Aug 26 13:42]  project-structure-detailed.txt
+├── [2.3K Aug 26 13:42]  project-structure.txt
+├── [ 127 Aug 25 23:20]  response.json
+├── [ 576 Aug 26 13:23]  scripts
+│   ├── [1.7K Aug 26 13:40]  cegm.sh
+│   ├── [1.7K Aug 25 17:36]  cleanup.sh
+│   ├── [ 225 Aug 26 13:22]  deploy_infra.sh
+│   ├── [3.0K Aug 25 18:46]  deploy.sh
+│   ├── [ 225 Aug 26 13:23]  destroy-infra.sh
+│   ├── [1.3K Aug 25 17:36]  dump.sh
+│   ├── [1.3K Aug 25 17:36]  injector.sh
+│   ├── [  96 Aug 26 13:20]  lib
+│   │   └── [2.8K Aug 26 13:21]  common.sh
+│   ├── [ 225 Aug 26 13:21]  package_lambda.sh
+│   ├── [1.1K Aug 25 18:21]  refresh-creds.sh
+│   ├── [ 248 Aug 25 17:39]  reset.sh
+│   ├── [2.0K Aug 25 18:15]  rotate-key.sh
+│   ├── [ 632 Aug 26 13:23]  smoke_once.sh
+│   ├── [1.3K Aug 25 23:20]  smoke.sh
+│   ├── [1.6K Aug 25 18:24]  test-infra.sh
+│   └── [ 599 Aug 25 17:36]  use-keys.sh
+├── [ 444 Aug 25 17:36]  smoke_20250825_171206.log
+├── [ 631 Aug 25 17:36]  smoke_20250825_171335.log
+├── [ 631 Aug 25 17:36]  smoke_20250825_171454.log
+├── [ 20K Aug 25 23:20]  terraform.tfstate
+├── [ 20K Aug 25 23:20]  terraform.tfstate.backup
+├── [ 160 Aug 25 22:53]  tfvars
+│   ├── [6.0K Aug 25 22:53]  .DS_Store
+│   ├── [  96 Aug 25 17:36]  aws
+│   │   └── [ 590 Aug 25 18:49]  free_first.tfvars
+│   └── [  96 Aug 25 17:36]  gcp
+│       └── [ 463 Aug 25 17:36]  free_first.tfvars
+└── [1.6K Aug 26 13:26]  variables.tf
+
+16 directories, 60 files

@@ -1,43 +1,24 @@
-variable "cloud_provider" { type = string }
-variable "deploy_type"    { type = string }
-variable "env"            { type = string }
-variable "budget_profile" { type = string }
-variable "region"         { type = string }
-variable "name_prefix"    { type = string }
-variable "runtime"        { type = string }
-variable "memory"         { type = number }
-variable "timeout_seconds"{ type = number }
-variable "min_scale"      { type = number }
-variable "max_scale"      { type = number }
-variable "db_engine"      { type = string }
-variable "nosql_table_or_collection" { type = string }
-variable "use_api_gateway" { type = bool }
-variable "enable_cors"     { type = bool }
-variable "allowed_origins" { type = list(string) }
-variable "tags"            { type = map(string) }
-variable "ttl_hours"       { type = number }
+variable "region"           { description = "AWS region";                         type = string; default = "us-east-1" }
+variable "profile"          { description = "AWS CLI/SDK profile to use";         type = string; default = "default" }
+variable "name_prefix"      { description = "Prefix used to name resources";      type = string; default = "cegm" }
+variable "env"              { description = "Environment (dev, staging, prod)";   type = string; default = "dev" }
+variable "memory"           { description = "Lambda memory (MB)";                 type = number; default = 128 }
+variable "timeout_seconds"  { description = "Lambda timeout seconds";             type = number; default = 10 }
+variable "log_retention_days" { description = "CloudWatch Logs retention days";   type = number; default = 7 }
+variable "public_access"    { description = "If true, Lambda URL is public";      type = bool;   default = false }
+variable "nosql_table_or_collection" { description = "DynamoDB table name"; type = string; default = "cegm-events" }
+variable "db_engine"        { description = "Placeholder for guardrails module";  type = string; default = "dynamodb" }
+variable "allow_paid"       { description = "Guardrails flag to allow paid res";  type = bool;   default = false }
 
-variable "log_retention_days" {
-  description = "Retention days for Lambda logs"
-  type        = number
-  default     = 14
-}
-
-variable "allow_paid" {
-  description = "Allow resources beyond free tier"
-  type        = bool
-  default     = false
-}
-
-variable "public_access" {
-  description = "Public Lambda URL access"
-  type        = bool
-  default     = false
-}
-
-# Important for provider binding
-variable "profile" {
-  description = "AWS CLI profile"
+# NEW: console/account color you want to propagate as a tag and default tag
+variable "acc_color" {
+  description = "Human-friendly account color label (cosmetic; used as 'Color' tag)."
   type        = string
-  default     = "aws-cli-client"
+  default     = "purple"
+}
+
+variable "tags" {
+  description = "Extra tags to merge (keys besides Project/Owner/Env/Color)."
+  type        = map(string)
+  default     = {}
 }

@@ -1,0 +1,773 @@
+
+
+===== infra/scripts/cegm.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Master wrapper for modular workflows.
+# USAGE:
+#   scripts/cegm.sh package
+#   scripts/cegm.sh deploy
+#   scripts/cegm.sh smoke
+#   scripts/cegm.sh destroy
+#   scripts/cegm.sh redeploy          # destroy -> package -> deploy -> smoke
+#   PROFILE=aws-cli-client REGION=us-east-1 scripts/cegm.sh deploy
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PROFILE="${PROFILE:-default}"
+export REGION="${REGION:-us-east-1}"
+
+cmd="${1:-help}"
+
+case "$cmd" in
+  package)
+    exec "$SCRIPT_DIR/package_lambda.sh"
+    ;;
+  deploy)
+    exec "$SCRIPT_DIR/deploy_infra.sh"
+    ;;
+  smoke)
+    exec "$SCRIPT_DIR/smoke_once.sh"
+    ;;
+  destroy)
+    exec "$SCRIPT_DIR/destroy_infra.sh"
+    ;;
+  redeploy)
+    # prove repeatability: destroy -> package -> deploy -> smoke
+    "$SCRIPT_DIR/destroy_infra.sh"
+    "$SCRIPT_DIR/package_lambda.sh"
+    "$SCRIPT_DIR/deploy_infra.sh"
+    exec "$SCRIPT_DIR/smoke_once.sh"
+    ;;
+  help|--help|-h)
+    cat <<EOF
+Usage: scripts/cegm.sh <command>
+
+Commands:
+  package   Package lambda/handler.py into infra/modules/aws/serverless_api/lambda.zip
+  deploy    Terraform init+apply (uses PROFILE/REGION envs)
+  smoke     Invoke Lambda, auto-extract smoke ID, get-item from DynamoDB, tail logs
+  destroy   Terraform destroy (uses PROFILE/REGION envs)
+  redeploy  Destroy -> package -> deploy -> smoke (repeatability proof)
+
+Env vars:
+  PROFILE   AWS profile to use (default: default)
+  REGION    AWS region (default: us-east-1)
+
+Examples:
+  scripts/cegm.sh deploy
+  PROFILE=aws-cli-client REGION=us-east-1 scripts/cegm.sh redeploy
+EOF
+    ;;
+  *)
+    echo "[ERROR] Unknown command: $cmd" >&2
+    exit 1
+    ;;
+esac
+
+
+
+===== infra/scripts/cleanup.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+AWS_PROFILE=${AWS_PROFILE:-aws-cli-client}
+REGION="us-east-1"
+PREFIX="cegm"
+
+# Ensure environment creds match the profile (prevents stale env vars)
+PROFILE="$AWS_PROFILE" source "$SCRIPT_DIR/use-keys.sh"
+
+echo "[*] Pre-flight AWS identity check..."
+if ! aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null 2>&1; then
+  echo "[ERROR] Invalid AWS profile/token ($AWS_PROFILE)"
+  exit 1
+fi
+
+echo "[*] Cleaning up old AWS resources for $PREFIX in $REGION..."
+
+aws lambda delete-function \
+  --function-name "${PREFIX}-lambda" \
+  --region "$REGION" --profile "$AWS_PROFILE" || true
+
+aws lambda delete-function-url-config \
+  --function-name "${PREFIX}-lambda" \
+  --region "$REGION" --profile "$AWS_PROFILE" || true
+
+for stmt in AllowExecRoleInvoke AllowAccountInvoke; do
+  aws lambda remove-permission \
+    --function-name "${PREFIX}-lambda" \
+    --statement-id "$stmt" \
+    --region "$REGION" --profile "$AWS_PROFILE" || true
+done
+
+aws dynamodb delete-table \
+  --table-name "${PREFIX}-events" \
+  --region "$REGION" --profile "$AWS_PROFILE" || true
+
+aws logs delete-log-group \
+  --log-group-name "/aws/lambda/${PREFIX}-lambda" \
+  --region "$REGION" --profile "$AWS_PROFILE" || true
+
+aws iam detach-role-policy \
+  --role-name "${PREFIX}-lambda-exec" \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole \
+  --profile "$AWS_PROFILE" || true
+
+aws iam delete-role-policy \
+  --role-name "${PREFIX}-lambda-exec" \
+  --policy-name "${PREFIX}-lambda-dynamo" \
+  --profile "$AWS_PROFILE" || true
+
+aws iam delete-role \
+  --role-name "${PREFIX}-lambda-exec" \
+  --profile "$AWS_PROFILE" || true
+
+echo "[*] Cleanup complete."
+
+
+===== infra/scripts/deploy_infra.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+
+LOG="$(logfile_path package)"
+tee_log_start "$LOG"
+
+zip_lambda
+echo "== package END $(date -u) =="
+echo "Log: $LOG"
+
+
+
+===== infra/scripts/deploy.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# === Resolve paths ===
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+INFRA_DIR="$PROJECT_ROOT/infra"
+
+ENV_NAME="${1:-dev}"
+CLOUD="${2:-aws}"
+
+PROFILE="${PROFILE:-aws-cli-client}"
+export TF_PLUGIN_CACHE_DIR="${TF_PLUGIN_CACHE_DIR:-$HOME/.terraform.d/plugin-cache}"
+
+echo "[DEBUG] Profile: $PROFILE"
+echo "[DEBUG] Env: $ENV_NAME, Cloud: $CLOUD"
+
+# === Choose tfvars ===
+if [[ "$CLOUD" == "aws" ]]; then
+  TFVARS="$INFRA_DIR/tfvars/aws/free_first.tfvars"
+elif [[ "$CLOUD" == "gcp" ]]; then
+  TFVARS="$INFRA_DIR/tfvars/gcp/free_first.tfvars"
+else
+  echo "[ERROR] Unknown cloud '$CLOUD'"
+  exit 1
+fi
+echo "[DEBUG] TFVARS: $TFVARS"
+echo "[DEBUG] TF_PLUGIN_CACHE_DIR: $TF_PLUGIN_CACHE_DIR"
+
+mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+# === Check Terraform version (recommend >= 1.13) ===
+TFV="$(terraform version | head -n1 | awk '{print $2}' | tr -d 'v')"
+# Basic semver compare: require 1.13.0+
+TF_MAJOR="${TFV%%.*}"
+TF_MINOR="${TFV#*.}"; TF_MINOR="${TF_MINOR%%.*}"
+if [[ "${TF_MAJOR:-0}" -eq 1 && "${TF_MINOR:-0}" -lt 13 ]]; then
+  echo "[WARN] Terraform $TFV detected. Providers (aws 5.100+) can fail to load on older TF."
+  echo "[WARN] Please upgrade to Terraform >= 1.13.x for best compatibility."
+fi
+
+# === Load AWS creds into env ===
+echo "[*] Loading AWS credentials for profile: $PROFILE"
+PROFILE="$PROFILE" bash "$SCRIPT_DIR/use-keys.sh"
+
+PLAN_PATH="$INFRA_DIR/plan.out"
+
+# === macOS quarantine cleanup (best-effort) ===
+if command -v xattr >/dev/null 2>&1; then
+  xattr -dr com.apple.quarantine "$HOME/.terraform.d/plugin-cache" 2>/dev/null || true
+  xattr -dr com.apple.quarantine "$INFRA_DIR/.terraform" 2>/dev/null || true
+fi
+
+run_plan_and_apply() {
+  terraform -chdir="$INFRA_DIR" init -upgrade -reconfigure
+
+  terraform -chdir="$INFRA_DIR" plan \
+    -var-file="$TFVARS" \
+    -out "$PLAN_PATH"
+
+  terraform -chdir="$INFRA_DIR" apply -auto-approve "$PLAN_PATH"
+}
+
+# === First attempt ===
+set +e
+APPLY_OUTPUT="$(run_plan_and_apply 2>&1)"
+APPLY_STATUS=$?
+set -e
+
+if [[ $APPLY_STATUS -ne 0 ]]; then
+  echo "$APPLY_OUTPUT"
+
+  # Detect provider schema load failure
+  if echo "$APPLY_OUTPUT" | grep -qi "Failed to load plugin schemas"; then
+    echo "[WARN] Provider schema load failure detected. Re-initializing providers and retrying once..."
+    rm -rf "$INFRA_DIR/.terraform"
+    if command -v xattr >/dev/null 2>&1; then
+      xattr -dr com.apple.quarantine "$HOME/.terraform.d/plugin-cache" 2>/dev/null || true
+      xattr -dr com.apple.quarantine "$INFRA_DIR/.terraform" 2>/dev/null || true
+    fi
+
+    set +e
+    APPLY_OUTPUT_RETRY="$(run_plan_and_apply 2>&1)"
+    APPLY_STATUS_RETRY=$?
+    set -e
+
+    if [[ $APPLY_STATUS_RETRY -ne 0 ]]; then
+      echo "$APPLY_OUTPUT_RETRY"
+      echo "[ERROR] Deployment failed again after provider re-init."
+      exit $APPLY_STATUS_RETRY
+    fi
+  else
+    echo "[ERROR] Deployment failed."
+    exit $APPLY_STATUS
+  fi
+fi
+
+echo
+echo "Outputs:"
+terraform -chdir="$INFRA_DIR" output || true
+
+
+===== infra/scripts/destroy-infra.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+
+LOG="$(logfile_path destroy)"
+tee_log_start "$LOG"
+
+tf_destroy
+echo "== destroy END $(date -u) =="
+echo "Log: $LOG"
+
+
+
+===== infra/scripts/dump.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+OUTPUT="$PROJECT_ROOT/infra_dump.txt"
+
+: > "$OUTPUT"
+
+echo "[*] Dumping infra scripts + configs into $OUTPUT"
+echo "[DEBUG] Script dir   : $SCRIPT_DIR"
+echo "[DEBUG] Project root : $PROJECT_ROOT"
+
+dump_files() {
+  local title="$1"; shift
+  local files=("$@")
+
+  if [ ${#files[@]} -eq 0 ]; then
+    echo "[WARN] No files found for $title"
+    return
+  fi
+
+  for f in "$@"; do
+    echo "[DEBUG] Dumping $f"
+    {
+      echo ""
+      echo "===== FILE: ${f#$PROJECT_ROOT/} ====="
+      echo ""
+      cat "$f"
+    } >> "$OUTPUT"
+  done
+}
+
+# Scripts
+scripts=$(find "$PROJECT_ROOT/infra/scripts" -maxdepth 1 -type f -name "*.sh" 2>/dev/null || true)
+dump_files "scripts" $scripts
+
+# Terraform root configs
+tfs=$(find "$PROJECT_ROOT/infra" -maxdepth 1 -type f \( -name "*.tf" -o -name "*.tfvars" \) 2>/dev/null || true)
+dump_files "terraform root" $tfs
+
+# tfvars subdir
+if [ -d "$PROJECT_ROOT/infra/tfvars" ]; then
+  subvars=$(find "$PROJECT_ROOT/infra/tfvars" -type f -name "*.tfvars" 2>/dev/null || true)
+  dump_files "tfvars subdir" $subvars
+else
+  echo "[DEBUG] No infra/tfvars directory found"
+fi
+
+echo "[*] Dump complete (no tfstate included)."
+
+
+===== infra/scripts/injector.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+INFRA_DIR="$PROJECT_ROOT/infra"
+
+PROFILE=${PROFILE:-aws-cli-client}
+USER_NAME=${USER_NAME:-aws-cli-client}
+PLAN_FILE="$INFRA_DIR/plan.out"
+
+terraform -chdir="$INFRA_DIR" plan -var-file="$INFRA_DIR/tfvars/aws/free_first.tfvars" -out="$PLAN_FILE"
+SERVICES=$(terraform show -json "$PLAN_FILE" | jq -r '.planned_values.root_module.resources[].type' | sort -u)
+
+echo "Detected services in this plan: $SERVICES"
+
+POLICY=$(jq -n '{Version:"2012-10-17",Statement:[]}')
+for SVC in $SERVICES; do
+  case $SVC in
+    aws_lambda_function)
+      POLICY=$(echo $POLICY | jq '.Statement += [{"Effect":"Allow","Action":["lambda:*"],"Resource":"*"}]')
+      ;;
+    aws_dynamodb_table)
+      POLICY=$(echo $POLICY | jq '.Statement += [{"Effect":"Allow","Action":["dynamodb:*"],"Resource":"*"}]')
+      ;;
+    aws_cloudwatch_log_group)
+      POLICY=$(echo $POLICY | jq '.Statement += [{"Effect":"Allow","Action":["logs:*"],"Resource":"*"}]')
+      ;;
+  esac
+done
+
+echo $POLICY | jq . > "$INFRA_DIR/policy.json"
+
+aws iam put-user-policy \
+  --user-name "$USER_NAME" \
+  --policy-name DynamicDeployerPolicy \
+  --policy-document file://"$INFRA_DIR/policy.json" \
+  --profile "$PROFILE"
+
+
+===== infra/scripts/lib/common.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -------- Paths (location-agnostic) --------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+TF_DIR="$PROJECT_ROOT/infra"
+MOD_DIR="$TF_DIR/modules/aws/serverless_api"
+LAMBDA_SRC_DIR="$PROJECT_ROOT/lambda"
+LAMBDA_HANDLER="$LAMBDA_SRC_DIR/handler.py"
+LAMBDA_ZIP="$MOD_DIR/lambda.zip"
+
+# -------- Defaults --------
+PROFILE="${PROFILE:-default}"
+REGION="${REGION:-us-east-1}"
+
+# -------- Helpers --------
+require_cmd() {
+  for c in "$@"; do
+    command -v "$c" >/dev/null 2>&1 || { echo "[ERROR] Missing command: $c" >&2; exit 1; }
+  done
+}
+
+logfile_path() {
+  local base="${1:-run}"
+  mkdir -p "$TF_DIR"
+  echo "$TF_DIR/${base}_$(date -u +%Y%m%d_%H%M%S).log"
+}
+
+tee_log_start() {
+  local log="$1"
+  exec > >(tee -a "$log") 2>&1
+  echo "== $(basename "$log" .log) START $(date -u) =="
+}
+
+outputs_load() {
+  require_cmd terraform jq
+  API_URL="$(terraform -chdir="$TF_DIR" output -raw api_url 2>/dev/null || true)"
+  FUNCTION_ARN="$(terraform -chdir="$TF_DIR" output -raw lambda_function_arn 2>/dev/null || true)"
+  TABLE_NAME="$(terraform -chdir="$TF_DIR" output -raw dynamodb_table 2>/dev/null || true)"
+}
+
+tf_init_apply() {
+  require_cmd terraform
+  terraform -chdir="$TF_DIR" init -reconfigure -upgrade
+  terraform -chdir="$TF_DIR" apply -auto-approve -var profile="$PROFILE" -var region="$REGION"
+}
+
+tf_destroy() {
+  require_cmd terraform
+  terraform -chdir="$TF_DIR" destroy -auto-approve -var profile="$PROFILE" -var region="$REGION"
+}
+
+zip_lambda() {
+  require_cmd zip
+  [[ -f "$LAMBDA_HANDLER" ]] || { echo "[ERROR] Missing $LAMBDA_HANDLER"; exit 1; }
+  mkdir -p "$MOD_DIR"
+  (cd "$LAMBDA_SRC_DIR" && zip -q "$LAMBDA_ZIP" "$(basename "$LAMBDA_HANDLER")")
+  echo "[ok] Packaged $LAMBDA_HANDLER -> $LAMBDA_ZIP"
+}
+
+lambda_name_from_arn() {
+  local arn="$1"
+  echo "${arn##*:function:}"
+}
+
+invoke_lambda_smoke() {
+  require_cmd aws jq
+  local fn_name="$1"
+  local payload='{"body":"{\"ping\":\"pong\"}"}'
+  local resp
+  resp="$(aws lambda invoke \
+    --function-name "$fn_name" \
+    --payload "$payload" \
+    --cli-binary-format raw-in-base64-out \
+    /dev/stdout \
+    --region "$REGION" --profile "$PROFILE")"
+  echo "[invoke] $resp"
+  local id
+  id="$(echo "$resp" | jq -r '.body | fromjson | .id // empty')"
+  [[ -n "$id" ]] || { echo "[ERROR] No smoke id in response"; return 1; }
+  SMOKE_ID="$id"
+  export SMOKE_ID
+}
+
+ddb_get_item_by_id() {
+  require_cmd aws jq
+  local table="$1" id="$2"
+  aws dynamodb get-item \
+    --table-name "$table" \
+    --key "$(jq -n --arg id "$id" '{id:{S:$id}}')" \
+    --region "$REGION" --profile "$PROFILE"
+}
+
+logs_tail_lambda() {
+  require_cmd aws
+  local fn_name="$1"
+  aws logs tail "/aws/lambda/${fn_name}" --since 2m --format short --region "$REGION" --profile "$PROFILE"
+}
+
+
+
+===== infra/scripts/package_lambda.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+
+LOG="$(logfile_path package)"
+tee_log_start "$LOG"
+
+zip_lambda
+echo "== package END $(date -u) =="
+echo "Log: $LOG"
+
+
+
+===== infra/scripts/refresh-creds.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOG="infra/creds_$(date +%Y%m%d_%H%M%S).log"
+PROFILE=${PROFILE:-aws-cli-client}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+{
+  echo "== CREDS START $(date -u) =="
+  echo "[*] Unsetting stale AWS_* env vars"
+  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE
+
+  echo "[*] Loading keys from profile: $PROFILE"
+  PROFILE="$PROFILE" bash "$SCRIPT_DIR/use-keys.sh"
+
+  echo "[*] Verifying identity (STS)"
+  if ! aws sts get-caller-identity --profile "$PROFILE"; then
+    echo "[WARN] Credentials invalid, attempting rotation..."
+    "$SCRIPT_DIR/rotate-key.sh"
+
+    echo "[*] Re-loading keys from profile after rotation..."
+    PROFILE="$PROFILE" bash "$SCRIPT_DIR/use-keys.sh"
+
+    echo "[*] Re-validating identity (STS)"
+    aws sts get-caller-identity --profile "$PROFILE" || {
+      echo "[ERROR] Credentials still invalid after rotation"
+      exit 1
+    }
+  fi
+  echo "== CREDS END $(date -u) =="
+} 2>&1 | tee "$LOG"
+
+# macOS clipboard summary
+printf "Profile: %s\nLog: %s\n" "$PROFILE" "$LOG" | tee -a "$LOG" | pbcopy
+echo "[*] Summary copied to clipboard."
+
+
+===== infra/scripts/reset.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV="${1:-dev}"
+CLOUD="${2:-aws}"
+
+echo "[*] Resetting infra for $ENV on $CLOUD ..."
+"$SCRIPT_DIR/cleanup.sh"
+"$SCRIPT_DIR/deploy.sh" "$ENV" "$CLOUD"
+
+
+===== infra/scripts/rotate-key.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+USER_NAME=${USER_NAME:-aws-cli-client}
+PROFILE=${PROFILE:-aws-cli-client}
+
+echo "[*] Rotating keys for $USER_NAME..."
+
+# Clear stale env vars
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_PROFILE
+
+# List existing keys sorted by create date
+EXISTING_KEYS=$(aws iam list-access-keys \
+  --user-name "$USER_NAME" \
+  --profile "$PROFILE" \
+  --query 'AccessKeyMetadata[*].{ID:AccessKeyId,Create:CreateDate}' \
+  --output json | jq -c '. | sort_by(.Create)')
+
+COUNT=$(echo "$EXISTING_KEYS" | jq 'length')
+
+# If at quota (2 keys), delete the oldest
+if [ "$COUNT" -ge 2 ]; then
+  OLDEST_KEY=$(echo "$EXISTING_KEYS" | jq -r '.[0].ID')
+  echo "[*] Deleting oldest key: $OLDEST_KEY"
+  aws iam delete-access-key \
+    --user-name "$USER_NAME" \
+    --access-key-id "$OLDEST_KEY" \
+    --profile "$PROFILE"
+fi
+
+# Create new key
+NEW_KEYS=$(aws iam create-access-key --user-name "$USER_NAME" --profile "$PROFILE")
+NEW_ID=$(echo "$NEW_KEYS"   | jq -r '.AccessKey.AccessKeyId')
+NEW_SECRET=$(echo "$NEW_KEYS" | jq -r '.AccessKey.SecretAccessKey')
+
+# Update AWS CLI profile
+aws configure set aws_access_key_id     "$NEW_ID"    --profile "$PROFILE"
+aws configure set aws_secret_access_key "$NEW_SECRET" --profile "$PROFILE"
+
+# Validate via profile with retries
+echo "[*] Validating new credentials via profile..."
+MAX_RETRIES=5
+for i in $(seq 1 $MAX_RETRIES); do
+  if aws sts get-caller-identity --profile "$PROFILE" >/dev/null 2>&1; then
+    echo "[*] Validation successful on attempt $i"
+    break
+  fi
+  echo "[WARN] Validation failed (attempt $i/$MAX_RETRIES), retrying..."
+  sleep 3
+  if [ "$i" -eq "$MAX_RETRIES" ]; then
+    echo "[ERROR] New credentials failed validation after $MAX_RETRIES attempts!"
+    exit 1
+  fi
+done
+
+# Export into current shell
+export AWS_ACCESS_KEY_ID="$NEW_ID"
+export AWS_SECRET_ACCESS_KEY="$NEW_SECRET"
+unset AWS_SESSION_TOKEN
+echo "[*] Exported new credentials into current shell"
+
+echo "[*] Key rotation complete. Active key: $NEW_ID"
+
+
+===== infra/scripts/smoke_once.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+
+LOG="$(logfile_path smoke)"
+tee_log_start "$LOG"
+
+outputs_load
+[[ -n "${FUNCTION_ARN:-}" && -n "${TABLE_NAME:-}" ]] || { echo "[ERROR] Missing outputs. Run deploy_infra.sh first."; exit 1; }
+
+FN_NAME="$(lambda_name_from_arn "$FUNCTION_ARN")"
+echo "Function: $FN_NAME"
+echo "Table:    $TABLE_NAME"
+
+invoke_lambda_smoke "$FN_NAME"
+echo "SMOKE_ID=$SMOKE_ID"
+
+echo "[ddb] get-item"
+ddb_get_item_by_id "$TABLE_NAME" "$SMOKE_ID"
+
+echo "[logs] tail"
+logs_tail_lambda "$FN_NAME"
+
+echo "== smoke END $(date -u) =="
+echo "Log: $LOG"
+
+
+
+===== infra/scripts/smoke.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Resolve project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TF_DIR="$PROJECT_ROOT/infra"
+PROFILE=${1:-default}
+REGION=${2:-us-east-1}
+LOG="$TF_DIR/smoke_$(date -u +%Y%m%d_%H%M%S).log"
+
+exec > >(tee "$LOG") 2>&1
+
+echo "== SMOKE START $(date -u) =="
+
+API_URL="$(terraform -chdir="$TF_DIR" output -raw api_url)"
+ARN="$(terraform -chdir="$TF_DIR" output -raw lambda_function_arn)"
+TABLE="$(terraform -chdir="$TF_DIR" output -raw dynamodb_table)"
+
+echo "API_URL=$API_URL"
+echo "LAMBDA_ARN=$ARN"
+echo "TABLE=$TABLE"
+
+# Invoke Lambda via AWS CLI (safe regardless of public_access)
+RESP="$(aws lambda invoke \
+  --function-name "$(basename "$ARN")" \
+  --cli-binary-format raw-in-base64-out \
+  --payload '{"body":"{\"ping\":\"pong\"}"}' \
+  --profile "$PROFILE" --region "$REGION" \
+  /dev/stdout)"
+
+echo "[lambda] $RESP"
+
+SMOKE_ID="$(echo "$RESP" | jq -r '.body | fromjson | .id')"
+echo "SMOKE_ID=$SMOKE_ID"
+
+# Confirm in DynamoDB
+aws dynamodb get-item \
+  --table-name "$TABLE" \
+  --key "{\"id\":{\"S\":\"$SMOKE_ID\"}}" \
+  --profile "$PROFILE" --region "$REGION"
+
+# Tail logs
+aws logs tail "/aws/lambda/$(basename "$ARN")" \
+  --since 2m --profile "$PROFILE" --region "$REGION"
+
+echo "== SMOKE END $(date -u) =="
+
+
+===== infra/scripts/test-infra.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Resolve project root no matter where this script is called from
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_PATH/../.." && pwd)"
+cd "$PROJECT_ROOT"
+
+LOG_DIR="$PROJECT_ROOT/infra/logs"
+mkdir -p "$LOG_DIR"
+
+RESET=false
+CLEANUP=false
+
+# Parse flags
+for arg in "$@"; do
+  case $arg in
+    --reset) RESET=true ;;
+    --cleanup) CLEANUP=true ;;
+  esac
+done
+
+echo "== TEST INFRA START $(date -u) =="
+
+# 1. Refresh creds
+echo "[1/3] Refreshing AWS credentials..."
+"$PROJECT_ROOT/infra/scripts/refresh-creds.sh" || {
+  echo "[ERROR] Failed to refresh or rotate AWS credentials."
+  exit 1
+}
+
+# 2. Deploy infra
+echo "[2/3] Deploying AWS infra (Lambda + DynamoDB)..."
+"$PROJECT_ROOT/infra/scripts/deploy.sh" dev aws || {
+  echo "[ERROR] Deployment failed."
+  exit 1
+}
+
+# 3. Smoke test
+echo "[3/3] Running smoke test..."
+"$PROJECT_ROOT/infra/scripts/smoke.sh" || {
+  echo "[ERROR] Smoke test failed."
+  exit 1
+}
+
+# Optional cleanup/reset
+if [ "$RESET" = true ]; then
+  echo "[*] Resetting infra..."
+  "$PROJECT_ROOT/infra/scripts/reset.sh" dev aws
+elif [ "$CLEANUP" = true ]; then
+  echo "[*] Cleaning up infra..."
+  "$PROJECT_ROOT/infra/scripts/cleanup.sh"
+fi
+
+echo "== TEST INFRA END $(date -u) =="
+
+# Friendly summary
+API_URL=$(terraform -chdir="$PROJECT_ROOT/infra" output -raw api_url || echo "n/a")
+DYNAMO_TABLE=$(terraform -chdir="$PROJECT_ROOT/infra" output -raw dynamodb_table || echo "n/a")
+
+echo ""
+echo "✅ Infra test complete!"
+echo "-----------------------"
+echo "API URL     : $API_URL"
+echo "DynamoDB    : $DYNAMO_TABLE"
+echo "Logs        : $LOG_DIR"
+
+
+===== infra/scripts/use-keys.sh =====
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROFILE=${PROFILE:-aws-cli-client}
+
+echo "[*] Loading AWS credentials for profile: $PROFILE"
+
+AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id --profile "$PROFILE")
+AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key --profile "$PROFILE")
+
+if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+  echo "[ERROR] Could not fetch keys from profile $PROFILE"
+  exit 1
+fi
+
+export AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY
+unset AWS_SESSION_TOKEN
+
+echo "[*] Exported AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY into env"
