@@ -1,0 +1,142 @@
+# ===================================================================
+# Spring Boot configuration for the "dev" profile.
+# This file overrides application.yml when profile 'dev' is active.
+# Filename MUST be application-dev.yml for Spring to pick it up.
+# ===================================================================
+
+logging:
+  level:
+    ROOT: DEBUG
+    tech.jhipster: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.cegm.gateway: DEBUG
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0
+
+spring:
+  # Ensure this file applies only for 'dev' profile
+  config:
+    activate:
+      on-profile: dev
+
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**,.h2.server.properties
+    livereload:
+      enabled: false
+
+  docker:
+    compose:
+      enabled: false
+      profiles:
+        active: dev
+
+  jackson:
+    serialization:
+      indent-output: true
+
+  cloud:
+    consul:
+      config:
+        fail-fast: false
+        format: yaml
+        profile-separator: '-'
+      discovery:
+        prefer-ip-address: true
+        tags:
+          - profile=${spring.profiles.active}
+          - version='@project.version@'
+          - git-version=${git.commit.id.describe:}
+          - git-commit=${git.commit.id.abbrev:}
+          - git-branch=${git.branch:}
+      host: localhost
+      port: 8500
+
+  # --------- Force H2 for dev ---------
+  datasource:
+    url: jdbc:h2:file:./target/h2db/db/cegmGateway;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: cegmGateway
+    password:
+    hikari:
+      jdbc-url: jdbc:h2:file:./target/h2db/db/cegmGateway;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      driver-class-name: org.h2.Driver
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  h2:
+    console:
+      enabled: true
+
+  # Disable Liquibase in dev to avoid any DataSource shenanigans
+  liquibase:
+    enabled: false
+    contexts: dev, faker
+
+  # Make JPA happy with H2 while Liquibase is off
+  jpa:
+    database: H2
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate.id.new_generator_mappings: true
+      hibernate.jdbc.lob.non_contextual_creation: true
+      hibernate.temp.use_jdbc_metadata_defaults: false
+
+  messages:
+    cache-duration: PT1S
+
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+  forward-headers-strategy: native
+
+# ===================================================================
+# JHipster specific properties
+# ===================================================================
+
+jhipster:
+  gateway:
+    rate-limiting:
+      enabled: false
+      limit: 100000
+      duration-in-seconds: 3600
+    authorized-microservices-endpoints:
+      app1: /api,/v3/api-docs
+  cors:
+    allowed-origins: 'http://localhost:8100,https://localhost:8100'
+    allowed-origin-patterns: 'https://*.githubpreview.dev'
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
+    allow-credentials: true
+    max-age: 1800
+  security:
+    authentication:
+      jwt:
+        base64-secret: MWI5MmQ2MmZjNmJkNzFkMTVmNWI2MWM1ZjkxNzA3NTc1ZTU1M2QwNTIzZTk4MjQyYThlZTdlNDVmMDE5NDU1NjI2NjQ4OWIyOGIwZTVkY2Y3MTdlNjAyNjZjYzdjOWZkNmI1ZTg5YmE3YTk1YzdkZGIxN2E5NDhlOTVjZjk3N2I=
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
+  logging:
+    use-json-format: false
+    logstash:
+      enabled: false
+      host: localhost
+      port: 5000
+      ring-buffer-size: 512
+
+# ===================================================================
+# Application-specific properties can go below
+# ===================================================================
+
+# application:

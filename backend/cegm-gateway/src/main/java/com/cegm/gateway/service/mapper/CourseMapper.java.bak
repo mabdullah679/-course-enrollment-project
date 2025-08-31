@@ -1,0 +1,12 @@
+package com.cegm.gateway.service.mapper;
+
+import com.cegm.gateway.domain.Course;
+import com.cegm.gateway.service.dto.CourseDTO;
+import org.mapstruct.Mapper;
+
+/**
+ * Mapper for the entity {@link Course} and its DTO {@link CourseDTO}.
+ */
+@Mapper(componentModel = "spring")
+public interface CourseMapper extends EntityMapper<CourseDTO, Course> {
+}
