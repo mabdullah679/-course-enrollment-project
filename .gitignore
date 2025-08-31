@@ -12,3 +12,17 @@ infra/lambda.zip
 infra/modules/**/lambda.zip
 # keep docs out of dev
 infra/docs/
+target/
+build/
+*.jar
+*.war
+*.log
+node_modules/
+dist/
+.vite/
+.npm/
+package-lock.json
+yarn.lock
+.idea/
+.vscode/
+*.iml
