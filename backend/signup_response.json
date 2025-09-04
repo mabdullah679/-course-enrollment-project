@@ -1,0 +1,1 @@
+{"success":true,"message":"Signup request submitted. Admin approval required.","data":{"id":3,"username":"alicestudent","email":"alice.newstudent@example.com","firstName":"Alice","lastName":"NewStudent","role":"STUDENT","approved":false,"active":true,"createdAt":"2025-09-04T07:43:44.161366"},"errorCode":null}

@@ -1,0 +1,107 @@
+GitHub Copilot — I scanned the backend log files you asked (the two files I read) and extracted every DEBUG and ERROR line I found; below is a normalized, concise list plus the critical recurring issues and recommended fixes. I'll continue scanning other log files if you want — I listed remaining files at the end.
+
+Requirements checklist
+Read backend log files and extract DEBUG and ERROR entries with timestamp, severity, logger, and message — Done (for the two files read: cegm_dev.log (partial range) and cegm_dev.log).
+Provide normalized list of entries and highlight critical/repeated issues — Done for the entries below.
+If additional log files remain, offer next steps — Listed at the end.
+Extracted DEBUG and ERROR entries (normalized)
+(Format: [timestamp] [SEVERITY] [logger] — message)
+
+2025-09-03T11:21:40.611-04:00 ERROR com.cegm.lms.exception.GlobalExceptionHandler — UnhandledException: Cookie name [${DEV_COOKIE_NAME:?missing}] is a reserved token
+
+java.lang.IllegalArgumentException thrown when creating Cookie with unresolved token.
+2025-09-04T07:39:28.922-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:39:28.922-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:39:28.922-04:00 ERROR o.a.c.c.C.[.[.[/].[dispatcherServlet] — Servlet.service() threw exception: java.lang.IllegalStateException: Environment variable DEV_COOKIE_NAME is required but not set: missing
+
+2025-09-04T07:39:28.932-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:39:28.932-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:39:28.932-04:00 ERROR o.a.c.c.C.[.[.[/].[dispatcherServlet] — Servlet.service() threw exception (same IllegalStateException stack trace)
+
+2025-09-04T07:42:07.744-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_JWT_ADMIN_SECRET:?missing}
+
+2025-09-04T07:42:07.745-04:00 INFO com.cegm.lms.service.SsotConfigService — Resolved environment variable DEV_JWT_ADMIN_SECRET: dev-admin-jwt-secret-key-must-be-at-least-32-characters-long-for-HS512
+
+2025-09-04T07:42:07.813-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:42:07.813-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:42:07.814-04:00 ERROR c.c.l.exception.GlobalExceptionHandler — UnhandledException: Environment variable DEV_COOKIE_NAME is required but not set: missing
+
+2025-09-04T07:43:10.433-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_JWT_STUDENT_SECRET:?missing}
+
+2025-09-04T07:43:10.433-04:00 INFO com.cegm.lms.service.SsotConfigService — Resolved environment variable DEV_JWT_STUDENT_SECRET: dev-student-jwt-secret-key-must-be-at-least-32-characters-long-for-HS512
+
+2025-09-04T07:43:10.434-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:43:10.434-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:43:10.434-04:00 ERROR c.c.l.exception.GlobalExceptionHandler — UnhandledException: Environment variable DEV_COOKIE_NAME is required but not set: missing
+
+2025-09-04T07:43:53.615-04:00 ERROR c.c.l.exception.GlobalExceptionHandler — UnauthorizedException: Account not approved
+
+Source: com.cegm.lms.service.UserService.authenticateUser → thrown when an account is not approved.
+2025-09-04T07:44:14.818-04:00 ERROR c.c.l.exception.GlobalExceptionHandler — UnauthorizedException: Account not approved
+
+Repeated UnauthorizedException at authenticateUser (same root cause).
+2025-09-04T07:44:20.688-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_JWT_ADMIN_SECRET:?missing}
+
+2025-09-04T07:44:20.688-04:00 INFO com.cegm.lms.service.SsotConfigService — Resolved environment variable DEV_JWT_ADMIN_SECRET: dev-admin-jwt-secret-key-must-be-at-least-32-characters-long-for-HS512
+
+2025-09-04T07:44:20.689-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:44:20.689-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:44:20.689-04:00 ERROR c.c.l.exception.GlobalExceptionHandler — UnhandledException: Environment variable DEV_COOKIE_NAME is required but not set: missing
+
+2025-09-04T07:44:56.058-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:44:56.058-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:44:56.059-04:00 ERROR o.a.c.c.C.[.[.[/].[dispatcherServlet] — Servlet.service() threw exception: java.lang.IllegalStateException: Environment variable DEV_COOKIE_NAME is required but not set: missing
+
+2025-09-04T07:44:57.456-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:44:57.456-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:44:57.456-04:00 ERROR o.a.c.c.C.[.[.[/].[dispatcherServlet] — Servlet.service() threw exception: java.lang.IllegalStateException: Environment variable DEV_COOKIE_NAME is required but not set: missing
+
+2025-09-04T07:44:57.590-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:44:57.590-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+2025-09-04T07:44:57.705-04:00 DEBUG com.cegm.lms.service.SsotConfigService — Resolving environment variable in: ${DEV_COOKIE_NAME:?missing}
+
+2025-09-04T07:44:57.705-04:00 ERROR com.cegm.lms.service.SsotConfigService — Missing required environment variable: DEV_COOKIE_NAME - missing
+
+Notes:
+
+I intentionally omitted INFO/STACK-TRACE body lines except where they carried message context; if you want full stack traces for any listed ERROR, I can include them.
+Top recurring / critical issues observed
+Missing DEV_COOKIE_NAME environment variable (frequent): causes IllegalStateException when code tries to read session cookie name or create Cookies, leading to 500/UnhandledException. Fix: set DEV_COOKIE_NAME before requests (development SSoT env resolution).
+UnauthorizedException: Account not approved — multiple login attempts for users not yet approved. Fix: either approve test user in DB or adjust test flow to approve before login.
+Cookie name unresolved token usage: attempts to use literal token string ("${DEV_COOKIE_NAME:?missing}") created invalid Cookie → causes IllegalArgumentException from Jakarta Cookie validation.
+JWT secrets are present in some calls but when inconsistent across runs they produce validation/signature errors (observed earlier in the session). Ensure both DEV_JWT_ADMIN_SECRET and DEV_JWT_STUDENT_SECRET are stable and identical across processes that sign/verify tokens.
+Quick remediation checklist
+Export DEV_COOKIE_NAME (e.g., export DEV_COOKIE_NAME=cegm_dev_session) in the environment that runs the backend.
+Ensure DEV_JWT_ADMIN_SECRET and DEV_JWT_STUDENT_SECRET are set and length >= 32 chars in the environment used for running backend and any scripts.
+For tests: approve accounts (Admin approval flow or set approved flag directly in H2) before login attempts for student accounts.
+Update GlobalExceptionHandler / Audit log code to populate required fields (e.g., userId) before persisting AuditLog to avoid ConstraintViolationException (observed previously in other logs).
+Files scanned and coverage
+Scanned and extracted DEBUG/ERROR entries from:
+cegm_dev.log (lines 401–1954) — Done
+cegm_dev.log (lines 1–1000) — Done
+Other log files found earlier (not yet parsed in this run):
+backend.log
+frontend.log
+build.log
+cegm_dev.log (other ranges may duplicate)
+etc.
+Next steps (pick one)
+I can continue now and parse the remaining log files (notably backend.log) and append any additional DEBUG/ERROR entries I find, then produce a final consolidated report with counts and suggested fixes. (I'll proceed unless you want to stop or restrict to specific files.)
+Or if you prefer, I can immediately produce full stack-trace dumps for the top 3 ERRORs listed.
+Which option should I take?

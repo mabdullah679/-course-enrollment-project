@@ -1,0 +1,500 @@
+==================== service/SsotConfigLoader.java ====================
+
+
+
+==================== service/SsotConfigService.java ====================
+package com.cegm.lms.service;
+
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class SsotConfigService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SsotConfigService.class);
+
+    @jakarta.annotation.Resource(name = "cegmSsotConfig")
+    private Map<String, Object> ssotConfig;
+    private Map<String, Object> services;
+
+    @PostConstruct
+    public void init() {
+        if (ssotConfig == null) {
+            logger.error("SSoT config bean is null at startup! Application cannot function.");
+            throw new IllegalStateException("SSoT config bean is null at startup!");
+        }
+        logger.info("SSoT config loaded at startup. Actual class: {}. Top-level keys: {}", ssotConfig.getClass().getName(), ssotConfig.keySet());
+        Object svc = ssotConfig.get("services");
+        if (svc instanceof Map) {
+            services = (Map<String, Object>) svc;
+        }
+        if (services == null) {
+            services = new java.util.HashMap<>();
+        }
+        // Explicit check for security section
+        if (ssotConfig.get("security") == null) {
+            logger.error("SSoT config missing 'security' section at startup! Check your YAML file.");
+            throw new IllegalStateException("SSoT config missing 'security' section at startup!");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getStudentErrorMessage() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> globalErrorHandling = (Map<String, Object>) services.get("GlobalErrorHandlingService");
+        return (String) globalErrorHandling.get("studentErrorMessage");
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getSessionCookieName() {
+        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+        if (security == null) throw new IllegalStateException("SSoT config missing 'security' section");
+        Map<String, Object> sessionCookie = (Map<String, Object>) security.get("sessionCookie");
+        return (String) sessionCookie.get("name");
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<String> getCorsAllowedOrigins() {
+        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+        if (security == null) throw new IllegalStateException("SSoT config missing 'security' section");
+        Map<String, Object> cors = (Map<String, Object>) security.get("cors");
+        return (List<String>) cors.get("allowedOrigins");
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getStudentJwtSecret() {
+        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+        if (security == null) {
+            logger.error("SSoT config missing 'security' section when accessing getStudentJwtSecret!");
+            throw new IllegalStateException("SSoT config missing 'security' section");
+        }
+        Map<String, Object> jwt = (Map<String, Object>) security.get("jwt");
+        Map<String, Object> student = (Map<String, Object>) jwt.get("student");
+        return (String) student.get("secret");
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getAdminJwtSecret() {
+        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+        if (security == null) {
+            logger.error("SSoT config missing 'security' section when accessing getAdminJwtSecret!");
+            throw new IllegalStateException("SSoT config missing 'security' section");
+        }
+        Map<String, Object> jwt = (Map<String, Object>) security.get("jwt");
+        Map<String, Object> admin = (Map<String, Object>) jwt.get("admin");
+        return (String) admin.get("secret");
+    }
+
+    @SuppressWarnings("unchecked")
+    public long getStudentJwtExpirationMillis() {
+        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+        if (security == null) throw new IllegalStateException("SSoT config missing 'security' section");
+        Map<String, Object> jwt = (Map<String, Object>) security.get("jwt");
+        Map<String, Object> student = (Map<String, Object>) jwt.get("student");
+        String expiresIn = (String) student.get("expiresIn");
+        return parseTimeToMillis(expiresIn);
+    }
+
+    @SuppressWarnings("unchecked")
+    public long getAdminJwtExpirationMillis() {
+        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+        if (security == null) throw new IllegalStateException("SSoT config missing 'security' section");
+        Map<String, Object> jwt = (Map<String, Object>) security.get("jwt");
+        Map<String, Object> admin = (Map<String, Object>) jwt.get("admin");
+        String expiresIn = (String) admin.get("expiresIn");
+        return parseTimeToMillis(expiresIn);
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean isEnrollmentWindowRequired() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> enrollmentService = (Map<String, Object>) services.get("EnrollmentService");
+        return (Boolean) enrollmentService.get("enrollmentWindowRequired");
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean shouldStudent403IfWindowOff() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> enrollmentService = (Map<String, Object>) services.get("EnrollmentService");
+        return (Boolean) enrollmentService.get("student403IfWindowOff");
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getDefaultAccountType() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> signUpService = (Map<String, Object>) services.get("SignUpService");
+        return (String) signUpService.get("defaultAccountType");
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean isAdminApprovalRequired() {
+        if (services == null) return false;
+        Map<String, Object> signUpService = (Map<String, Object>) services.get("SignUpService");
+        if (signUpService == null) return false;
+        Boolean required = (Boolean) signUpService.get("adminApprovalRequired");
+        return required != null && required;
+    }
+
+    @SuppressWarnings("unchecked")
+    public int getDuplicateUserErrorCode() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> signUpService = (Map<String, Object>) services.get("SignUpService");
+        return (Integer) signUpService.get("duplicateUserErrorCode");
+    }
+
+    @SuppressWarnings("unchecked")
+    public int getDuplicateEnrollmentErrorCode() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> enrollmentService = (Map<String, Object>) services.get("EnrollmentService");
+        return (Integer) enrollmentService.get("duplicateEnrollmentErrorCode");
+    }
+
+    @SuppressWarnings("unchecked")
+    public int getMissingCourseErrorCode() {
+        Map<String, Object> services = (Map<String, Object>) ssotConfig.get("services");
+        Map<String, Object> enrollmentService = (Map<String, Object>) services.get("EnrollmentService");
+        return (Integer) enrollmentService.get("missingCourseErrorCode");
+    }
+
+    private long parseTimeToMillis(String timeString) {
+        if (timeString == null) return 0;
+        timeString = timeString.trim().toLowerCase();
+        if (timeString.endsWith("ms")) {
+            return Long.parseLong(timeString.replace("ms", ""));
+        } else if (timeString.endsWith("s")) {
+            return Long.parseLong(timeString.replace("s", "")) * 1000;
+        } else if (timeString.endsWith("m")) {
+            return Long.parseLong(timeString.replace("m", "")) * 60 * 1000;
+        } else if (timeString.endsWith("h")) {
+            return Long.parseLong(timeString.replace("h", "")) * 60 * 60 * 1000;
+        } else if (timeString.endsWith("d")) {
+            return Long.parseLong(timeString.replace("d", "")) * 24 * 60 * 60 * 1000;
+        } else {
+            return Long.parseLong(timeString);
+        }
+    }
+}
+
+
+==================== security/JwtTokenProvider.java ====================
+package com.cegm.lms.security;
+
+import com.cegm.lms.service.SsotConfigService;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+@Component
+public class JwtTokenProvider {
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
+
+    @Autowired
+    private SsotConfigService ssotConfigService;
+
+    public String generateStudentToken(String username, Long userId) {
+        return generateToken(username, userId, true);
+    }
+
+    public String generateAdminToken(String username, Long userId) {
+        return generateToken(username, userId, false);
+    }
+
+    private String generateToken(String username, Long userId, boolean isStudent) {
+        try {
+            String secret = isStudent ? 
+                ssotConfigService.getStudentJwtSecret() : 
+                ssotConfigService.getAdminJwtSecret();
+            
+            long expirationTime = isStudent ? 
+                ssotConfigService.getStudentJwtExpirationMillis() : 
+                ssotConfigService.getAdminJwtExpirationMillis();
+
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
+            Date now = new Date();
+            Date expiryDate = new Date(now.getTime() + expirationTime);
+
+            return Jwts.builder()
+                    .subject(username)
+                    .claim("userId", userId)
+                    .claim("isStudent", isStudent)
+                    .issuedAt(now)
+                    .expiration(expiryDate)
+                    .signWith(key)
+                    .compact();
+        } catch (Exception e) {
+            logger.error("Error generating JWT token", e);
+            throw new RuntimeException("Could not generate token", e);
+        }
+    }
+
+    public String getUsernameFromToken(String token, boolean isStudent) {
+        try {
+            String secret = isStudent ? 
+                ssotConfigService.getStudentJwtSecret() : 
+                ssotConfigService.getAdminJwtSecret();
+            
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
+            
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            
+            return claims.getSubject();
+        } catch (Exception e) {
+            logger.error("Error extracting username from token", e);
+            return null;
+        }
+    }
+
+    public Long getUserIdFromToken(String token, boolean isStudent) {
+        try {
+            String secret = isStudent ? 
+                ssotConfigService.getStudentJwtSecret() : 
+                ssotConfigService.getAdminJwtSecret();
+            
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
+            
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            
+            return claims.get("userId", Long.class);
+        } catch (Exception e) {
+            logger.error("Error extracting user ID from token", e);
+            return null;
+        }
+    }
+
+    public boolean validateToken(String token, boolean isStudent) {
+        try {
+            String secret = isStudent ? 
+                ssotConfigService.getStudentJwtSecret() : 
+                ssotConfigService.getAdminJwtSecret();
+            
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
+            
+            Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token);
+            
+            return true;
+        } catch (SecurityException ex) {
+            logger.error("Invalid JWT signature", ex);
+        } catch (MalformedJwtException ex) {
+            logger.error("Invalid JWT token", ex);
+        } catch (ExpiredJwtException ex) {
+            logger.error("Expired JWT token", ex);
+        } catch (UnsupportedJwtException ex) {
+            logger.error("Unsupported JWT token", ex);
+        } catch (IllegalArgumentException ex) {
+            logger.error("JWT claims string is empty", ex);
+        }
+        return false;
+    }
+}
+
+
+
+==================== security/JwtAuthenticationFilter.java ====================
+package com.cegm.lms.security;
+
+import com.cegm.lms.service.SsotConfigService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtTokenProvider tokenProvider;
+
+    @Autowired
+    private SsotConfigService ssotConfigService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
+                                  FilterChain filterChain) throws ServletException, IOException {
+        
+        String token = getJwtFromRequest(request);
+        
+        if (token != null) {
+            // Try student token first
+            if (tokenProvider.validateToken(token, true)) {
+                String username = tokenProvider.getUsernameFromToken(token, true);
+                Long userId = tokenProvider.getUserIdFromToken(token, true);
+                
+                if (username != null && userId != null) {
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(
+                            username, 
+                            null, 
+                            List.of(new SimpleGrantedAuthority("ROLE_STUDENT"))
+                        );
+                    authentication.setDetails(userId);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            }
+            // Try admin token
+            else if (tokenProvider.validateToken(token, false)) {
+                String username = tokenProvider.getUsernameFromToken(token, false);
+                Long userId = tokenProvider.getUserIdFromToken(token, false);
+                
+                if (username != null && userId != null) {
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(
+                            username, 
+                            null, 
+                            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                        );
+                    authentication.setDetails(userId);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            }
+        }
+        
+        filterChain.doFilter(request, response);
+    }
+
+    private String getJwtFromRequest(HttpServletRequest request) {
+        // First try Authorization header
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        
+        // Then try session cookie
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            String cookieName = ssotConfigService.getSessionCookieName();
+            for (Cookie cookie : cookies) {
+                if (cookieName.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        
+        return null;
+    }
+}
+
+
+
+==================== controller/AuthController.java ====================
+package com.cegm.lms.controller;
+
+import com.cegm.lms.dto.request.LoginRequest;
+import com.cegm.lms.dto.request.SignUpRequest;
+import com.cegm.lms.dto.response.ApiResponse;
+import com.cegm.lms.dto.response.AuthResponse;
+import com.cegm.lms.dto.response.UserResponse;
+import com.cegm.lms.model.User;
+import com.cegm.lms.model.enums.UserRole;
+import com.cegm.lms.security.JwtTokenProvider;
+import com.cegm.lms.service.SsotConfigService;
+import com.cegm.lms.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin
+public class AuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private JwtTokenProvider tokenProvider;
+
+    @Autowired
+    private SsotConfigService ssotConfigService;
+
+    @PostMapping("/signup")
+    public ResponseEntity<ApiResponse<UserResponse>> signUp(@Valid @RequestBody SignUpRequest request) {
+        User user = userService.signUp(request);
+        UserResponse userResponse = userService.convertToResponse(user);
+        return ResponseEntity.ok(ApiResponse.success("User registered successfully", userResponse));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, 
+                                                          HttpServletResponse response) {
+        User user = userService.authenticateUser(request.getUsername(), request.getPassword());
+        
+        String token;
+        if (user.getRole() == UserRole.STUDENT) {
+            token = tokenProvider.generateStudentToken(user.getUsername(), user.getId());
+        } else {
+            token = tokenProvider.generateAdminToken(user.getUsername(), user.getId());
+        }
+
+        // Set session cookie
+        Cookie sessionCookie = new Cookie(ssotConfigService.getSessionCookieName(), token);
+        sessionCookie.setHttpOnly(true);
+        sessionCookie.setSecure(false); // Set to true in production with HTTPS
+        sessionCookie.setPath("/");
+        sessionCookie.setMaxAge(24 * 60 * 60); // 24 hours
+        response.addCookie(sessionCookie);
+
+        UserResponse userResponse = userService.convertToResponse(user);
+        AuthResponse authResponse = new AuthResponse(token, userResponse);
+        
+        return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        // Clear session cookie
+        Cookie sessionCookie = new Cookie(ssotConfigService.getSessionCookieName(), "");
+        sessionCookie.setHttpOnly(true);
+        sessionCookie.setSecure(false);
+        sessionCookie.setPath("/");
+        sessionCookie.setMaxAge(0);
+        response.addCookie(sessionCookie);
+
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@RequestParam String username) {
+        User user = userService.findByUsername(username);
+        UserResponse userResponse = userService.convertToResponse(user);
+        return ResponseEntity.ok(ApiResponse.success(userResponse));
+    }
+}
+
+
+

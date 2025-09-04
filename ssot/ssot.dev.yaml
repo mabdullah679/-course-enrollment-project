@@ -1,0 +1,127 @@
+environment: dev
+
+services:
+  SignUpService:
+    defaultAccountType: STUDENT
+    adminApprovalRequired: true
+    duplicateUserErrorCode: 400
+
+  AdminSignUpApprovalService:
+    enabled: true
+    approvalModes: [CLI, GUI]
+    approvalTimeoutSeconds: 300
+    requireAdminAuthToken: true
+
+  CourseService:
+    statusEnum: [ACTIVE, ARCHIVED, CLOSED]
+    codeUnique: true
+    adminActions: [create, update, archive]
+
+  EnrollmentService:
+    enrollmentWindowService: EnrollmentWindowService
+    preventDuplicateEnrollments: true
+    duplicateEnrollmentErrorCode: 409
+    missingCourseErrorCode: 404
+    enrollmentWindowRequired: true
+    student403IfWindowOff: true
+    statusEnum: [ACTIVE, COMPLETED, DROPPED]
+
+  EnrollmentWindowService:
+    defaultStatus: "ON"
+    toggleableBy: [ADMIN]
+    toggleVia: [API, CLI, GUI]
+    statusApiExposed: true
+
+  GradeService:
+    assignableBy: ADMIN
+    feedbackOptional: true
+    invalidEnrollmentErrorCode: 404
+    forbiddenAccessErrorCode: 403
+    duplicateAssignmentPolicy: reject
+    assignmentNameUniquePerEnrollment: true
+    enrollmentIdRequired: true
+
+  GlobalErrorHandlingService:
+    centralizeErrors: true
+    studentErrorMessage: "Contact admin for assistance."
+    adminErrorTicketing: true
+    autoTicketFields:
+      - studentId
+      - serviceName
+      - errorCode
+      - timestamp
+    studentToast: true
+    adminTracking: [CLI, GUI]
+    map40xErrors: true
+    preventStacktraces: true
+
+  StudentAssistanceService:
+    ticketFields:
+      - studentId
+      - errorType
+      - serviceName
+      - timestamp
+    adminTracking: [CLI, GUI]
+    exposeErrorsVia: [CLI, GUI]
+
+  UserProfileService:
+    studentView: self
+    studentUpdate: self
+    adminView: approvedUsersOnly
+    escalationService: AccountDetailRetrievalService
+
+  AccountDetailRetrievalService:
+    correlationIdRequired: true
+    permissionUpdateMode: [CLI, GUI]
+    correlationIdPersists: true
+    revokeAccessSupported: true
+
+  AllUsersService:
+    adminOnly: true
+    gatedBy: AccountDetailRetrievalService
+    pagination: true
+    promoteDemote: true
+    selfDemoteAllowed: false
+
+database:
+  type: postgres
+  host: localhost
+  port: 5432
+  username: devuser
+  password: devpassword
+  dbname: cegm_lms_dev
+
+security:
+  sessionCookie:
+    name: "cegm_dev_session"
+    httpOnly: true
+    secure: false
+    sameSite: Lax
+  cors:
+    allowedOrigins:
+      - "http://localhost:3000"
+      - "http://127.0.0.1:3000"
+      - "http://localhost:5173"
+  jwt:
+    student:
+      secret: ${DEV_JWT_STUDENT_SECRET:dev-student-jwt-secret-key-at-least-32-chars-xxxxxxx}
+      expiresIn: "24h"
+    admin:
+      secret: ${DEV_JWT_ADMIN_SECRET:dev-admin-jwt-secret-key-at-least-32-chars-xxxxxxxxx}
+      expiresIn: "24h"
+
+logging:
+  level: debug
+  file: cegm_dev.log
+
+features:
+  enableCLI: true
+  enableGUI: true
+
+costControl:
+  maxInstances: 2
+  autoShutdownIdleMinutes: 60
+
+tags:
+  environment: dev
+  project: cegm-lms

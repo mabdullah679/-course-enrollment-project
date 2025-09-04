@@ -1,0 +1,9 @@
+# CEGM LMS Dev Profile Configuration
+# Single JWT secret (Option A as per spring-jwt-debug.md)
+auth:
+  jwt:
+    secret: "dev-single-jwt-secret-key-at-least-32-chars-stable"
+  cookie:
+    name: "cegm_dev_session"
+
+# Dev HTTP cookies: Secure=false, HttpOnly=true, SameSite=Lax, Path=/, no Domain; no __Host- prefix

@@ -1,0 +1,356 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CEGM LMS SSoT Schema",
+  "type": "object",
+  "required": [
+    "environment",
+    "services",
+    "database",
+    "security",
+    "logging",
+    "features",
+    "costControl",
+    "tags"
+  ],
+  "properties": {
+    "environment": {
+      "type": "string",
+      "enum": ["dev"]
+    },
+    "services": {
+      "type": "object",
+      "properties": {
+        "SignUpService": {
+          "type": "object",
+          "required": [
+            "defaultAccountType",
+            "adminApprovalRequired",
+            "duplicateUserErrorCode"
+          ],
+          "properties": {
+            "defaultAccountType": { "type": "string", "enum": ["STUDENT", "ADMIN"] },
+            "adminApprovalRequired": { "type": "boolean" },
+            "duplicateUserErrorCode": { "type": "integer" }
+          }
+        },
+        "AdminSignUpApprovalService": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "approvalModes",
+            "approvalTimeoutSeconds",
+            "requireAdminAuthToken"
+          ],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "approvalModes": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["CLI", "GUI"] },
+              "minItems": 1
+            },
+            "approvalTimeoutSeconds": { "type": "integer" },
+            "requireAdminAuthToken": { "type": "boolean" }
+          }
+        },
+        "CourseService": {
+          "type": "object",
+          "required": [
+            "statusEnum",
+            "codeUnique",
+            "adminActions"
+          ],
+          "properties": {
+            "statusEnum": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["ACTIVE", "ARCHIVED", "CLOSED"] },
+              "minItems": 1
+            },
+            "codeUnique": { "type": "boolean" },
+            "adminActions": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["create", "update", "archive"] },
+              "minItems": 1
+            }
+          }
+        },
+        "EnrollmentService": {
+          "type": "object",
+          "required": [
+            "enrollmentWindowService",
+            "preventDuplicateEnrollments",
+            "duplicateEnrollmentErrorCode",
+            "missingCourseErrorCode",
+            "enrollmentWindowRequired",
+            "student403IfWindowOff",
+            "statusEnum"
+          ],
+          "properties": {
+            "enrollmentWindowService": { "type": "string", "enum": ["EnrollmentWindowService"] },
+            "preventDuplicateEnrollments": { "type": "boolean" },
+            "duplicateEnrollmentErrorCode": { "type": "integer" },
+            "missingCourseErrorCode": { "type": "integer" },
+            "enrollmentWindowRequired": { "type": "boolean" },
+            "student403IfWindowOff": { "type": "boolean" },
+            "statusEnum": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["ACTIVE", "COMPLETED", "DROPPED"] },
+              "minItems": 1
+            }
+          }
+        },
+        "EnrollmentWindowService": {
+          "type": "object",
+          "required": [
+            "defaultStatus",
+            "toggleableBy",
+            "toggleVia",
+            "statusApiExposed"
+          ],
+          "properties": {
+            "defaultStatus": { "type": "string", "enum": ["ON", "OFF"] },
+            "toggleableBy": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["ADMIN"] },
+              "minItems": 1
+            },
+            "toggleVia": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["API", "CLI", "GUI"] },
+              "minItems": 1
+            },
+            "statusApiExposed": { "type": "boolean" }
+          }
+        },
+        "GradeService": {
+          "type": "object",
+          "required": [
+            "assignableBy",
+            "feedbackOptional",
+            "invalidEnrollmentErrorCode",
+            "forbiddenAccessErrorCode",
+            "duplicateAssignmentPolicy",
+            "assignmentNameUniquePerEnrollment",
+            "enrollmentIdRequired"
+          ],
+          "properties": {
+            "assignableBy": { "type": "string", "enum": ["ADMIN"] },
+            "feedbackOptional": { "type": "boolean" },
+            "invalidEnrollmentErrorCode": { "type": "integer" },
+            "forbiddenAccessErrorCode": { "type": "integer" },
+            "duplicateAssignmentPolicy": { "type": "string", "enum": ["reject", "update"] },
+            "assignmentNameUniquePerEnrollment": { "type": "boolean" },
+            "enrollmentIdRequired": { "type": "boolean" }
+          }
+        },
+        "GlobalErrorHandlingService": {
+          "type": "object",
+          "required": [
+            "centralizeErrors",
+            "studentErrorMessage",
+            "adminErrorTicketing",
+            "autoTicketFields",
+            "studentToast",
+            "adminTracking",
+            "map40xErrors",
+            "preventStacktraces"
+          ],
+          "properties": {
+            "centralizeErrors": { "type": "boolean" },
+            "studentErrorMessage": { "type": "string" },
+            "adminErrorTicketing": { "type": "boolean" },
+            "autoTicketFields": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            },
+            "studentToast": { "type": "boolean" },
+            "adminTracking": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["CLI", "GUI"] },
+              "minItems": 1
+            },
+            "map40xErrors": { "type": "boolean" },
+            "preventStacktraces": { "type": "boolean" }
+          }
+        },
+        "StudentAssistanceService": {
+          "type": "object",
+          "required": [
+            "ticketFields",
+            "adminTracking",
+            "exposeErrorsVia"
+          ],
+          "properties": {
+            "ticketFields": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            },
+            "adminTracking": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["CLI", "GUI"] },
+              "minItems": 1
+            },
+            "exposeErrorsVia": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["CLI", "GUI"] },
+              "minItems": 1
+            }
+          }
+        },
+        "UserProfileService": {
+          "type": "object",
+          "required": [
+            "studentView",
+            "studentUpdate",
+            "adminView",
+            "escalationService"
+          ],
+          "properties": {
+            "studentView": { "type": "string", "enum": ["self"] },
+            "studentUpdate": { "type": "string", "enum": ["self"] },
+            "adminView": { "type": "string", "enum": ["approvedUsers", "approvedUsersOnly"] },
+            "escalationService": { "type": "string", "enum": ["AccountDetailRetrievalService"] }
+          }
+        },
+        "AccountDetailRetrievalService": {
+          "type": "object",
+          "required": [
+            "correlationIdRequired",
+            "permissionUpdateMode",
+            "correlationIdPersists",
+            "revokeAccessSupported"
+          ],
+          "properties": {
+            "correlationIdRequired": { "type": "boolean" },
+            "permissionUpdateMode": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["CLI", "GUI"] },
+              "minItems": 1
+            },
+            "correlationIdPersists": { "type": "boolean" },
+            "revokeAccessSupported": { "type": "boolean" }
+          }
+        },
+        "AllUsersService": {
+          "type": "object",
+          "required": [
+            "adminOnly",
+            "gatedBy",
+            "pagination",
+            "promoteDemote",
+            "selfDemoteAllowed"
+          ],
+          "properties": {
+            "adminOnly": { "type": "boolean" },
+            "gatedBy": { "type": "string", "enum": ["AccountDetailRetrievalService"] },
+            "pagination": { "type": "boolean" },
+            "promoteDemote": { "type": "boolean" },
+            "selfDemoteAllowed": { "type": "boolean" }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "database": {
+      "type": "object",
+      "required": [
+        "type",
+        "host",
+        "port",
+        "username",
+        "password",
+        "dbname"
+      ],
+      "properties": {
+        "type": { "type": "string", "enum": ["postgres"] },
+        "host": { "type": "string" },
+        "port": { "type": "integer" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "dbname": { "type": "string" }
+      }
+    },
+    "security": {
+      "type": "object",
+      "required": ["sessionCookie", "cors", "jwt"],
+      "properties": {
+        "sessionCookie": {
+          "type": "object",
+          "required": ["name", "httpOnly", "secure", "sameSite"],
+          "properties": {
+            "name": { "type": "string" },
+            "httpOnly": { "type": "boolean" },
+            "secure": { "type": "boolean" },
+            "sameSite": { "type": "string", "enum": ["Lax", "Strict", "None"] }
+          }
+        },
+        "cors": {
+          "type": "object",
+          "required": ["allowedOrigins"],
+          "properties": {
+            "allowedOrigins": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "jwt": {
+          "type": "object",
+          "required": ["student", "admin"],
+          "properties": {
+            "student": {
+              "type": "object",
+              "required": ["secret", "expiresIn"],
+              "properties": {
+                "secret": { "type": "string" },
+                "expiresIn": { "type": "string" }
+              }
+            },
+            "admin": {
+              "type": "object",
+              "required": ["secret", "expiresIn"],
+              "properties": {
+                "secret": { "type": "string" },
+                "expiresIn": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "required": ["level", "file"],
+      "properties": {
+        "level": { "type": "string", "enum": ["debug", "info", "warn", "error"] },
+        "file": { "type": "string" }
+      }
+    },
+    "features": {
+      "type": "object",
+      "required": ["enableCLI", "enableGUI"],
+      "properties": {
+        "enableCLI": { "type": "boolean" },
+        "enableGUI": { "type": "boolean" }
+      }
+    },
+    "costControl": {
+      "type": "object",
+      "required": ["maxInstances", "autoShutdownIdleMinutes"],
+      "properties": {
+        "maxInstances": { "type": "integer" },
+        "autoShutdownIdleMinutes": { "type": "integer" }
+      }
+    },
+    "tags": {
+      "type": "object",
+      "required": ["environment", "project"],
+      "properties": {
+        "environment": { "type": "string" },
+        "project": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

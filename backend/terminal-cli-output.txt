@@ -1,0 +1,275 @@
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -v http://localhost:8080/api/v1/health
+* Host localhost:8080 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:8080...
+* Connected to localhost (::1) port 8080
+> GET /api/v1/health HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/1.1 403 
+< Vary: Origin
+< Vary: Access-Control-Request-Method
+< Vary: Access-Control-Request-Headers
+< Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+< Referrer-Policy: no-referrer
+< Permissions-Policy: geolocation=(), camera=(), microphone=()
+< X-Content-Type-Options: nosniff
+< X-Frame-Options: DENY
+< X-XSS-Protection: 0
+< Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+< Pragma: no-cache
+< Expires: 0
+< Content-Length: 0
+< Date: Thu, 04 Sep 2025 11:39:58 GMT
+< 
+* Connection #0 to host localhost left intact
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -v http://localhost:8080/api/health
+* Host localhost:8080 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:8080...
+* Connected to localhost (::1) port 8080
+> GET /api/health HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/1.1 403 
+< Vary: Origin
+< Vary: Access-Control-Request-Method
+< Vary: Access-Control-Request-Headers
+< Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+< Referrer-Policy: no-referrer
+< Permissions-Policy: geolocation=(), camera=(), microphone=()
+< X-Content-Type-Options: nosniff
+< X-Frame-Options: DENY
+< X-XSS-Protection: 0
+< Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+< Pragma: no-cache
+< Expires: 0
+< Content-Length: 0
+< Date: Thu, 04 Sep 2025 11:40:11 GMT
+< 
+* Connection #0 to host localhost left intact
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i -X OPTIONS http://localhost:8080/api/v1/auth/me \
+  -H "Origin: http://localhost:3000" \
+  -H "Access-Control-Request-Method: GET"
+HTTP/1.1 200 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Access-Control-Allow-Origin: http://localhost:3000
+Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+Access-Control-Allow-Credentials: true
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+X-Frame-Options: DENY
+Content-Length: 0
+Date: Thu, 04 Sep 2025 11:40:35 GMT
+
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -I http://localhost:8080 | egrep -i "Content-Security-Policy|Referrer-Policy|Permissions-Policy|X-Content-Type-Options|X-Frame-Options"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+Referrer-Policy: no-referrer
+Permissions-Policy: geolocation=(), camera=(), microphone=()
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+muhammadabdullah@Abdullahs-MBP:~/cegm/bac
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i http://localhost:8080/api/v1/users
+HTTP/1.1 403 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+Referrer-Policy: no-referrer
+Permissions-Policy: geolocation=(), camera=(), microphone=()
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+Content-Length: 0
+Date: Thu, 04 Sep 2025 11:41:36 GMT
+
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i http://localhost:8080/api/v1/courses
+HTTP/1.1 403 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+Referrer-Policy: no-referrer
+Permissions-Policy: geolocation=(), camera=(), microphone=()
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+Content-Length: 0
+Date: Thu, 04 Sep 2025 11:41:56 GMT
+
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i http://localhost:8080/api/courses
+HTTP/1.1 403 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+Referrer-Policy: no-referrer
+Permissions-Policy: geolocation=(), camera=(), microphone=()
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+Content-Length: 0
+Date: Thu, 04 Sep 2025 11:42:01 GMT
+
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -c admin_cookies.txt -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@cegm.edu","password":"admin123"}' \
+  -w "\nHTTP %{http_code}\n"
+{"success":false,"message":"Contact admin for assistance.","data":null,"errorCode":"500"}
+HTTP 500
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt http://localhost:8080/api/v1/auth/me -w "\nHTTP %{http_code}\n"
+
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt "http://localhost:8080/api/v1/users?limit=10" -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt "http://localhost:8080/api/v1/exports/users" -w "\nHTTP %{http_code}\n" -o users_export.csv
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt "http://localhost:8080/api/v1/exports/users" -w "\nHTTP %{http_code}\n" -o users_export.csv
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt -X POST http://localhost:8080/api/v1/users/{ID}/roles \
+  -H "Content-Type: application/json" \
+  -d '{"role":"INSTRUCTOR"}' -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i -b admin_cookies.txt -X POST http://localhost:8080/api/v1/auth/rotate
+
+HTTP/1.1 403 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8080; frame-ancestors 'none'
+Referrer-Policy: no-referrer
+Permissions-Policy: geolocation=(), camera=(), microphone=()
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+Content-Length: 0
+Date: Thu, 04 Sep 2025 11:42:59 GMT
+
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt -X POST http://localhost:8080/api/v1/auth/logout -w "\nHTTP %{http_code}\n"
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -c student_cookies.txt -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"student@cegm.edu","password":"student123"}' \
+  -w "\nHTTP %{http_code}\n"
+
+{"success":false,"message":"Contact admin for assistance.","data":null,"errorCode":"500"}
+HTTP 500
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b student_cookies.txt http://localhost:8080/api/v1/auth/me -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b student_cookies.txt http://localhost:8080/api/v1/courses -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b student_cookies.txt http://localhost:8080/api/v1/users -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b student_cookies.txt -X POST http://localhost:8080/api/v1/enrollments \
+  -H "Content-Type: application/json" \
+  -d '{"courseId": 1}' -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b student_cookies.txt http://localhost:8080/api/v1/enrollments/me -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b student_cookies.txt -X POST http://localhost:8080/api/v1/auth/logout -w "\nHTTP %{http_code}\n"
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -X POST http://localhost:8080/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName":"Alice",
+    "lastName":"NewStudent",
+    "email":"alice.newstudent@example.com",
+    "username":"alicestudent",
+    "password":"student123",
+    "accountType":"STUDENT"
+  }' -w "\nHTTP %{http_code}\n" -o signup_response.json
+
+
+HTTP 200
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice.newstudent@example.com","password":"student123"}' -w "\nHTTP %{http_code}\n"
+
+{"success":false,"message":"Contact admin for assistance.","data":null,"errorCode":"401"}
+HTTP 401
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -b admin_cookies.txt -X POST http://localhost:8080/api/v1/users/{ID}/approve -w "\nHTTP %{http_code}\n"
+
+
+HTTP 403
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -s -c alice_cookies.txt -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice.newstudent@example.com","password":"student123"}' -w "\nHTTP %{http_code}\n"
+{"success":false,"message":"Contact admin for assistance.","data":null,"errorCode":"401"}
+HTTP 401
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@cegm.edu","password":"admin123"}' | grep -i Set-Cookie
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   137    0    89  100    48    976    526 --:--:-- --:--:-- --:--:--  1505
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ curl -i -X OPTIONS http://localhost:8080/api/v1/health \
+  -H "Origin: http://localhost:3000" \
+  -H "Access-Control-Request-Method: GET"
+HTTP/1.1 200 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+Access-Control-Allow-Origin: http://localhost:3000
+Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+Access-Control-Allow-Credentials: true
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+X-Frame-Options: DENY
+Content-Length: 0
+Date: Thu, 04 Sep 2025 11:44:25 GMT
+
+muhammadabdullah@Abdullahs-MBP:~/cegm/backend $ 

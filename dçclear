@@ -1,0 +1,79 @@
+# Sprint Add-On: Multi-Client Session Semantics (GUI + CLI)
+
+Read with:
+- prompt.md
+- instruction.md
+- guardrails.md
+- acceptance-matrix.md
+- sprint-gui-auth.md
+- sprint-jwt-debug.md
+- sprint-student-gui-auth.md
+
+## 1) Objective
+Guarantee that **any client (browser tab/window, VS Code webview, curl/CLI)** can authenticate with valid credentials and receive a **fresh session cookie/token** without being restricted to the original request source. Multiple concurrent sessions per account are allowed within TTL. Role gating still enforced server-side.
+
+## 2) Session Model (dev)
+- **Per-client session**: each successful login (GUI or CLI) issues a **new** session cookie/token for that client. Sessions are not globally exclusive.
+- **No client pinning**: do **not** bind tokens to User-Agent, IP, or transport. Credentials → session; origin/source must not block.
+- **TTL**: session lifespan per config (e.g., 24h in dev). On expiry, credentials can create a **new** session instantly.
+- **Rotation**:
+  - On **login**: issue/rotate session cookie.
+  - On **role change**: invalidate that session’s server handle and **re-issue** cookie to affected client(s) when they next authenticate; BroadcastChannel only informs GUI to refetch.
+- **Logout**: ends **that session only**. Other active sessions for the same account remain valid (unless an admin global-revokes).
+- **Secret policy**: use the **single dev secret** (Option A) unless `kid` routing is already proven; tokens must verify identically for GUI and CLI (see sprint-jwt-debug.md).
+
+## 3) Cookie/Token Rules (dev HTTP)
+- Cookies: `Secure=false, HttpOnly=true, SameSite=Lax, Path=/, no Domain`. No `__Host-` in HTTP dev.
+- Issue cookie on **every** successful login from any client.
+- Do not reject GUI because a prior **curl** login already created a session (and vice-versa).
+
+## 4) Required UX Behavior
+- **Sign-in** and **sign-up** pages always accessible without a session.
+- First GUI request for any account **must** succeed if credentials are valid—even if a CLI session exists or was first.
+- After GUI login, the app must immediately call `/auth/me`, hydrate state, and allow access to role-gated routes.
+- If credentials are invalid → clear state, show actionable toast; do not loop.
+
+## 5) Negative Security Constraints
+- Keep **deny-by-default** and resource-level checks; multi-session does **not** weaken authorization.
+- Do **not** tie session validity to User-Agent/IP; rate-limit login attempts to deter brute force (dev-appropriate thresholds).
+- Logout endpoint ends only the caller’s session unless an explicit “logout all sessions” admin action exists.
+
+## 6) Repro & Evidence (must pass in one build, no restarts)
+Use **http://localhost:3000** (GUI) and **http://localhost:8080/api/v1** (API). Clear cookies between relevant steps when noted.
+
+### A) Parallel Sessions (GUI + CLI)
+1. **GUI login as admin** → verify `Set-Cookie`, `/auth/me=200`.
+2. **Without logging out**, **CLI login** as the same admin (new cookie jar file).
+   - Expect **200** and **another Set-Cookie** (separate session).
+3. In GUI, reload → `/auth/me=200` (GUI session still valid).
+4. In CLI, call `/auth/me` with its cookie → **200** (CLI session still valid).
+
+### B) CLI-First, GUI-Second (student)
+1. **CLI**: signup student, admin approves, student **CLI login** → `/auth/me=200`.
+2. **GUI**: clear site cookies → **GUI login** as the same student.
+   - Expect `Set-Cookie`, `/auth/me=200`, student dashboard loads.
+
+### C) GUI-First, New Browser Session-Second
+1. GUI tab A: student login → `/auth/me=200`.
+2. Open a **new browser profile/window** (no cookies), GUI tab B: student login again.
+   - Expect another `Set-Cookie` and `/auth/me=200`.
+3. Both tabs can access student dashboard concurrently.
+
+### D) Expiry/Rotation Sanity
+1. (If configurable) set a short TTL for dev or simulate expiry (advance clock or invalidate server session).
+2. After expiry, **GUI** must require re-login; upon valid credentials, a **new** session is issued and `/auth/me=200`.
+3. Role change by admin → affected client must **rehydrate** and show updated permissions on next auth step.
+
+### E) Evidence to Produce
+- **cURL outputs** showing two successful logins for the **same account** with two **distinct cookie jars**, both `/auth/me=200`.
+- **GUI network traces/HAR** for:
+  - First GUI login after a CLI session exists (shows `Set-Cookie` and `/auth/me=200`).
+  - Second GUI window/profile login (another `Set-Cookie`, `/auth/me=200`).
+- **Short log excerpt** (server) proving both sessions are active (session IDs redacted) and not tied to User-Agent/IP.
+- **One-paragraph analysis** confirming the behavior and that no resource is accessible beyond role permissions.
+
+## 7) Exit Criteria
+- Any client (GUI/CLI/new window) with valid credentials can establish its **own** session and access allowed routes; prior sessions do not block new ones.
+- First GUI request after a CLI session exists **succeeds** with valid credentials.
+- Multiple concurrent sessions for the same account work within TTL; logout ends only the calling session.
+- No regressions: deny-by-default, role checks, and acceptance-matrix items remain green.
