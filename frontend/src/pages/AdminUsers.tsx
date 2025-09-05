@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { User, UserRole, UserStatus, PaginatedResponse } from '../types/api'
 import { usersApi, exportsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { useDebounce } from '../hooks/useDebounce'
 
 interface AuditEntry {
   id: number
@@ -22,6 +23,7 @@ const AdminUsers: React.FC = () => {
   const [hasNext, setHasNext] = useState(false)
   const [lastId, setLastId] = useState<number | undefined>(undefined)
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [filters, setFilters] = useState({
     role: searchParams.get('role') || '',
     status: searchParams.get('status') || ''
@@ -50,7 +52,7 @@ const AdminUsers: React.FC = () => {
       const response = await usersApi.getUsers(
         currentAfter,
         20,
-        searchTerm || undefined,
+        debouncedSearchTerm || undefined,
         filters.role || undefined,
         filters.status || undefined
       )
@@ -75,7 +77,7 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     fetchUsers(true)
-  }, [searchTerm, filters])
+  }, [debouncedSearchTerm, filters])
 
   // Close actions menu when clicking outside
   useEffect(() => {
@@ -197,7 +199,7 @@ const AdminUsers: React.FC = () => {
       const exportFilters: any = {}
       if (filters.role) exportFilters.role = filters.role
       if (filters.status) exportFilters.status = filters.status
-      if (searchTerm) exportFilters.q = searchTerm
+      if (debouncedSearchTerm) exportFilters.q = debouncedSearchTerm
       
       const blob = await exportsApi.exportUsers(exportFilters)
       const url = window.URL.createObjectURL(blob)

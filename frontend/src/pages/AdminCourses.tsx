@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { toastGroups } from '../lib/toast'
-import { coursesApi } from '../services/api'
+import { toast } from 'react-hot-toast'
+import { coursesApi, exportsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
-import { UserRole, Course, CourseCreateRequest } from '../types/api'
+import { UserRole, Course, CourseCreateRequest, PaginatedResponse } from '../types/api'
+import { useDebounce } from '../hooks/useDebounce'
 
 interface AuditEntry {
   id: number
@@ -17,6 +18,14 @@ const AdminCourses: React.FC = () => {
   const { user } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasNext, setHasNext] = useState(false)
+  const [lastId, setLastId] = useState<number | undefined>(undefined)
+  const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
+  const [filters, setFilters] = useState({
+    status: '',
+    term: ''
+  })
   
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -36,19 +45,45 @@ const AdminCourses: React.FC = () => {
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
 
   useEffect(() => {
-    fetchCourses()
-  }, [])
+    fetchCourses(true)
+  }, [debouncedSearchTerm, filters])
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (reset = false) => {
     setLoading(true)
     try {
-      const response = await coursesApi.getCourses(undefined, 50)
+      const currentAfter = reset ? undefined : lastId
+      const response = await coursesApi.getCourses(
+        currentAfter, 
+        20,
+        undefined, // ownerId
+        filters.term || undefined,
+        filters.status || undefined
+      )
+      
       if (response.success && response.data) {
-        setCourses(response.data.content || [])
+        const paginatedData = response.data as PaginatedResponse<Course>
+        let courseData = paginatedData.content || []
+        
+        // Apply search filter client-side if needed
+        if (debouncedSearchTerm) {
+          courseData = courseData.filter(course => 
+            course.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            course.code.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            course.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+          )
+        }
+        
+        if (reset) {
+          setCourses(courseData)
+        } else {
+          setCourses(prev => [...prev, ...courseData])
+        }
+        setHasNext(paginatedData.hasNext)
+        setLastId(paginatedData.nextCursor)
       }
     } catch (error: any) {
       console.error('Error fetching courses:', error)
-      toastGroups.api.error('Failed to fetch courses')
+      toast.error('Failed to fetch courses')
     } finally {
       setLoading(false)
     }
@@ -58,7 +93,7 @@ const AdminCourses: React.FC = () => {
     e.preventDefault()
     
     if (!newCourse.name.trim() || !newCourse.courseCode.trim() || !newCourse.credits) {
-      toastGroups.form.error('Please fill in all required fields')
+      toast.error('Please fill in all required fields')
       return
     }
 
@@ -66,7 +101,7 @@ const AdminCourses: React.FC = () => {
       const response = await coursesApi.createCourse(newCourse)
       
       if (response.success) {
-        toastGroups.form.success('Course created successfully')
+        toast.success('Course created successfully')
         setShowCreateModal(false)
         setNewCourse({
           name: '',
@@ -79,7 +114,7 @@ const AdminCourses: React.FC = () => {
         if (response.data) {
           setCourses(prev => [...prev, response.data])
         } else {
-          fetchCourses() // Fallback if no data returned
+          fetchCourses(true) // Fallback if no data returned
         }
       }
     } catch (error: any) {
@@ -87,12 +122,43 @@ const AdminCourses: React.FC = () => {
       
       // Check for 403 with Cookie present (CSRF issue)
       if (error.response?.status === 403) {
-        toastGroups.system.warning('Permission denied: CSRF protection may be blocking this request')
+        toast.error('Permission denied: CSRF protection may be blocking this request')
         console.error('STOP: Protected POST returns 403 with Cookie present - check CSRF posture')
         return
       }
       
-      toastGroups.api.error(error.response?.data?.message || 'Failed to create course')
+      toast.error(error.response?.data?.message || 'Failed to create course')
+    }
+  }
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }))
+    setLastId(undefined)
+  }
+
+  const handleExportCourses = async () => {
+    try {
+      const exportFilters: any = {}
+      if (filters.status) exportFilters.status = filters.status
+      if (filters.term) exportFilters.term = filters.term
+      if (debouncedSearchTerm) exportFilters.q = debouncedSearchTerm
+      
+      const blob = await exportsApi.exportCourses(exportFilters)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `courses-export-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('Courses exported successfully')
+    } catch (error: any) {
+      console.error('Error exporting courses:', error)
+      toast.error('Failed to export courses')
     }
   }
 
@@ -109,7 +175,7 @@ const AdminCourses: React.FC = () => {
       const response = await coursesApi.updateCourseStatus(selectedCourse.id, newStatus)
       
       if (response.success) {
-        toastGroups.form.success('Course status updated successfully')
+        toast.success('Course status updated successfully')
         setCourses(prev => prev.map(course => 
           course.id === selectedCourse.id 
             ? { ...course, status: newStatus }
@@ -120,7 +186,7 @@ const AdminCourses: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error changing course status:', error)
-      toastGroups.api.error(error.response?.data?.message || 'Failed to change course status')
+      toast.error(error.response?.data?.message || 'Failed to change course status')
     }
   }
 
@@ -134,12 +200,12 @@ const AdminCourses: React.FC = () => {
       setShowAuditModal(true)
     } catch (error: any) {
       console.error('Error fetching course audit history:', error)
-      toastGroups.api.error('Failed to load audit history')
+      toast.error('Failed to load audit history')
     }
   }
 
   const handleRefresh = () => {
-    fetchCourses()
+    fetchCourses(true)
   }
 
   const getStatusColor = (status: string) => {
@@ -180,6 +246,13 @@ const AdminCourses: React.FC = () => {
           >
             Refresh
           </button>
+          <button
+            type="button"
+            onClick={handleExportCourses}
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Export CSV
+          </button>
           {user?.role === UserRole.ADMIN && (
             <button
               type="button"
@@ -189,6 +262,45 @@ const AdminCourses: React.FC = () => {
               Create Course
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Search Courses</label>
+            <input
+              type="text"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Search by name, code, or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Status</label>
+            <select
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="ARCHIVED">Archived</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Term</label>
+            <input
+              type="text"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="e.g., Fall 2024"
+              value={filters.term}
+              onChange={(e) => handleFilterChange('term', e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -277,6 +389,19 @@ const AdminCourses: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Load More */}
+      {hasNext && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => fetchCourses(false)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
 
       {/* Create Course Modal */}
       {showCreateModal && (

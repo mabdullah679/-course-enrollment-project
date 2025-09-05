@@ -1,10 +1,22 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRole } from '../types/api'
 
 const Profile: React.FC = () => {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await refreshUser()
+    } catch (error) {
+      console.error('Failed to refresh profile:', error)
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   if (!user) {
     return (
@@ -44,10 +56,31 @@ const Profile: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Your account information and preferences
-            </p>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+                <p className="mt-1 text-sm text-gray-600">
+                  Your account information and preferences
+                </p>
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {refreshing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Refreshing...
+                  </>
+                ) : (
+                  'Refresh'
+                )}
+              </button>
+            </div>
           </div>
           
           <div className="px-6 py-6">
@@ -93,19 +126,21 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Approval Status</label>
-                    <p className={`mt-1 text-sm font-medium ${
-                      user.approved ? 'text-green-600' : 'text-yellow-600'
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                      user.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
                     }`}>
-                      {user.approved ? 'Approved' : 'Pending Approval'}
-                    </p>
+                      {user.status}
+                    </span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Account Status</label>
+                    <label className="block text-sm font-medium text-gray-700">Account Active</label>
                     <p className={`mt-1 text-sm font-medium ${
                       user.active ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {user.active ? 'Active' : 'Inactive'}
+                      {user.active ? 'Yes' : 'No'}
                     </p>
                   </div>
                   <div>

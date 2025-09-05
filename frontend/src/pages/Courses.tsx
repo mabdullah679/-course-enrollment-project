@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { Course, PaginatedResponse } from '../types/api'
 import { coursesApi, enrollmentsApi } from '../services/api'
+import { useDebounce } from '../hooks/useDebounce'
 
 const Courses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([])
@@ -9,11 +10,12 @@ const Courses: React.FC = () => {
   const [hasNext, setHasNext] = useState(false)
   const [lastId, setLastId] = useState<number | undefined>(undefined)
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [showEnrolledOnly, setShowEnrolledOnly] = useState(false)
 
   useEffect(() => {
     fetchCourses(true)
-  }, [searchTerm, showEnrolledOnly])
+  }, [debouncedSearchTerm, showEnrolledOnly])
 
   const fetchCourses = async (reset = false) => {
     setLoading(true)
@@ -32,11 +34,11 @@ const Courses: React.FC = () => {
         let courseData = paginatedData.content || []
         
         // Filter by search term if provided
-        if (searchTerm) {
+        if (debouncedSearchTerm) {
           courseData = courseData.filter(course => 
-            course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            course.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            course.code.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            course.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
           )
         }
         
