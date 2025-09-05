@@ -36,11 +36,11 @@ public class GradesController {
             @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) Long studentId,
             @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String after,
             @RequestParam(defaultValue = "25") int size) {
         
-        Sort sort = Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Sort sort = Sort.by("id").ascending();
+        Pageable pageable = PageRequest.of(0, size, sort);
         
         Page<Grade> grades;
         

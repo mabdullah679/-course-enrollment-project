@@ -13,7 +13,10 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,24 +101,61 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        String requestId = getRequestId();
+        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> errors = new HashMap<>();
+        
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            
+            Map<String, Object> fieldError = new HashMap<>();
+            fieldError.put("code", "VALIDATION_ERROR");
+            fieldError.put("field", fieldName);
+            fieldError.put("message", errorMessage);
+            
+            errors.put(fieldName, fieldError);
         });
         
-        logger.error("Validation error: {}", errors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Validation failed", "400"));
+        response.put("success", false);
+        response.put("message", "Validation failed");
+        response.put("errors", errors);
+        if (requestId != null) {
+            response.put("requestId", requestId);
+        }
+        
+        logger.error("Validation error [Request-ID: {}]: {}", requestId, errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+        String requestId = getRequestId();
         logError("UnhandledException", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(getStudentErrorMessage(), "500"));
+        
+        ApiResponse<Object> response = ApiResponse.error(getStudentErrorMessage(), "500");
+        if (requestId != null) {
+            // Add requestId to response for support tracking
+            Map<String, Object> data = new HashMap<>();
+            data.put("requestId", requestId);
+            response.setData(data);
+        }
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    private String getRequestId() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                return (String) request.getAttribute("X-Request-Id");
+            }
+        } catch (Exception e) {
+            // Ignore if we can't get request ID
+        }
+        return null;
     }
 
     private void logError(String exceptionType, Exception ex) {

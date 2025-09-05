@@ -38,11 +38,11 @@ public class EnrollmentsController {
             @RequestParam(required = false) String semester,
             @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) Long studentId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String after,
             @RequestParam(defaultValue = "25") int size) {
         
-        Sort sort = Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Sort sort = Sort.by("id").ascending();
+        Pageable pageable = PageRequest.of(0, size, sort);
         
         Page<Enrollment> enrollments;
         

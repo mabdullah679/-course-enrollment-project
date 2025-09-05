@@ -10,6 +10,25 @@ export const api = axios.create({
   withCredentials: true, // Essential for HttpOnly cookies
 })
 
+// Generate a unique request ID
+const generateRequestId = () => {
+  return 'req_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now()
+}
+
+// Request interceptor to add X-Request-Id header
+api.interceptors.request.use(
+  (config) => {
+    // Add X-Request-Id header if not already present
+    if (!config.headers['X-Request-Id']) {
+      config.headers['X-Request-Id'] = generateRequestId()
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,

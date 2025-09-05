@@ -113,7 +113,7 @@ const AdminUsers: React.FC = () => {
     if (!selectedUser) return
 
     try {
-      const response = await usersApi.changeUserRole(selectedUser.id, [newRole])
+      const response = await usersApi.changeUserRole(selectedUser.id, newRole)
       
       if (response.success) {
         toast.success('User role updated successfully')
@@ -139,7 +139,7 @@ const AdminUsers: React.FC = () => {
     if (!selectedUser) return
 
     try {
-      const response = await usersApi.changeUserStatus(selectedUser.id, newActiveStatus)
+      const response = await usersApi.changeUserStatus(selectedUser.id, undefined, newActiveStatus)
       
       if (response.success) {
         toast.success('User status updated successfully')

@@ -214,13 +214,74 @@ public class UserService {
      * Change user role with audit logging.
      */
     public User changeUserRole(Long userId, UserRole newRole) {
+        return changeUserRole(userId, newRole, null);
+    }
+
+    /**
+     * Change user role with audit logging and request ID.
+     */
+    public User changeUserRole(Long userId, UserRole newRole, String requestId) {
         User user = findById(userId);
         UserRole oldRole = user.getRole();
         user.setRole(newRole);
         
-        auditLogService.log(userId, "UsersController", "ROLE_CHANGE", 
-            String.format("Role changed from %s to %s", oldRole, newRole));
+        String auditMessage = String.format("Role changed from %s to %s", oldRole, newRole);
+        if (requestId != null) {
+            auditMessage += " [Request-ID: " + requestId + "]";
+        }
+        
+        auditLogService.log(userId, "UsersController", "ROLE_CHANGE", auditMessage);
         
         return userRepository.save(user);
+    }
+
+    /**
+     * Change user status (approved/active) with audit logging.
+     */
+    public User changeUserStatus(Long userId, Boolean approved, Boolean active) {
+        return changeUserStatus(userId, approved, active, null);
+    }
+
+    /**
+     * Change user status (approved/active) with audit logging and request ID.
+     */
+    public User changeUserStatus(Long userId, Boolean approved, Boolean active, String requestId) {
+        User user = findById(userId);
+        
+        if (approved != null) {
+            boolean oldApproved = user.getApproved();
+            user.setApproved(approved);
+            String auditMessage = String.format("Approved status changed from %s to %s", oldApproved, approved);
+            if (requestId != null) {
+                auditMessage += " [Request-ID: " + requestId + "]";
+            }
+            auditLogService.log(userId, "UsersController", "STATUS_CHANGE", auditMessage);
+        }
+        
+        if (active != null) {
+            boolean oldActive = user.getActive();
+            user.setActive(active);
+            String auditMessage = String.format("Active status changed from %s to %s", oldActive, active);
+            if (requestId != null) {
+                auditMessage += " [Request-ID: " + requestId + "]";
+            }
+            auditLogService.log(userId, "UsersController", "STATUS_CHANGE", auditMessage);
+        }
+        
+        return userRepository.save(user);
+    }
+
+    /**
+     * Get user audit history with pagination.
+     * TODO: Implement actual audit history retrieval from audit service.
+     */
+    public Object getUserAuditHistory(Long userId, String after, int limit) {
+        // For now return empty structure that matches expected format
+        // TODO: Implement proper audit history retrieval
+        return java.util.Map.of(
+            "data", java.util.List.of(),
+            "hasNext", false,
+            "cursor", ""
+        );
     }
 }

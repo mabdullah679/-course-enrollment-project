@@ -6,6 +6,7 @@ import com.cegm.lms.model.User;
 import com.cegm.lms.model.enums.UserRole;
 import com.cegm.lms.service.SessionManagementService;
 import com.cegm.lms.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -87,12 +88,15 @@ public class UsersController {
      * Change user role with session rotation.
      * Admin only access.
      */
-    @PostMapping("/{id}/roles")
+    @PostMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> changeUserRole(
             @PathVariable Long id,
             @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest,
             HttpServletResponse response) {
+        
+        String requestId = (String) httpRequest.getAttribute("X-Request-Id");
         
         String roleString = request.get("role");
         if (roleString == null) {
@@ -108,8 +112,8 @@ public class UsersController {
                 .body(ApiResponse.error("Invalid role: " + roleString, "INVALID_ROLE"));
         }
         
-        // Update user role
-        User user = userService.changeUserRole(id, newRole);
+        // Update user role with audit logging including request ID
+        User user = userService.changeUserRole(id, newRole, requestId);
         
         // Rotate session if this is the current user
         Object details = SecurityContextHolder.getContext().getAuthentication().getDetails();
@@ -119,6 +123,49 @@ public class UsersController {
         
         UserResponse userResponse = userService.convertToResponse(user);
         return ResponseEntity.ok(ApiResponse.success("User role changed successfully", userResponse));
+    }
+
+    /**
+     * Change user status (approved/active).
+     * Admin only access.
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> changeUserStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> request,
+            HttpServletRequest httpRequest) {
+        
+        String requestId = (String) httpRequest.getAttribute("X-Request-Id");
+        
+        Boolean approved = request.get("approved");
+        Boolean active = request.get("active");
+        
+        if (approved == null && active == null) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("At least one of 'approved' or 'active' must be provided", "MISSING_STATUS_FIELDS"));
+        }
+        
+        User user = userService.changeUserStatus(id, approved, active, requestId);
+        UserResponse userResponse = userService.convertToResponse(user);
+        return ResponseEntity.ok(ApiResponse.success("User status updated successfully", userResponse));
+    }
+
+    /**
+     * Get user audit history.
+     * Admin only access.
+     */
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> getUserAuditHistory(
+            @PathVariable Long id,
+            @RequestParam(required = false) String after,
+            @RequestParam(defaultValue = "25") int limit) {
+        
+        // For now return empty audit history with proper structure
+        // TODO: Implement actual audit logging system
+        Object auditHistory = userService.getUserAuditHistory(id, after, limit);
+        return ResponseEntity.ok(ApiResponse.success(auditHistory));
     }
 
     /**
