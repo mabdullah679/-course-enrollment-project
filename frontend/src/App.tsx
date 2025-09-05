@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminUsers from './pages/AdminUsers'
 import AdminCourses from './pages/AdminCourses'
+import StaffSupport from './pages/StaffSupport'
 import { UserRole } from './types/api'
 
 function App() {
@@ -99,7 +100,7 @@ function AppRoutes() {
             <Route path="/" element={<Navigate to="/staff" />} />
             <Route path="/staff" element={<Dashboard />} />
             <Route path="/staff/users" element={<AdminStaffRoute><AdminUsers /></AdminStaffRoute>} />
-            <Route path="/staff/support" element={<AdminDashboard />} />
+            <Route path="/staff/support" element={<AdminStaffRoute><StaffSupport /></AdminStaffRoute>} />
             <Route path="/profile" element={<Profile />} />
             {/* Block access to admin-only routes */}
             <Route path="/admin/*" element={<Navigate to="/staff" />} />

@@ -97,6 +97,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const navigationItems = getNavigationItems()
 
+  const getRoleColor = (role: UserRole): string => {
+    switch (role) {
+      case UserRole.ADMIN:
+        return 'text-purple-600 hover:text-purple-800'
+      case UserRole.INSTRUCTOR:
+        return 'text-blue-600 hover:text-blue-800'
+      case UserRole.STAFF:
+        return 'text-green-600 hover:text-green-800'
+      case UserRole.STUDENT:
+        return 'text-indigo-600 hover:text-indigo-800'
+      default:
+        return 'text-gray-500'
+    }
+  }
+
   const getRoleDisplayName = (role: UserRole): string => {
     switch (role) {
       case UserRole.STUDENT: return 'Student'
@@ -152,12 +167,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     {(user.role === UserRole.ADMIN || user.role === UserRole.STAFF) ? (
                       <Link 
                         to={getProfileBadgeRoute()}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className={`font-medium ${getRoleColor(user.role)}`}
                       >
                         {getRoleDisplayName(user.role)}
                       </Link>
                     ) : (
-                      <div className="text-gray-500">{getRoleDisplayName(user.role)}</div>
+                      <div className={`font-medium ${getRoleColor(user.role)}`}>
+                        {getRoleDisplayName(user.role)}
+                      </div>
                     )}
                   </div>
                   <button
@@ -207,7 +224,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="text-base font-medium text-gray-800">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-sm text-gray-500">{getRoleDisplayName(user.role)}</div>
+                <div className={`text-sm font-medium ${getRoleColor(user.role)}`}>
+                  {getRoleDisplayName(user.role)}
+                </div>
               </div>
               <div className="mt-3 px-4">
                 <button
