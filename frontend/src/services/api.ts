@@ -92,12 +92,13 @@ export const coursesApi = {
 }
 
 export const usersApi = {
-  getUsers: async (lastId?: number, limit = 20, search?: string, role?: string, status?: string) => {
+  getUsers: async (lastId?: number, limit = 20, search?: string, role?: string, approved?: boolean, active?: boolean) => {
     let url = `/api/v1/users?limit=${limit}`
     if (lastId) url += `&lastId=${lastId}`
     if (search) url += `&search=${encodeURIComponent(search)}`
     if (role) url += `&role=${role}`
-    if (status) url += `&status=${status}`
+    if (approved !== undefined) url += `&approved=${approved}`
+    if (active !== undefined) url += `&active=${active}`
     const response = await api.get(url)
     return response.data
   },
@@ -109,6 +110,21 @@ export const usersApi = {
 
   changeUserRole: async (id: number, role: string) => {
     const response = await api.post(`/api/v1/users/${id}/roles`, { role })
+    return response.data
+  },
+
+  changeUserStatus: async (id: number, active: boolean) => {
+    const response = await api.put(`/api/v1/users/${id}/status`, { active })
+    return response.data
+  },
+
+  getUserAuditHistory: async (id: number) => {
+    const response = await api.get(`/api/v1/users/${id}/audit`)
+    return response.data
+  },
+
+  getUserProfile: async (id: number) => {
+    const response = await api.get(`/api/v1/users/${id}`)
     return response.data
   },
 }

@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { User, UserRole, UserStatus, PaginatedResponse } from '../types/api'
 import { usersApi, exportsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
+interface AuditEntry {
+  id: number
+  field: string
+  oldValue: string
+  newValue: string
+  changedBy: string
+  changedAt: string
+}
+
 const AdminUsers: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [hasNext, setHasNext] = useState(false)
@@ -14,23 +24,39 @@ const AdminUsers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
     role: searchParams.get('role') || '',
-    status: ''
+    approved: searchParams.get('approved') || '',
+    active: searchParams.get('active') || ''
   })
+  
+  // Modal states
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [showAuditModal, setShowAuditModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showActionsMenu, setShowActionsMenu] = useState<number | null>(null)
+  
+  // Form states
   const [newRole, setNewRole] = useState<UserRole>(UserRole.STUDENT)
+  const [newActiveStatus, setNewActiveStatus] = useState(true)
+  const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
+  
   const { refreshUser } = useAuth()
 
   const fetchUsers = async (reset = false) => {
     setLoading(true)
     try {
       const currentLastId = reset ? undefined : lastId
+      const approved = filters.approved ? filters.approved === 'true' : undefined
+      const active = filters.active ? filters.active === 'true' : undefined
+      
       const response = await usersApi.getUsers(
         currentLastId,
         20,
         searchTerm || undefined,
         filters.role || undefined,
-        filters.status || undefined
+        approved,
+        active
       )
       
       if (response.success && response.data) {
@@ -54,6 +80,18 @@ const AdminUsers: React.FC = () => {
   useEffect(() => {
     fetchUsers(true)
   }, [searchTerm, filters])
+
+  // Close actions menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowActionsMenu(null)
+    }
+    
+    if (showActionsMenu !== null) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showActionsMenu])
 
   const handleApproveUser = async (userId: number) => {
     try {
@@ -97,6 +135,64 @@ const AdminUsers: React.FC = () => {
       console.error('Error changing user role:', error)
       toast.error(error.response?.data?.message || 'Failed to change user role')
     }
+  }
+
+  const handleChangeStatus = async () => {
+    if (!selectedUser) return
+
+    try {
+      const response = await usersApi.changeUserStatus(selectedUser.id, newActiveStatus)
+      
+      if (response.success) {
+        toast.success('User status updated successfully')
+        setUsers(prev => prev.map(user => 
+          user.id === selectedUser.id 
+            ? { ...user, active: newActiveStatus }
+            : user
+        ))
+        setShowStatusModal(false)
+        setSelectedUser(null)
+      }
+    } catch (error: any) {
+      console.error('Error changing user status:', error)
+      toast.error(error.response?.data?.message || 'Failed to change user status')
+    }
+  }
+
+  const handleViewAuditHistory = async (user: User) => {
+    setSelectedUser(user)
+    try {
+      const response = await usersApi.getUserAuditHistory(user.id)
+      if (response.success && response.data) {
+        setAuditHistory(response.data)
+      }
+      setShowAuditModal(true)
+    } catch (error: any) {
+      console.error('Error fetching audit history:', error)
+      toast.error('Failed to load audit history')
+    }
+  }
+
+  const handleViewProfile = async (user: User) => {
+    setSelectedUser(user)
+    setShowProfileModal(true)
+  }
+
+  const handleRoleClick = (user: User) => {
+    setSelectedUser(user)
+    setNewRole(user.role)
+    setShowRoleModal(true)
+  }
+
+  const handleStatusClick = (user: User) => {
+    setSelectedUser(user)
+    setNewActiveStatus(user.active)
+    setShowStatusModal(true)
+  }
+
+  const handleRoleBadgeClick = (role: UserRole) => {
+    // Navigate to users page filtered by role
+    navigate(`/admin/users?role=${role}`)
   }
 
   const handleExportUsers = async () => {
@@ -151,16 +247,13 @@ const AdminUsers: React.FC = () => {
     }
   }
 
-  const getStatusColor = (status: UserStatus) => {
-    switch (status) {
-      case UserStatus.APPROVED:
-        return 'bg-green-100 text-green-800'
-      case UserStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800'
-      case UserStatus.SUSPENDED:
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  const getStatusColor = (user: User) => {
+    if (user.approved && user.active) {
+      return 'bg-green-100 text-green-800'
+    } else if (user.approved && !user.active) {
+      return 'bg-yellow-100 text-yellow-800'
+    } else {
+      return 'bg-red-100 text-red-800'
     }
   }
 
@@ -221,16 +314,27 @@ const AdminUsers: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Status</label>
+            <label className="block text-sm font-medium text-gray-700">Approved</label>
             <select
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              value={filters.approved}
+              onChange={(e) => handleFilterChange('approved', e.target.value)}
             >
-              <option value="">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="SUSPENDED">Suspended</option>
+              <option value="">All Users</option>
+              <option value="true">Approved</option>
+              <option value="false">Pending Approval</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Active</label>
+            <select
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              value={filters.active}
+              onChange={(e) => handleFilterChange('active', e.target.value)}
+            >
+              <option value="">All Users</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
             </select>
           </div>
         </div>
@@ -279,37 +383,91 @@ const AdminUsers: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
+                  <button
+                    onClick={() => handleRoleClick(user)}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 ${getRoleColor(user.role)}`}
+                  >
                     {user.role}
-                  </span>
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status)}`}>
-                    {user.status}
-                  </span>
+                  <button
+                    onClick={() => handleStatusClick(user)}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(user)}`}
+                  >
+                    {user.approved ? 'Approved' : 'Pending'} • {user.active ? 'Active' : 'Inactive'}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                  {user.status === UserStatus.PENDING && (
+                  <div className="flex items-center space-x-2">
+                    <span>{new Date(user.createdAt).toLocaleDateString()}</span>
                     <button
-                      onClick={() => handleApproveUser(user.id)}
-                      className="text-green-600 hover:text-green-900"
+                      onClick={() => handleViewAuditHistory(user)}
+                      className="text-blue-500 hover:text-blue-700"
+                      title="View audit history"
                     >
-                      Approve
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
                     </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setSelectedUser(user)
-                      setNewRole(user.role)
-                      setShowRoleModal(true)
-                    }}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    Change Role
-                  </button>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowActionsMenu(showActionsMenu === user.id ? null : user.id)}
+                      className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    
+                    {showActionsMenu === user.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              handleRoleClick(user)
+                              setShowActionsMenu(null)
+                            }}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          >
+                            Change Role
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleStatusClick(user)
+                              setShowActionsMenu(null)
+                            }}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          >
+                            Change Status
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleViewProfile(user)
+                              setShowActionsMenu(null)
+                            }}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          >
+                            View Profile
+                          </button>
+                          {!user.approved && (
+                            <button
+                              onClick={() => {
+                                handleApproveUser(user.id)
+                                setShowActionsMenu(null)
+                              }}
+                              className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100 w-full text-left"
+                            >
+                              Approve User
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -340,6 +498,7 @@ const AdminUsers: React.FC = () => {
         )}
       </div>
 
+      {/* Role Change Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -377,6 +536,189 @@ const AdminUsers: React.FC = () => {
                   className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Modal */}
+      {showStatusModal && selectedUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Change Status for {selectedUser.firstName} {selectedUser.lastName}
+              </h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Active Status
+                </label>
+                <select
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  value={newActiveStatus.toString()}
+                  onChange={(e) => setNewActiveStatus(e.target.value === 'true')}
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleChangeStatus}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                >
+                  Change Status
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStatusModal(false)
+                    setSelectedUser(null)
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audit History Modal */}
+      {showAuditModal && selectedUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-2/3 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Audit History for {selectedUser.firstName} {selectedUser.lastName}
+              </h3>
+              <div className="max-h-96 overflow-y-auto">
+                {auditHistory.length > 0 ? (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Field
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Old Value
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          New Value
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Changed By
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {auditHistory.map((entry) => (
+                        <tr key={entry.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {entry.field}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {entry.oldValue}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {entry.newValue}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {entry.changedBy}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(entry.changedAt).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No audit history available</p>
+                )}
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    setShowAuditModal(false)
+                    setSelectedUser(null)
+                    setAuditHistory([])
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfileModal && selectedUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-2/3 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                User Profile: {selectedUser.firstName} {selectedUser.lastName}
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedUser.firstName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedUser.lastName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedUser.email}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Username</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedUser.username}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                    <button
+                      onClick={() => handleRoleBadgeClick(selectedUser.role)}
+                      className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 ${getRoleColor(selectedUser.role)}`}
+                    >
+                      {selectedUser.role}
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedUser)}`}>
+                      {selectedUser.approved ? 'Approved' : 'Pending'} • {selectedUser.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Created</label>
+                    <p className="mt-1 text-sm text-gray-900">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">User ID</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedUser.id}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    setShowProfileModal(false)
+                    setSelectedUser(null)
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Close
                 </button>
               </div>
             </div>
