@@ -43,6 +43,7 @@ const AdminCourses: React.FC = () => {
   })
   const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'CLOSED'>('ACTIVE')
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchCourses(true)
@@ -92,6 +93,9 @@ const AdminCourses: React.FC = () => {
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Clear previous validation errors
+    setValidationErrors({})
+    
     if (!newCourse.name.trim() || !newCourse.courseCode.trim() || !newCourse.credits) {
       toast.error('Please fill in all required fields')
       return
@@ -103,6 +107,7 @@ const AdminCourses: React.FC = () => {
       if (response.success) {
         toast.success('Course created successfully')
         setShowCreateModal(false)
+        setValidationErrors({})
         setNewCourse({
           name: '',
           courseCode: '',
@@ -127,7 +132,30 @@ const AdminCourses: React.FC = () => {
         return
       }
       
-      toast.error(error.response?.data?.message || 'Failed to create course')
+      // Handle field-level validation errors
+      if (error.response?.status === 400 && error.response?.data?.data) {
+        const fieldErrors = error.response.data.data
+        const newValidationErrors: Record<string, string> = {}
+        
+        // Extract field errors from the backend response
+        Object.keys(fieldErrors).forEach(fieldName => {
+          const fieldError = fieldErrors[fieldName]
+          if (fieldError && fieldError.message) {
+            newValidationErrors[fieldName] = fieldError.message
+          }
+        })
+        
+        setValidationErrors(newValidationErrors)
+        
+        // Show a generic message but field-specific errors will show inline
+        const requestId = error.response.headers['x-request-id']
+        toast.error(`Validation failed${requestId ? ` (Request ID: ${requestId})` : ''}`)
+      } else {
+        // For other errors, show the backend message or a generic one
+        const requestId = error.response?.headers['x-request-id']
+        const message = error.response?.data?.message || 'Failed to create course'
+        toast.error(`${message}${requestId ? ` (Request ID: ${requestId})` : ''}`)
+      }
     }
   }
 
@@ -256,7 +284,10 @@ const AdminCourses: React.FC = () => {
           {user?.role === UserRole.ADMIN && (
             <button
               type="button"
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setShowCreateModal(true)
+                setValidationErrors({})
+              }}
               className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Create Course
@@ -417,11 +448,16 @@ const AdminCourses: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                        validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={newCourse.name}
                       onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
                       required
                     />
+                    {validationErrors.name && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -429,11 +465,16 @@ const AdminCourses: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                        validationErrors.code ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={newCourse.courseCode}
                       onChange={(e) => setNewCourse({ ...newCourse, courseCode: e.target.value })}
                       required
                     />
+                    {validationErrors.code && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.code}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -443,11 +484,16 @@ const AdminCourses: React.FC = () => {
                       type="number"
                       min="1"
                       max="6"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                        validationErrors.credits ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={newCourse.credits}
                       onChange={(e) => setNewCourse({ ...newCourse, credits: parseInt(e.target.value) || 0 })}
                       required
                     />
+                    {validationErrors.credits && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.credits}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -468,17 +514,23 @@ const AdminCourses: React.FC = () => {
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700">Description</label>
                   <textarea
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                      validationErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                     rows={3}
                     value={newCourse.description}
                     onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                   />
+                  {validationErrors.description && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.description}</p>
+                  )}
                 </div>
                 <div className="flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false)
+                      setValidationErrors({})
                       setNewCourse({
                         name: '',
                         courseCode: '',
