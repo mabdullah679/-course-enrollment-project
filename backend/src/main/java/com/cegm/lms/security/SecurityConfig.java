@@ -30,6 +30,9 @@ public class SecurityConfig {
     private SecurityHeadersFilter securityHeadersFilter;
 
     @Autowired
+    private RequestIdFilter requestIdFilter;
+
+    @Autowired
     private SsotConfigService ssotConfigService;
 
     @Bean
@@ -49,6 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("OPTIONS").permitAll()
                 .anyRequest().authenticated()
             )
+            .addFilterBefore(requestIdFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(securityHeadersFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

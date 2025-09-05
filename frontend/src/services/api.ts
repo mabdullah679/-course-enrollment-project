@@ -123,18 +123,20 @@ export const usersApi = {
     return response.data
   },
 
-  changeUserRole: async (id: number, roles: string[]) => {
-    const response = await api.post(`/api/v1/users/${id}/roles`, { roles })
+  changeUserRole: async (id: number, role: string) => {
+    const response = await api.post(`/api/v1/users/${id}/role`, { role })
     return response.data
   },
 
-  changeUserStatus: async (id: number, active: boolean) => {
-    const response = await api.put(`/api/v1/users/${id}/status`, { active })
+  changeUserStatus: async (id: number, data: { approved?: boolean; active?: boolean }) => {
+    const response = await api.put(`/api/v1/users/${id}/status`, data)
     return response.data
   },
 
-  getUserAuditHistory: async (id: number) => {
-    const response = await api.get(`/api/v1/users/${id}/audit`)
+  getUserAuditHistory: async (id: number, limit = 20, after?: string) => {
+    let url = `/api/v1/users/${id}/audit?limit=${limit}`
+    if (after) url += `&after=${after}`
+    const response = await api.get(url)
     return response.data
   },
 

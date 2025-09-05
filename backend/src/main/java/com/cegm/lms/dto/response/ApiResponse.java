@@ -38,6 +38,12 @@ public class ApiResponse<T> {
         return new ApiResponse<>(false, message, errorCode);
     }
 
+    public static <T> ApiResponse<T> error(String message, String errorCode, T data) {
+        ApiResponse<T> response = new ApiResponse<>(false, message, errorCode);
+        response.setData(data);
+        return response;
+    }
+
     // Getters and Setters
     public boolean isSuccess() { return success; }
     public void setSuccess(boolean success) { this.success = success; }

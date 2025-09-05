@@ -99,16 +99,23 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+        Map<String, Object> errors = new HashMap<>();
+        
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            String errorCode = error.getCode();
+            
+            errors.put(fieldName, Map.of(
+                "code", errorCode != null ? errorCode : "VALIDATION_ERROR",
+                "field", fieldName, 
+                "message", errorMessage != null ? errorMessage : "Invalid value"
+            ));
         });
         
         logger.error("Validation error: {}", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Validation failed", "400"));
+                .body(ApiResponse.error("Validation failed", "VALIDATION_FAILED", errors));
     }
 
     @ExceptionHandler(Exception.class)

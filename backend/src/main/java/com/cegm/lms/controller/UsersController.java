@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -87,7 +88,7 @@ public class UsersController {
      * Change user role with session rotation.
      * Admin only access.
      */
-    @PostMapping("/{id}/roles")
+    @PostMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> changeUserRole(
             @PathVariable Long id,
@@ -119,6 +120,55 @@ public class UsersController {
         
         UserResponse userResponse = userService.convertToResponse(user);
         return ResponseEntity.ok(ApiResponse.success("User role changed successfully", userResponse));
+    }
+
+    /**
+     * Update user status (active/approved).
+     * Admin only access.
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request) {
+        
+        User user = userService.findById(id);
+        
+        // Update approved status if provided
+        if (request.containsKey("approved")) {
+            Boolean approved = (Boolean) request.get("approved");
+            if (approved != null) {
+                user = userService.updateApprovalStatus(id, approved);
+            }
+        }
+        
+        // Update active status if provided
+        if (request.containsKey("active")) {
+            Boolean active = (Boolean) request.get("active");
+            if (active != null) {
+                user = userService.updateActiveStatus(id, active);
+            }
+        }
+        
+        UserResponse userResponse = userService.convertToResponse(user);
+        return ResponseEntity.ok(ApiResponse.success("User status updated successfully", userResponse));
+    }
+
+    /**
+     * Get user audit history.
+     * Admin only access.
+     */
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> getUserAuditHistory(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String after) {
+        
+        // For now, return empty audit history - this will be implemented when audit service is ready
+        // TODO: Implement proper audit history retrieval
+        return ResponseEntity.ok(ApiResponse.success("Audit history retrieved successfully", 
+            Map.of("entries", List.of(), "hasNext", false, "nextCursor", (String) null)));
     }
 
     /**

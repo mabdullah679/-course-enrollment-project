@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '17'
   MAVEN_OPTS: '-Xmx1024m -XX:MaxPermSize=256m'
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup JDK 21
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
@@ -130,7 +130,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup JDK 21
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
@@ -151,7 +151,7 @@ jobs:
           echo "DB_PASSWORD=" >> $GITHUB_ENV
           echo "DB_DRIVER=org.h2.Driver" >> $GITHUB_ENV
           echo "DB_DIALECT=org.hibernate.dialect.H2Dialect" >> $GITHUB_ENV
-          echo "JWT_SECRET=test-secret-key-for-ci-pipeline-only-not-for-production-use" >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.CI_JWT_SECRET }}" >> $GITHUB_ENV
           echo "JWT_EXPIRATION_HOURS=24" >> $GITHUB_ENV
           echo "COOKIE_NAME=cegm_session" >> $GITHUB_ENV
           echo "COOKIE_HTTP_ONLY=true" >> $GITHUB_ENV

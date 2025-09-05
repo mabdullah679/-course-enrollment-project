@@ -223,4 +223,32 @@ public class UserService {
         
         return userRepository.save(user);
     }
+
+    /**
+     * Update user approval status with audit logging.
+     */
+    public User updateApprovalStatus(Long userId, boolean approved) {
+        User user = findById(userId);
+        boolean oldApproved = user.getApproved();
+        user.setApproved(approved);
+        
+        auditLogService.log(userId, "UsersController", "APPROVAL_STATUS_CHANGE", 
+            String.format("Approval status changed from %s to %s", oldApproved, approved));
+        
+        return userRepository.save(user);
+    }
+
+    /**
+     * Update user active status with audit logging.
+     */
+    public User updateActiveStatus(Long userId, boolean active) {
+        User user = findById(userId);
+        boolean oldActive = user.getActive();
+        user.setActive(active);
+        
+        auditLogService.log(userId, "UsersController", "ACTIVE_STATUS_CHANGE", 
+            String.format("Active status changed from %s to %s", oldActive, active));
+        
+        return userRepository.save(user);
+    }
 }
