@@ -66,25 +66,29 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           { name: 'Dashboard', href: '/dashboard' },
           { name: 'Courses', href: '/courses' },
           { name: 'Enrollments', href: '/enrollments' },
-          { name: 'Grades', href: '/grades' }
+          { name: 'Grades', href: '/grades' },
+          { name: 'Profile', href: '/profile' }
         ]
       case UserRole.INSTRUCTOR:
         return [
           { name: 'Dashboard', href: '/instructor' },
           { name: 'My Courses', href: '/instructor/courses' },
-          { name: 'Grades', href: '/instructor/grades' }
+          { name: 'Grades', href: '/instructor/grades' },
+          { name: 'Profile', href: '/profile' }
         ]
       case UserRole.STAFF:
         return [
           { name: 'Dashboard', href: '/staff' },
           { name: 'Users', href: '/staff/users' },
-          { name: 'Support', href: '/staff/support' }
+          { name: 'Support', href: '/staff/support' },
+          { name: 'Profile', href: '/profile' }
         ]
       case UserRole.ADMIN:
         return [
           { name: 'Dashboard', href: '/admin' },
           { name: 'Users', href: '/admin/users' },
-          { name: 'Courses', href: '/admin/courses' }
+          { name: 'Courses', href: '/admin/courses' },
+          { name: 'Profile', href: '/profile' }
         ]
       default:
         return []

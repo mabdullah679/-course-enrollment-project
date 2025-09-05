@@ -75,13 +75,23 @@ export const coursesApi = {
     return response.data
   },
 
-  createCourse: async (data: any) => {
+  createCourse: async (data: { name: string; courseCode: string; credits: number; status: string; description?: string }) => {
     const response = await api.post('/api/v1/courses', data)
     return response.data
   },
 
   updateCourse: async (id: number, data: any) => {
     const response = await api.put(`/api/v1/courses/${id}`, data)
+    return response.data
+  },
+
+  updateCourseStatus: async (id: number, status: string) => {
+    const response = await api.put(`/api/v1/courses/${id}/status`, { status })
+    return response.data
+  },
+
+  getCourseAuditHistory: async (id: number) => {
+    const response = await api.get(`/api/v1/courses/${id}/audit`)
     return response.data
   },
 
@@ -92,12 +102,13 @@ export const coursesApi = {
 }
 
 export const usersApi = {
-  getUsers: async (lastId?: number, limit = 20, search?: string, role?: string, status?: string) => {
+  getUsers: async (lastId?: number, limit = 20, search?: string, role?: string, approved?: boolean, active?: boolean) => {
     let url = `/api/v1/users?limit=${limit}`
     if (lastId) url += `&lastId=${lastId}`
     if (search) url += `&search=${encodeURIComponent(search)}`
     if (role) url += `&role=${role}`
-    if (status) url += `&status=${status}`
+    if (approved !== undefined) url += `&approved=${approved}`
+    if (active !== undefined) url += `&active=${active}`
     const response = await api.get(url)
     return response.data
   },
@@ -109,6 +120,21 @@ export const usersApi = {
 
   changeUserRole: async (id: number, role: string) => {
     const response = await api.post(`/api/v1/users/${id}/roles`, { role })
+    return response.data
+  },
+
+  changeUserStatus: async (id: number, active: boolean) => {
+    const response = await api.put(`/api/v1/users/${id}/status`, { active })
+    return response.data
+  },
+
+  getUserAuditHistory: async (id: number) => {
+    const response = await api.get(`/api/v1/users/${id}/audit`)
+    return response.data
+  },
+
+  getUserProfile: async (id: number) => {
+    const response = await api.get(`/api/v1/users/${id}`)
     return response.data
   },
 }
@@ -157,6 +183,25 @@ export const gradesApi = {
   },
 }
 
+export const configApi = {
+  getMeta: async () => {
+    const response = await api.get('/api/v1/config/meta')
+    return response.data
+  },
+}
+
+export const actuatorApi = {
+  getHealth: async () => {
+    const response = await api.get('/actuator/health')
+    return response.data
+  },
+
+  getInfo: async () => {
+    const response = await api.get('/actuator/info')
+    return response.data
+  },
+}
+
 export const exportsApi = {
   exportUsers: async () => {
     const response = await api.get('/api/v1/exports/users', { responseType: 'blob' })
@@ -175,25 +220,6 @@ export const exportsApi = {
 
   exportGrades: async () => {
     const response = await api.get('/api/v1/exports/grades', { responseType: 'blob' })
-    return response.data
-  },
-}
-
-export const configApi = {
-  getMeta: async () => {
-    const response = await api.get('/api/v1/config/meta')
-    return response.data
-  },
-}
-
-export const actuatorApi = {
-  getHealth: async () => {
-    const response = await api.get('/actuator/health')
-    return response.data
-  },
-
-  getInfo: async () => {
-    const response = await api.get('/actuator/info')
     return response.data
   },
 }
