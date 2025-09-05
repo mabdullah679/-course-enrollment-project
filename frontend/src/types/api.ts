@@ -99,10 +99,11 @@ export interface PaginatedResponse<T> {
 }
 
 export interface CourseCreateRequest {
-  code: string
   name: string
-  description?: string
+  courseCode: string
   credits: number
+  status: 'ACTIVE' | 'ARCHIVED' | 'CLOSED'
+  description?: string
 }
 
 export interface GradeCreateRequest {

@@ -75,13 +75,23 @@ export const coursesApi = {
     return response.data
   },
 
-  createCourse: async (data: any) => {
+  createCourse: async (data: { name: string; courseCode: string; credits: number; status: string; description?: string }) => {
     const response = await api.post('/api/v1/courses', data)
     return response.data
   },
 
   updateCourse: async (id: number, data: any) => {
     const response = await api.put(`/api/v1/courses/${id}`, data)
+    return response.data
+  },
+
+  updateCourseStatus: async (id: number, status: string) => {
+    const response = await api.put(`/api/v1/courses/${id}/status`, { status })
+    return response.data
+  },
+
+  getCourseAuditHistory: async (id: number) => {
+    const response = await api.get(`/api/v1/courses/${id}/audit`)
     return response.data
   },
 
