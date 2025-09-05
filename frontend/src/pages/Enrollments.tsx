@@ -20,14 +20,14 @@ const Enrollments: React.FC = () => {
   const fetchEnrollments = async (reset = false) => {
     setLoading(true)
     try {
-      const currentLastId = reset ? undefined : lastId
+      const currentAfter = reset ? undefined : lastId
       const studentId = user?.id // Filter by current user if student
       
       const response = await enrollmentsApi.getEnrollments(
-        currentLastId,
+        currentAfter,
         20,
         undefined, // type
-        undefined, // status
+        undefined, // semester 
         undefined, // courseId
         studentId  // studentId
       )

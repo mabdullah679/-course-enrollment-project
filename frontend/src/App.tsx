@@ -12,6 +12,9 @@ import Profile from './pages/Profile'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminUsers from './pages/AdminUsers'
 import AdminCourses from './pages/AdminCourses'
+import AdminGrades from './pages/AdminGrades'
+import AdminConfiguration from './pages/AdminConfiguration'
+import AdminEnrollments from './pages/AdminEnrollments'
 import { UserRole } from './types/api'
 
 function App() {
@@ -70,17 +73,22 @@ function AppRoutes() {
         {user.role === UserRole.STUDENT ? (
           <>
             <Route path="/" element={<Navigate to="/student" />} />
-            <Route path="/student" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/enrollments" element={<Enrollments />} />
-            <Route path="/grades" element={<Grades />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/student" element={<Dashboard />} />
+            <Route path="/student/courses" element={<Courses />} />
+            <Route path="/student/enrollments" element={<Enrollments />} />
+            <Route path="/student/grades" element={<Grades />} />
+            <Route path="/student/profile" element={<Profile />} />
+            {/* Redirect root level routes to student paths */}
+            <Route path="/dashboard" element={<Navigate to="/student" />} />
+            <Route path="/courses" element={<Navigate to="/student/courses" />} />
+            <Route path="/enrollments" element={<Navigate to="/student/enrollments" />} />
+            <Route path="/grades" element={<Navigate to="/student/grades" />} />
+            <Route path="/profile" element={<Navigate to="/student/profile" />} />
             {/* Block access to admin/staff routes */}
-            <Route path="/admin/*" element={<Navigate to="/dashboard" />} />
-            <Route path="/staff/*" element={<Navigate to="/dashboard" />} />
-            <Route path="/instructor/*" element={<Navigate to="/dashboard" />} />
-            <Route path="*" element={<Navigate to="/dashboard" />} />
+            <Route path="/admin/*" element={<Navigate to="/student" />} />
+            <Route path="/staff/*" element={<Navigate to="/student" />} />
+            <Route path="/instructor/*" element={<Navigate to="/student" />} />
+            <Route path="*" element={<Navigate to="/student" />} />
           </>
         ) : user.role === UserRole.INSTRUCTOR ? (
           <>
@@ -111,8 +119,14 @@ function AppRoutes() {
             <Route path="/" element={<Navigate to="/admin" />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-            <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+            <Route path="/admin/course-management" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+            <Route path="/admin/grade-management" element={<AdminRoute><AdminGrades /></AdminRoute>} />
+            <Route path="/admin/enrollments" element={<AdminRoute><AdminEnrollments /></AdminRoute>} />
+            <Route path="/admin/config" element={<AdminRoute><AdminConfiguration /></AdminRoute>} />
             <Route path="/profile" element={<Profile />} />
+            {/* Redirect old course route to new name */}
+            <Route path="/admin/courses" element={<Navigate to="/admin/course-management" />} />
+            <Route path="/admin/grades" element={<Navigate to="/admin/grade-management" />} />
             <Route path="*" element={<Navigate to="/admin" />} />
           </>
         )}

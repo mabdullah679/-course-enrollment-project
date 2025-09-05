@@ -42,7 +42,7 @@ const AdminCourses: React.FC = () => {
   const fetchCourses = async () => {
     setLoading(true)
     try {
-      const response = await coursesApi.getAllCourses(0, 50)
+      const response = await coursesApi.getCourses(undefined, 50)
       if (response.success && response.data) {
         setCourses(response.data.content || [])
       }

@@ -18,7 +18,7 @@ const Grades: React.FC = () => {
   const fetchGrades = async (reset = false) => {
     setLoading(true)
     try {
-      const currentLastId = reset ? undefined : lastId
+      const currentAfter = reset ? undefined : lastId
       let studentId: number | undefined
       let courseId: number | undefined
 
@@ -29,7 +29,7 @@ const Grades: React.FC = () => {
       // For instructors and admin, show all grades (backend should filter by permissions)
       
       const response = await gradesApi.getGrades(
-        currentLastId,
+        currentAfter,
         20,
         courseId,
         studentId

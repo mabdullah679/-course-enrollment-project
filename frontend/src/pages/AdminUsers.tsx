@@ -24,8 +24,7 @@ const AdminUsers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
     role: searchParams.get('role') || '',
-    approved: searchParams.get('approved') || '',
-    active: searchParams.get('active') || ''
+    status: searchParams.get('status') || ''
   })
   
   // Modal states
@@ -46,17 +45,14 @@ const AdminUsers: React.FC = () => {
   const fetchUsers = async (reset = false) => {
     setLoading(true)
     try {
-      const currentLastId = reset ? undefined : lastId
-      const approved = filters.approved ? filters.approved === 'true' : undefined
-      const active = filters.active ? filters.active === 'true' : undefined
+      const currentAfter = reset ? undefined : lastId
       
       const response = await usersApi.getUsers(
-        currentLastId,
+        currentAfter,
         20,
         searchTerm || undefined,
         filters.role || undefined,
-        approved,
-        active
+        filters.status || undefined
       )
       
       if (response.success && response.data) {
@@ -115,7 +111,7 @@ const AdminUsers: React.FC = () => {
     if (!selectedUser) return
 
     try {
-      const response = await usersApi.changeUserRole(selectedUser.id, newRole)
+      const response = await usersApi.changeUserRole(selectedUser.id, [newRole])
       
       if (response.success) {
         toast.success('User role updated successfully')
@@ -197,7 +193,13 @@ const AdminUsers: React.FC = () => {
 
   const handleExportUsers = async () => {
     try {
-      const blob = await exportsApi.exportUsers()
+      // Prepare filters for export that match current view
+      const exportFilters: any = {}
+      if (filters.role) exportFilters.role = filters.role
+      if (filters.status) exportFilters.status = filters.status
+      if (searchTerm) exportFilters.q = searchTerm
+      
+      const blob = await exportsApi.exportUsers(exportFilters)
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -314,27 +316,16 @@ const AdminUsers: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Approved</label>
+            <label className="block text-sm font-medium text-gray-700">Status</label>
             <select
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              value={filters.approved}
-              onChange={(e) => handleFilterChange('approved', e.target.value)}
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
             >
-              <option value="">All Users</option>
-              <option value="true">Approved</option>
-              <option value="false">Pending Approval</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Active</label>
-            <select
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              value={filters.active}
-              onChange={(e) => handleFilterChange('active', e.target.value)}
-            >
-              <option value="">All Users</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="SUSPENDED">Suspended</option>
             </select>
           </div>
         </div>

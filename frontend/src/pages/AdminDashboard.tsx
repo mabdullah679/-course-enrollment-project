@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { configApi, actuatorApi } from '../services/api'
+import { configApi, actuatorApi, usersApi, coursesApi, enrollmentsApi, gradesApi } from '../services/api'
 
 interface CapabilityStatus {
   available: boolean
@@ -26,11 +26,42 @@ const AdminDashboard: React.FC = () => {
     actuatorHealth: { available: false, probed: false } as CapabilityStatus,
     actuatorInfo: { available: false, probed: false } as CapabilityStatus,
   })
+  
+  const [counts, setCounts] = useState({
+    users: 0,
+    courses: 0,
+    enrollments: 0,
+    grades: 0,
+    loading: true
+  })
 
   // One-time capability probe on component mount
   useEffect(() => {
     probeCapabilities()
+    loadCounts()
   }, [])
+
+  const loadCounts = async () => {
+    try {
+      const [usersResp, coursesResp, enrollmentsResp, gradesResp] = await Promise.all([
+        usersApi.getUsers(undefined, 1),
+        coursesApi.getCourses(undefined, 1),
+        enrollmentsApi.getEnrollments(undefined, 1),
+        gradesApi.getGrades(undefined, 1)
+      ])
+      
+      setCounts({
+        users: usersResp.data?.content?.length || 0,
+        courses: coursesResp.data?.content?.length || 0,
+        enrollments: enrollmentsResp.data?.content?.length || 0,
+        grades: gradesResp.data?.content?.length || 0,
+        loading: false
+      })
+    } catch (error) {
+      console.error('Error loading counts:', error)
+      setCounts(prev => ({ ...prev, loading: false }))
+    }
+  }
 
   const probeCapabilities = async () => {
     console.info('Probing system capabilities...')
@@ -136,6 +167,40 @@ const AdminDashboard: React.FC = () => {
 
   const getAdminTiles = (): AdminTile[] => [
     {
+      title: 'User Management',
+      description: 'Manage system users, roles, and approvals',
+      href: '/admin/users',
+      status: 'info',
+      value: counts.loading ? 'Loading...' : `${counts.users}+ users`
+    },
+    {
+      title: 'Course Management',
+      description: 'Manage courses and content',
+      href: '/admin/course-management',
+      status: 'info',
+      value: counts.loading ? 'Loading...' : `${counts.courses}+ courses`
+    },
+    {
+      title: 'Grade Management',
+      description: 'Administrative oversight of grades and assessments',
+      href: '/admin/grade-management',
+      status: 'info',
+      value: counts.loading ? 'Loading...' : `${counts.grades}+ grades`
+    },
+    {
+      title: 'Enrollment Management',
+      description: 'Manage student enrollments and course participation',
+      href: '/admin/enrollments',
+      status: 'info',
+      value: counts.loading ? 'Loading...' : `${counts.enrollments}+ enrollments`
+    },
+    {
+      title: 'Configuration',
+      description: 'System health monitoring and configuration',
+      href: '/admin/config',
+      status: 'info'
+    },
+    {
       title: 'System Health',
       description: 'Overall system health status',
       status: !capabilities.actuatorHealth.probed ? 'loading' : 
@@ -148,44 +213,6 @@ const AdminDashboard: React.FC = () => {
       disabled: !capabilities.actuatorHealth.available,
       tooltip: !capabilities.actuatorHealth.available ? 'Endpoint unavailable' : undefined,
       action: () => handleRefreshTile('actuatorHealth')
-    },
-    {
-      title: 'System Info',
-      description: 'Application information',
-      status: !capabilities.actuatorInfo.probed ? 'loading' :
-             capabilities.actuatorInfo.available ? 'info' : 'disabled',
-      value: capabilities.actuatorInfo.available ? 'Available' : 'Disabled',
-      disabled: !capabilities.actuatorInfo.available,
-      tooltip: !capabilities.actuatorInfo.available ? 'Endpoint unavailable' : undefined,
-      action: () => handleRefreshTile('actuatorInfo')
-    },
-    {
-      title: 'Config Meta',
-      description: 'System configuration metadata',
-      status: !capabilities.configMeta.probed ? 'loading' :
-             capabilities.configMeta.available ? 'success' : 'disabled',
-      value: capabilities.configMeta.available ? 'Loaded' : 'Disabled',
-      disabled: !capabilities.configMeta.available,
-      tooltip: !capabilities.configMeta.available ? 'Endpoint unavailable' : undefined,
-      action: () => handleRefreshTile('configMeta')
-    },
-    {
-      title: 'User Management',
-      description: 'Manage system users',
-      href: '/admin/users',
-      status: 'info'
-    },
-    {
-      title: 'Course Management',
-      description: 'Manage courses and content',
-      href: '/admin/courses',
-      status: 'info'
-    },
-    {
-      title: 'Quick Actions',
-      description: 'Common administrative tasks',
-      action: () => handleExecuteTile('quickActions'),
-      status: 'info'
     }
   ]
 
@@ -196,7 +223,10 @@ const AdminDashboard: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <button
-          onClick={probeCapabilities}
+          onClick={() => {
+            probeCapabilities()
+            loadCounts()
+          }}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Refresh All

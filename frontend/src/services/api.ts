@@ -55,13 +55,19 @@ export const authApi = {
 }
 
 export const coursesApi = {
-  getActiveCourses: async () => {
-    const response = await api.get('/api/v1/courses')
+  getCourses: async (after?: number, size = 20, ownerId?: number, term?: string, status?: string) => {
+    let url = `/api/v1/courses?size=${size}`
+    if (after) url += `&after=${after}`
+    if (ownerId) url += `&ownerId=${ownerId}`
+    if (term) url += `&term=${term}`
+    if (status) url += `&status=${status}`
+    const response = await api.get(url)
     return response.data
   },
 
-  getAllCourses: async (page = 0, size = 10) => {
-    const response = await api.get(`/api/v1/courses/all?page=${page}&size=${size}`)
+  getStudentCourses: async (enrolled = true) => {
+    const url = enrolled ? '/api/v1/courses?enrolled=true' : '/api/v1/courses'
+    const response = await api.get(url)
     return response.data
   },
 
@@ -102,13 +108,12 @@ export const coursesApi = {
 }
 
 export const usersApi = {
-  getUsers: async (lastId?: number, limit = 20, search?: string, role?: string, approved?: boolean, active?: boolean) => {
-    let url = `/api/v1/users?limit=${limit}`
-    if (lastId) url += `&lastId=${lastId}`
-    if (search) url += `&search=${encodeURIComponent(search)}`
+  getUsers: async (after?: number, size = 20, q?: string, role?: string, status?: string) => {
+    let url = `/api/v1/users?size=${size}`
+    if (after) url += `&after=${after}`
+    if (q) url += `&q=${encodeURIComponent(q)}`
     if (role) url += `&role=${role}`
-    if (approved !== undefined) url += `&approved=${approved}`
-    if (active !== undefined) url += `&active=${active}`
+    if (status) url += `&status=${status}`
     const response = await api.get(url)
     return response.data
   },
@@ -118,8 +123,8 @@ export const usersApi = {
     return response.data
   },
 
-  changeUserRole: async (id: number, role: string) => {
-    const response = await api.post(`/api/v1/users/${id}/roles`, { role })
+  changeUserRole: async (id: number, roles: string[]) => {
+    const response = await api.post(`/api/v1/users/${id}/roles`, { roles })
     return response.data
   },
 
@@ -140,14 +145,19 @@ export const usersApi = {
 }
 
 export const enrollmentsApi = {
-  getEnrollments: async (lastId?: number, limit = 20, type?: string, status?: string, courseId?: number, studentId?: number) => {
-    let url = `/api/v1/enrollments?limit=${limit}`
-    if (lastId) url += `&lastId=${lastId}`
+  getEnrollments: async (after?: number, size = 20, type?: string, semester?: string, courseId?: number, studentId?: number) => {
+    let url = `/api/v1/enrollments?size=${size}`
+    if (after) url += `&after=${after}`
     if (type) url += `&type=${type}`
-    if (status) url += `&status=${status}`
+    if (semester) url += `&semester=${semester}`
     if (courseId) url += `&courseId=${courseId}`
     if (studentId) url += `&studentId=${studentId}`
     const response = await api.get(url)
+    return response.data
+  },
+
+  getStudentEnrollments: async (studentId: number) => {
+    const response = await api.get(`/api/v1/enrollments?studentId=${studentId}`)
     return response.data
   },
 
@@ -163,12 +173,18 @@ export const enrollmentsApi = {
 }
 
 export const gradesApi = {
-  getGrades: async (lastId?: number, limit = 20, courseId?: number, studentId?: number) => {
-    let url = `/api/v1/grades?limit=${limit}`
-    if (lastId) url += `&lastId=${lastId}`
+  getGrades: async (after?: number, size = 20, courseId?: number, studentId?: number, status?: string) => {
+    let url = `/api/v1/grades?size=${size}`
+    if (after) url += `&after=${after}`
     if (courseId) url += `&courseId=${courseId}`
     if (studentId) url += `&studentId=${studentId}`
+    if (status) url += `&status=${status}`
     const response = await api.get(url)
+    return response.data
+  },
+
+  getStudentGrades: async (studentId: number) => {
+    const response = await api.get(`/api/v1/grades?studentId=${studentId}`)
     return response.data
   },
 
@@ -190,6 +206,13 @@ export const configApi = {
   },
 }
 
+export const healthApi = {
+  getHealth: async () => {
+    const response = await api.get('/api/v1/health')
+    return response.data
+  },
+}
+
 export const actuatorApi = {
   getHealth: async () => {
     const response = await api.get('/actuator/health')
@@ -203,23 +226,35 @@ export const actuatorApi = {
 }
 
 export const exportsApi = {
-  exportUsers: async () => {
-    const response = await api.get('/api/v1/exports/users', { responseType: 'blob' })
+  exportUsers: async (filters?: any) => {
+    const response = await api.post('/api/v1/exports/csv', {
+      resource: 'users',
+      filters: filters || {}
+    }, { responseType: 'blob' })
     return response.data
   },
 
-  exportCourses: async () => {
-    const response = await api.get('/api/v1/exports/courses', { responseType: 'blob' })
+  exportCourses: async (filters?: any) => {
+    const response = await api.post('/api/v1/exports/csv', {
+      resource: 'courses',
+      filters: filters || {}
+    }, { responseType: 'blob' })
     return response.data
   },
 
-  exportEnrollments: async () => {
-    const response = await api.get('/api/v1/exports/enrollments', { responseType: 'blob' })
+  exportEnrollments: async (filters?: any) => {
+    const response = await api.post('/api/v1/exports/csv', {
+      resource: 'enrollments',
+      filters: filters || {}
+    }, { responseType: 'blob' })
     return response.data
   },
 
-  exportGrades: async () => {
-    const response = await api.get('/api/v1/exports/grades', { responseType: 'blob' })
+  exportGrades: async (filters?: any) => {
+    const response = await api.post('/api/v1/exports/csv', {
+      resource: 'grades',
+      filters: filters || {}
+    }, { responseType: 'blob' })
     return response.data
   },
 }

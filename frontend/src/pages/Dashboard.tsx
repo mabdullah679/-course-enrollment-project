@@ -56,17 +56,22 @@ const Dashboard: React.FC = () => {
     {
       title: 'My Courses',
       description: 'View your enrolled courses',
-      href: '/courses'
+      href: '/student/courses'
     },
     {
       title: 'Grades',
       description: 'Check your grades',
-      href: '/grades'
+      href: '/student/grades'
     },
     {
       title: 'Enrollments',
       description: 'Manage enrollments',
-      href: '/enrollments'
+      href: '/student/enrollments'
+    },
+    {
+      title: 'Profile',
+      description: 'View and update your profile',
+      href: '/student/profile'
     }
   ]
 
