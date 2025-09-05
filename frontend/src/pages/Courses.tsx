@@ -3,6 +3,9 @@ import { toast } from 'react-hot-toast'
 import { Course, PaginatedResponse } from '../types/api'
 import { coursesApi, enrollmentsApi } from '../services/api'
 import { useDebounce } from '../hooks/useDebounce'
+import RefreshButton from '../components/common/RefreshButton'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import EmptyState from '../components/common/EmptyState'
 
 const Courses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([])
@@ -91,7 +94,7 @@ const Courses: React.FC = () => {
   if (loading && courses.length === 0) {
     return (
       <div className="p-6">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500 mx-auto"></div>
+        <LoadingSpinner size="lg" text="Loading courses..." className="py-12" />
       </div>
     )
   }
@@ -106,13 +109,7 @@ const Courses: React.FC = () => {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            type="button"
-            onClick={handleRefresh}
-            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Refresh
-          </button>
+          <RefreshButton onClick={handleRefresh} />
         </div>
       </div>
 
@@ -175,11 +172,15 @@ const Courses: React.FC = () => {
       </div>
 
       {courses.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <p className="text-sm text-gray-500">
-            {showEnrolledOnly ? 'You are not enrolled in any courses.' : 'No courses found.'}
-          </p>
-        </div>
+        <EmptyState
+          title={showEnrolledOnly ? 'No enrolled courses' : 'No courses found'}
+          description={showEnrolledOnly ? 'You are not enrolled in any courses yet.' : 'No courses match your search criteria.'}
+          icon={
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          }
+        />
       )}
 
       {/* Load More */}
