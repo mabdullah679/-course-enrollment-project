@@ -26,6 +26,37 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   }
 
+  const getBrandLinkRoute = (): string => {
+    if (!user) return '/login'
+    
+    switch (user.role) {
+      case UserRole.ADMIN:
+        return '/admin'
+      case UserRole.INSTRUCTOR:
+        return '/instructor'
+      case UserRole.STAFF:
+        return '/staff'
+      case UserRole.STUDENT:
+        return '/student'
+      default:
+        return '/login'
+    }
+  }
+
+  const getProfileBadgeRoute = (): string => {
+    if (!user) return '/login'
+    
+    // Only admin and staff can access the users page
+    if (user.role === UserRole.ADMIN) {
+      return `/admin/users?role=${user.role}`
+    } else if (user.role === UserRole.STAFF) {
+      return `/staff/users?role=${user.role}`
+    }
+    
+    // For instructors and students, just show the role without linking
+    return '#'
+  }
+
   const getNavigationItems = (): NavItem[] => {
     if (!user) return []
 
@@ -84,7 +115,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">CEGM LMS</h1>
+                <Link 
+                  to={getBrandLinkRoute()} 
+                  className="text-xl font-bold text-gray-900 hover:text-blue-600"
+                >
+                  CEGM LMS
+                </Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navigationItems.map((item) => (
@@ -109,7 +145,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <div className="font-medium text-gray-900">
                       {user.firstName} {user.lastName}
                     </div>
-                    <div className="text-gray-500">{getRoleDisplayName(user.role)}</div>
+                    {(user.role === UserRole.ADMIN || user.role === UserRole.STAFF) ? (
+                      <Link 
+                        to={getProfileBadgeRoute()}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {getRoleDisplayName(user.role)}
+                      </Link>
+                    ) : (
+                      <div className="text-gray-500">{getRoleDisplayName(user.role)}</div>
+                    )}
                   </div>
                   <button
                     onClick={handleLogout}

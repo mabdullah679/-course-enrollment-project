@@ -178,3 +178,22 @@ export const exportsApi = {
     return response.data
   },
 }
+
+export const configApi = {
+  getMeta: async () => {
+    const response = await api.get('/api/v1/config/meta')
+    return response.data
+  },
+}
+
+export const actuatorApi = {
+  getHealth: async () => {
+    const response = await api.get('/actuator/health')
+    return response.data
+  },
+
+  getInfo: async () => {
+    const response = await api.get('/actuator/info')
+    return response.data
+  },
+}

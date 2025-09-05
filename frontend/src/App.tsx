@@ -50,7 +50,8 @@ function AppRoutes() {
       <Routes>
         {user.role === UserRole.STUDENT ? (
           <>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/" element={<Navigate to="/student" />} />
+            <Route path="/student" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/enrollments" element={<Enrollments />} />

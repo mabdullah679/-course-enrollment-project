@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { User, UserRole, UserStatus, PaginatedResponse } from '../types/api'
 import { usersApi, exportsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
 const AdminUsers: React.FC = () => {
+  const [searchParams] = useSearchParams()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [hasNext, setHasNext] = useState(false)
   const [lastId, setLastId] = useState<number | undefined>(undefined)
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
-    role: '',
+    role: searchParams.get('role') || '',
     status: ''
   })
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
