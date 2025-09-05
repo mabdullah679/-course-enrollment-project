@@ -1,31 +1,17 @@
-Change boundaries
+Scope: Frontend only unless a missing endpoint must be exposed; if so, document the exact endpoint and stop.
 
-Do not create/delete/rename backend controllers, services, entities, DTOs, security, or dependencies.
+No hardcoded env: All runtime config is read from /api/v1/config/meta.
 
-Do not modify SecurityConfig/CSRF/cookie secrets.
+Cookies: Every protected request must send Cookie automatically via the shared client.
 
-Frontend-only changes plus read-only use of existing endpoints. If /api/v1/config/meta or actuator don’t exist, render Disabled tiles.
+Actuator: Only call /actuator/health and /actuator/info (never /api/actuator/*). If absent, mark disabled — no error toasts.
 
-Paths & client
+Toasts: de-dup per group; no storms; validation errors show inline in modals.
 
-App APIs: /api/v1/*; actuator: /actuator/* (if present).
+Audit: If audit endpoints are missing, disable “i” with tooltip; no error toast.
 
-All feature modules must import the shared HTTP client; credentials enabled.
+Accessibility: Buttons/links must have aria-labels that match their tooltips.
 
-Cookies & CORS (dev)
+Logging: Route guard denials and disabled feature probes log info, not error.
 
-Cookie: HttpOnly, Secure=false, SameSite=Lax, Path=/, no Domain.
-
-CORS: http://localhost:3000 with credentials.
-
-CSRF posture
-
-JSON API w/ JWT cookie in dev should not require CSRF unless backend enforces. If a protected POST 403s with Cookie present → STOP, cite this section.
-
-Stop conditions
-
-Protected request without Cookie → STOP.
-
-Actuator path includes /api → STOP.
-
-Backend edits needed → STOP and ask.
+Stop rules: as in instruction.md.

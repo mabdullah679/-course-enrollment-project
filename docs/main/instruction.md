@@ -1,101 +1,214 @@
-Sprint Task Map (closing to staging)
+Objective
 
-Normalize API usage & credentials
+Harden the frontend so every dashboard tile and mini-GUI reads/writes real data against the Spring backend (H2), with correct cookies/CSRF posture, consistent routing, and graceful fallbacks where the backend capability does not exist. Do not modify backend unless this doc explicitly says to expose an endpoint; if an endpoint is missing, mark the tile/CTA Disabled and tooltip “Endpoint unavailable” and log a single info line.
 
-All app calls under /api/v1/*; actuator under /actuator/* (if exists).
+Target topology (local only)
 
-Every feature module uses the shared HTTP client with credentials. No direct fetch/raw axios.
+FE: http://localhost:3000
 
-Brand link routing by role
+BE: http://localhost:8080
 
-“CEGM LMS” routes: ADMIN→/admin, INSTRUCTOR→/instructor, STAFF→/staff, else→/student, unauth→/login.
+App APIs: /api/v1/*
 
-Staff/Instructor must not reach admin pages (guard routes & nav).
+Actuator-only: /actuator/* (never under /api)
 
-Per-tile Refresh & Execute behaviors
+Single shared HTTP client
 
-Every mini GUI (dashboard card) has its own Refresh button.
+All protected requests must use one shared client with:
 
-Execute buttons must trigger the documented action (probe/fetch/update) and render a visible result or a scoped toast.
+baseURL set from /api/v1/config/meta at runtime (no hardcoded env)
 
-No endless spinners. Use capability probe (see §4) and disable if unavailable.
+withCredentials: true
 
-System tiles: capability probe & graceful fallback
+CSRF header/cookie wiring only if the backend sets it (don’t invent)
 
-On first visit, probe once:
+Automatic Accept: application/json and appropriate Content-Type on POST/PUT/PATCH
 
-/api/v1/config/meta → hasMeta
+Cross-cutting GUI rules
 
-/actuator/health & /actuator/info → hasActuator
+Each card/tile has its own Refresh and Execute CTA where relevant. Disable if the endpoint is unavailable. No forever spinners.
 
-If any probe 404/500s, set flag false, show Disabled state (tooltip: “Endpoint unavailable”), no polling, no toasts, log once at info.
+Empty states: render structured empty tables with “No data yet” + refresh button; no unhelpful error toasts for 404/empty.
 
-Admin Users – hardening & mini GUIs
+Toasts: use de-dup policy — max one per logical group (auth/api/form/system) within 10s.
 
-Status filtering: align with backend contract (booleans: approved, active), not enums.
+Search + filters: apply together (AND), not sequential short-circuiting.
 
-CSV export: works with credentials; response text/csv; sensible filename.
+Deep links: brand “CEGM LMS” routes by role; role badges deep-link to Users (only Admin/Staff); Student role badge is not a deep link.
 
-Role column hyperlinks: each ROLE value is a link opening a Role mini GUI (modal/panel) to view/edit role (where permitted).
+Audit “i” icon: open mini-GUI that lists recorded changes if endpoint exists; otherwise tooltip “Audit trail unavailable”, no error toast.
 
-Status mini GUI: from STATUS column (or Actions menu), toggle Active/Approved when permitted.
+403 while cookie present on protected POST/PUT/PATCH ⇒ stop work on that feature, surface banner “403 with Cookie: check method security / CSRF” and follow the Stop rules.
 
-Created column: read-only; add Info icon to open an Audit mini GUI showing change log (role/status changes with timestamps).
+What to wire (endpoints)
 
-Actions menu: “Change Role”, “Change Status”, “View Profile”.
+Back the following UI actions with real calls. If your backend already exposes these paths, use them. If not, mark Disabled + tooltip.
 
-Approval flow:
+Configuration / Capability
 
-Unapproved users cannot log in (backend behavior).
+GET /api/v1/config/meta → runtime config (feature flags, enrollment window, UI brand, etc.)
 
-On denied login due to approved=false, show toast:
+(Optional) GET /actuator/health, GET /actuator/info → if Actuator is present. Never prefix with /api.
 
-“Your account is pending approval for role {role}.”
+Users (Admin & Staff)
 
-Only ADMIN can approve/promote/demote ADMIN users; staff/instructor cannot.
+List users: GET /api/v1/users?role=&approved=&active=&q=
 
-Courses – CRUD & status mini GUI
+role in {ADMIN, STAFF, INSTRUCTOR, STUDENT} or absent.
 
-List: name, course code, credits, status, created.
+approved boolean (true/false) or absent.
 
-Create Course includes: name*, courseCode*, credits*, status*, description.
+active boolean (true/false) or absent.
 
-Persist to H2 via existing endpoints; append to list on success.
+q matches name/email/username.
 
-Status hyperlink opens Course Status mini GUI to change status (persist) with a single scoped toast.
+Change role: PATCH /api/v1/users/{id}/role body { "role": "…" }
 
-Audit Info on Created shows course change history (status changes; timestamps).
+Change status: PATCH /api/v1/users/{id}/status body { "approved": bool, "active": bool }
 
-Validation errors surface clear field toasts/messages (no generic “Validation failed”).
+Approvals queue (Staff Support): reuse list users with approved=false.
 
-Grades, Enrollments, Empty states
+CSV export (if no server export): client-side generate CSV from current filtered dataset and trigger download with file name users_YYYYMMDD.csv.
 
-When no data, show the table headers and an empty state: “No data yet.”
+Courses (Admin & Instructor)
 
-Gradebook navigation from Instructor must not loop back; route to grades page.
+List courses: GET /api/v1/courses
 
-One scoped toast per failure; no storms.
+Create course: POST /api/v1/courses body { name, courseCode, credits, status, description }
 
-Profile page hygiene & deep link
+Change status: PATCH /api/v1/courses/{id}/status body { "status": "ACTIVE|ARCHIVED|DRAFT" }
 
-Single data source (Auth context or one fetch).
+(Audit) GET /api/v1/audit/courses/{id} if available; else disable the “i”.
 
-No “success data + failure toast” combos.
+Enrollments (Student & Instructor views)
 
-Role badge link opens Users with role pre-filtered.
+Student list: GET /api/v1/enrollments?studentId=me
 
-Student & enrollment window
+Instructor review: GET /api/v1/enrollments?instructorId=me
 
-Student cards are view only except Enrollments.
+Enrollment window:
 
-Enrollments are editable only if enrollmentWindow=OPEN (admin-controlled flag exposed in config/meta or an existing setting endpoint); otherwise show a toast: “Enrollment window is closed.”
+from /api/v1/config/meta: one of:
 
-Admin UI exposes a simple toggle for this flag if an endpoint exists; otherwise display read-only state.
+"enrollmentWindow": "OPEN" | "CLOSED" or
 
-Toast de-duplication
+"enrollmentDates": { "start": ISO, "end": ISO }
 
-One toast per logical group per page; repeated Refresh does not spam.
+If closed or outside window, Enrollment actions are read-only with a gating banner.
 
-Evidence
+Grades (Instructor & Student)
 
-Produce all artifacts defined in acceptance-matrix.md.
+Instructor: list gradeable items GET /api/v1/grades?instructorId=me
+
+Assign/update grade: PUT /api/v1/grades/{enrollmentId} body { score, grade, feedback }
+
+Student: GET /api/v1/grades?studentId=me
+
+If any endpoint above does not exist in your backend, do not fake it. Disable UI affordances for that feature with clear tooltip.
+
+Per-page requirements (what the screenshots showed missing)
+Admin Dashboard
+
+System Health / Info / Config Meta tiles:
+
+On load, do a one-time capability probe. If actuator endpoints return 404/501/connection error, mark tiles Disabled with tooltip “Endpoint unavailable”. Do not show “Loading…” forever.
+
+Each tile still shows Refresh and Execute:
+
+Refresh: re-probe if enabled; if disabled, no-op + tooltip.
+
+Execute: if not meaningful, no-op + tooltip “No action available”.
+
+User Management & Course Management cards: Manage → navigates to their pages.
+
+Admin → Users
+
+Filters apply together: (role matches OR role not set) AND (approved matches OR approved not set) AND (active matches OR active not set) AND (q matches OR q empty).
+
+ROLE chip = opens mini-GUI to change role → on success, toast “User role updated” and re-fetch list.
+
+STATUS chip (“Approved · Active”) = opens mini-GUI with two toggles; PATCH the deltas; on success, update row live.
+
+Created “i” icon = open Audit mini-GUI; if endpoint missing, tooltip and disable.
+
+Search box filters client-side while also sets q server param on refresh (server authoritative).
+
+Export CSV: if server export fails, do client-side export of current filtered rows. Never toast an error if client export succeeds.
+
+Admin → Courses
+
+Create Course modal requires name, courseCode, credits, status, description. On success, append new row without full-page reload.
+
+STATUS pill hyperlinks to mini-GUI to change status; after success, update in place.
+
+Created “i” icon Audit mini-GUI (disable if unavailable).
+
+Page-level Refresh re-fetches list.
+
+If backend rejects with validation (4xx body), display inline validation hints in modal, not just a toast.
+
+Instructor Dashboard
+
+Cards: Courses, Enrollments, Gradebook, Quick Actions.
+
+Courses page title: “Courses” (not “My Courses”) but list is only courses the instructor teaches.
+
+Gradebook
+
+Table shows “No grades yet” empty state until records exist.
+
+Add Assign Grade CTA in each row where grade is missing → opens modal → PUT /api/v1/grades/{enrollmentId}. On success, show “pending” badge replaced by grade/score.
+
+Refresh should clear error toasts (de-dup) and re-fetch.
+
+Staff Dashboard
+
+Do not reuse Admin Dashboard under /staff. Keep a separate Staff Support page:
+
+Approvals tile → Staff Users view pre-filtered approved=false.
+
+Config tile: only reads /api/v1/config/meta. No actuator here unless allowed.
+
+Health tile: if actuator available, show; else error badge Unknown without spinners.
+
+Data Exports tile: navigates to users view with Export CSV affordance.
+
+Staff Users page has the same Users grid as Admin but no role change to ADMIN. Show tooltip “Admin role changes require Admin privileges.”
+
+Student surfaces
+
+Dashboard cards link to Courses/Grades/Enrollments with Refresh. No edit CTAs except Enrollment actions when window OPEN.
+
+Profile shows status; Student role chip not a deep link.
+
+Routing & Guards
+
+Brand link route by role: ADMIN→/admin, INSTRUCTOR→/instructor, STAFF→/staff, STUDENT/unknown→/dashboard, unauth→/login.
+
+Do not allow Staff/Instructor to access /admin/* routes; redirect to home and log a single info line (“route-guard: blocked path …”).
+
+Instructor/Staff Profile role chip deep-links to Users only for Admin/Staff.
+
+Stop rules (strict)
+
+If a protected request is sent without a Cookie header → STOP, cite the exact file+function that sent it, and fix the client.
+
+If any actuator call includes /api in its path → STOP and correct path.
+
+If a protected POST/PUT/PATCH returns 403 while a Cookie is present → STOP and document that method security/CSRF must be adjusted on the backend; do not add client hacks.
+
+Deliverables
+
+Implement all wiring above.
+
+Evidence bundle:
+
+Screenshots of each page: before vs after for tiles, filters, modals, and empty states.
+
+Console/network capture for at least one successful role change, status change, course create, grade assign (showing Cookie present and 2xx).
+
+One capture showing disabled actuator tiles with tooltip.
+
+CSV file saved from client export (attach).
+
+Grouped diff summary by file with a one-line rationale per file.

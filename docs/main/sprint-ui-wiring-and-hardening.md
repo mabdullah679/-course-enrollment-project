@@ -1,61 +1,37 @@
-A) Brand routing & guards
+Users page (Admin & Staff)
 
-Implement role routing; guard admin routes from staff/instructor.
+Filter bar produces one consolidated API call with all applied params. Update the grid with the response; apply client search on top while typing, then refresh server with q on submit.
 
-Accept: screenshots and blocked attempt.
+ROLE and STATUS chips open modals; submit PATCH; update the row on success; no full reload.
 
-B) Dashboards & per-tile controls
+Actions menu: Change Role, Change Status, View Profile. Staff cannot set role=ADMIN (disable + tooltip).
 
-Admin/Instructor/Staff/Student dashboards render.
+Courses
 
-Each card has its own Refresh; Execute performs the action (or scoped toast).
+Modal fields: required: name, courseCode, credits, status; optional: description.
 
-Accept: close-ups + Network.
+After create: close modal, optimistic row append; reconcile with server on next refresh.
 
-C) System tiles (meta/actuator)
+Status change: patch and update in place.
 
-Probe once; render values or Disabled.
+Gradebook (Instructor)
 
-Accept: probe captures + Disabled UI (if absent).
+Show pending badges where grade missing.
 
-D) Admin Users UX
+“Assign Grade” opens modal; PUT /api/v1/grades/{enrollmentId}; update row.
 
-ROLE hyperlink → Role mini GUI; STATUS hyperlink → Status mini GUI; Created Info → Audit mini GUI.
+Staff Support
 
-Actions menu: Change Role, Change Status, View Profile.
+“Approvals” deep-links to Users with approved=false.
 
-Filters: approved/active booleans; CSV export works.
+“Data Exports” deep-links to Users with Export CSV visible.
 
-Accept: modals/screenshots, filtered request, CSV.
+Actuator/Config tiles
 
-E) Courses UX
+One-time probe at mount; mark Disabled if not reachable; Refresh retries probe.
 
-Create Course includes code/credits/status/name/description; persists in H2.
+Toasts & errors
 
-Status hyperlink → mini GUI; Audit Info persists.
+Validation errors: inline under fields.
 
-Accept: submit + list + audit screenshots.
-
-F) Grades/Enrollments/Empty states
-
-Tables render headers + “No data yet”; no looping routes.
-
-Accept: screenshots.
-
-G) Profile hygiene & deep link
-
-One data source; no error toast.
-
-Role badge → Users with role prefilter.
-
-Accept: network and screenshots.
-
-H) Toast hygiene
-
-One toast per group; Refresh All doesn’t flood.
-
-Accept: before/after comparison.
-
-I) Regression pass
-
-Re-verify /api/v1/* + Cookie; actuator only if present; all acceptance items green.
+5xx: single toast in “api” group; no repeated storms on refresh.

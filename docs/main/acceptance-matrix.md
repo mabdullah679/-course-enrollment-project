@@ -1,18 +1,15 @@
-Evidence QA must capture
-Area	Expected	Evidence
-API usage & cookies	Protected calls hit /api/v1/* with Cookie present.	DevTools capture (GET + POST).
-Actuator routing	/actuator/health & /actuator/info used only if present; otherwise Disabled tiles.	Probe capture + Disabled UI.
-Capability probe	One-time probe; no endless spinners; no toasts.	Network (single probe) + UI.
-Brand link routing	Brand sends to /admin /instructor /staff /student or /login.	Screens per role/unauth.
-Route guards	Staff/Instructor blocked from admin pages.	Attempt screenshot → blocked.
-Per-tile Refresh/Execute	Each card has own Refresh; Execute performs or shows scoped toast.	Close-up + Network.
-Profile hygiene	Single data source; no error toast.	Network (one call) + UI.
-Profile deep link	Role badge → Users prefiltered by role.	Before/after screens.
-Users filters	Query uses approved/active booleans; results filter.	URL + list screen.
-Users CSV	text/csv download with credentials.	Network + file.
-Users mini GUIs	Role link → Role mini GUI; Status link → Status mini GUI; Created Info → Audit mini GUI; Actions includes Role/Status/View Profile.	Modal screens + persisted change.
-Course form	Create with name, code, credits, status, description; persists; appears in list.	Submit Network + list.
-Course mini GUI	Status change persists; audit visible.	Modal + Info.
-Empty states	Grades/Enrollments show headers + “No data yet.”	Screens.
-Student enrollment window	Edit only when enrollmentWindow=OPEN; else toast.	Two screens + Network.
-Toast hygiene	One per group; no storms.	Before/after.
+Area	Scenario	What we do	Evidence
+Admin Dashboard	Actuator missing	Tiles show Disabled w/ tooltip; no spinner	Screenshot of disabled tiles; console info log
+Admin Users	Combined filters	Role + Approved + Active + q applied together	Network request params; table reflects combined filters
+Admin Users	Change Role	ROLE chip → modal → PATCH → row updates	HAR showing 2xx with Cookie; screenshot of toast & updated chip
+Admin Users	Change Status	STATUS chip → modal → PATCH → row updates	HAR; screenshot
+Admin Users	CSV	Export works even if server missing → client CSV	Downloaded users_YYYYMMDD.csv attached
+Admin Courses	Create course	Modal validates, POST persists, row appends	HAR + post-create row visible
+Admin Courses	Status change	Pill → modal → PATCH → pill updates	HAR + screen
+Instructor Gradebook	Assign grade	Modal PUT persists; “pending” badge replaced	HAR + updated row
+Student Enrollments	Gating	When window closed: banner + read-only	Screenshot + request to /api/v1/config/meta
+Staff Support	Approvals	Page pre-filtered for approved=false	URL w/ query + grid reflects
+Profile	Single source	UI reads only from AuthContext; role badge deep-links for Admin/Staff only	Screens
+Routing	Guards	Staff/Instructor blocked from /admin/*	Console info log + redirect behavior
+
+Acceptance is green only if all evidence artifacts are provided and requests show Cookie present.

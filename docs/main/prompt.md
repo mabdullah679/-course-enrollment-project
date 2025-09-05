@@ -1,51 +1,47 @@
-Agent Entrypoint
+Read and obey only the docs in docs/main/* listed below. Frontend only. Localhost FE :3000 ↔ BE :8080. App APIs /api/v1/*. Actuator /actuator/* only. Use one shared HTTP client with credentials for every protected request. No hardcoded env — read runtime config from /api/v1/config/meta.
 
-Read and obey these files as the Single Source of Truth:
+Implement and wire, per the docs:
 
-instruction.md
+Admin/Staff/Instructor/Student dashboards & pages
 
-guardrails.md
+Users grid (combined filters, role/status modals, CSV fallback)
 
-acceptance-matrix.md
+Courses (create, status mini-GUI, audit icon policy)
 
-sprint-gui-auth.md
+Instructor Gradebook (assign grade)
 
-sprint-jwt-debug.md
+Enrollment window gating from config meta
 
-sprint-all-roles-gui-auth.md
+Capability probes with per-tile Refresh/Execute; no forever spinners
 
-sprint-ui-wiring-and-hardening.md
+Routing guards + brand link routing
 
-Runtime rules
+Empty states + toast de-dup + inline validation
 
-Keep watch shells running; open new terminals only.
+Stop rules: if a protected request lacks Cookie; if any actuator path includes /api; or if a protected POST/PUT/PATCH returns 403 while Cookie is present. In each case, STOP and cite the exact file+function and doc section you’re adhering to.
 
-Rebuild the frontend only if a config file changes.
+Deliver: working UI, evidence bundle from acceptance-matrix.md, and a grouped diff summary by file with one-line rationale. Work in small chunks: propose plan + file list, then apply.
 
-Localhost only: FE http://localhost:3000 ↔ BE http://localhost:8080.
+Docs to load as context:
 
-Routing and client
+docs/main/instruction.md
 
-App APIs: /api/v1/*
+docs/main/guardrails.md
 
-Actuator: /actuator/* only if actuator already exists
+docs/main/acceptance-matrix.md
 
-Use one shared HTTP client with credentials for every protected request.
+docs/main/sprint-all-roles-gui-auth.md
 
-Stop rules
+docs/main/sprint-ui-wiring-and-hardening.md
 
-Protected request without a Cookie header → STOP and fix.
+docs/main/sprint-jwt-debug.md
 
-Any actuator call containing /api → STOP and fix.
+docs/main/sprint-config-and-actuator.md
 
-Protected POST returns 403 with Cookie present → STOP (do not change backend); cite CSRF/method security.
+docs/main/sprint-admin-dashboard.md
 
-Deliverables
+docs/main/sprint-users-management.md
 
-Apply all tasks described in instruction.md and sprint docs.
+docs/main/sprint-courses-management.md
 
-No hardcoded environment values; if present, read config from /api/v1/config/meta.
-
-Produce acceptance evidence listed in acceptance-matrix.md.
-
-Provide a concise change summary grouped by file.
+docs/main/sprint-instructor-gradebook.md
