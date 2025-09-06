@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { extractErrorDetails } from './errorMapping'
 import { toast } from './toast'
+import { requestTracker } from './requestTracker'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -33,8 +34,33 @@ api.interceptors.request.use(
 
 // Response interceptor for error handling with friendly toast messages
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Track successful requests (dev only)
+    if (import.meta.env.DEV) {
+      const requestId = response.headers['x-request-id'] || response.config.headers['X-Request-Id'] || 'unknown'
+      requestTracker.addRequest({
+        id: requestId as string,
+        endpoint: response.config.url || 'unknown',
+        method: (response.config.method || 'GET').toUpperCase(),
+        status: response.status,
+        timestamp: new Date()
+      })
+    }
+    return response
+  },
   (error) => {
+    // Track failed requests (dev only)
+    if (import.meta.env.DEV && error.response) {
+      const requestId = error.response.headers['x-request-id'] || error.config?.headers['X-Request-Id'] || 'unknown'
+      requestTracker.addRequest({
+        id: requestId as string,
+        endpoint: error.config?.url || 'unknown',
+        method: (error.config?.method || 'GET').toUpperCase(),
+        status: error.response.status,
+        timestamp: new Date()
+      })
+    }
+
     // Extract structured error details
     const errorDetails = extractErrorDetails(error)
     

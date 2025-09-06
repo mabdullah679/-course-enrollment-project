@@ -45,6 +45,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/health", "/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/api/v1/_qa-sanity").permitAll() // QA sanity check (dev only)
                 .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll()
                 .requestMatchers("OPTIONS").permitAll()
                 .anyRequest().authenticated()

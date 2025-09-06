@@ -16,6 +16,7 @@ import AdminGrades from './pages/AdminGrades'
 import AdminConfiguration from './pages/AdminConfiguration'
 import AdminEnrollments from './pages/AdminEnrollments'
 import InstructorGradebook from './pages/InstructorGradebook'
+import QaConsole from './components/common/QaConsole'
 import { UserRole } from './types/api'
 
 function App() {
@@ -25,6 +26,8 @@ function App() {
         <AppRoutes />
       </Router>
       <Toaster position="top-right" />
+      {/* QA Console - only in development */}
+      {import.meta.env.DEV && <QaConsole />}
     </AuthProvider>
   )
 }
