@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRole } from '../types/api'
+import { authApi } from '../services/api'
 import { toast } from 'react-hot-toast'
 
 const Profile: React.FC = () => {
@@ -49,12 +50,19 @@ const Profile: React.FC = () => {
     }
     
     try {
-      // TODO: Implement actual password change API call
-      toast.success('Password change functionality will be implemented in next sprint')
-      setShowChangePasswordModal(false)
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    } catch (error) {
-      toast.error('Failed to change password')
+      const response = await authApi.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      })
+      
+      if (response.success) {
+        toast.success('Password changed successfully')
+        setShowChangePasswordModal(false)
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      }
+    } catch (error: any) {
+      console.error('Error changing password:', error)
+      toast.error(error.response?.data?.message || 'Failed to change password')
     }
   }
 
@@ -67,11 +75,20 @@ const Profile: React.FC = () => {
     }
     
     try {
-      // TODO: Implement actual profile update API call
-      toast.success('Profile update functionality will be implemented in next sprint')
-      setShowUpdateProfileModal(false)
-    } catch (error) {
-      toast.error('Failed to update profile')
+      const response = await authApi.updateProfile({
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        email: profileForm.email
+      })
+      
+      if (response.success) {
+        toast.success('Profile updated successfully')
+        await refreshUser() // Refresh to get updated user data
+        setShowUpdateProfileModal(false)
+      }
+    } catch (error: any) {
+      console.error('Error updating profile:', error)
+      toast.error(error.response?.data?.message || 'Failed to update profile')
     }
   }
 

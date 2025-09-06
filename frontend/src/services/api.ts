@@ -52,6 +52,16 @@ export const authApi = {
     const response = await api.post('/api/v1/auth/rotate-session')
     return response.data
   },
+
+  updateProfile: async (data: { firstName?: string; lastName?: string; email?: string }): Promise<ApiResponse<User>> => {
+    const response = await api.patch('/api/v1/me', data)
+    return response.data
+  },
+
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<ApiResponse<string>> => {
+    const response = await api.post('/api/v1/me/password', data)
+    return response.data
+  },
 }
 
 export const coursesApi = {
