@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { User } from '../types/api'
+import { User, UserRole } from '../types/api'
 import { authApi } from '../services/api'
 import { apiRequest } from '../services/api'
 
@@ -10,6 +10,9 @@ interface AuthContextType {
   isLoading: boolean
   refreshUser: () => Promise<void>
   broadcastRoleChange: () => void
+  hasRole: (role: UserRole) => boolean
+  isApproved: () => boolean
+  isActive: () => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -115,8 +118,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     channel.close()
   }
 
+  const hasRole = (role: UserRole): boolean => {
+    return user?.role === role
+  }
+
+  const isApproved = (): boolean => {
+    return user?.approved === true
+  }
+
+  const isActive = (): boolean => {
+    return user?.active === true
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, refreshUser, broadcastRoleChange }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isLoading, 
+      refreshUser, 
+      broadcastRoleChange,
+      hasRole,
+      isApproved,
+      isActive
+    }}>
       {children}
     </AuthContext.Provider>
   )
