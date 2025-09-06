@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { coursesApi, exportsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
-import { UserRole, Course, CourseCreateRequest, PaginatedResponse } from '../types/api'
+import { UserRole, Course, CourseCreateRequest } from '../types/api'
 import { useDebounce } from '../hooks/useDebounce'
 
 interface AuditEntry {
@@ -61,8 +61,8 @@ const AdminCourses: React.FC = () => {
       )
       
       if (response.success && response.data) {
-        const paginatedData = response.data as PaginatedResponse<Course>
-        let courseData = paginatedData.content || []
+        // Handle direct array response from backend
+        let courseData = response.data as Course[]
         
         // Apply search filter client-side if needed
         if (debouncedSearchTerm) {
@@ -78,8 +78,9 @@ const AdminCourses: React.FC = () => {
         } else {
           setCourses(prev => [...prev, ...courseData])
         }
-        setHasNext(paginatedData.hasNext)
-        setLastId(paginatedData.nextCursor)
+        // For now, backend returns all courses at once, so no pagination
+        setHasNext(false)
+        setLastId(undefined)
       }
     } catch (error: any) {
       console.error('Error fetching courses:', error)

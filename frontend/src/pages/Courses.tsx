@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Course, PaginatedResponse } from '../types/api'
+import { Course } from '../types/api'
 import { coursesApi, enrollmentsApi } from '../services/api'
 import { useDebounce } from '../hooks/useDebounce'
 import RefreshButton from '../components/common/RefreshButton'
@@ -33,8 +33,8 @@ const Courses: React.FC = () => {
       }
       
       if (response.success && response.data) {
-        const paginatedData = response.data as PaginatedResponse<Course>
-        let courseData = paginatedData.content || []
+        // Handle direct array response from backend
+        let courseData = response.data as Course[]
         
         // Filter by search term if provided
         if (debouncedSearchTerm) {
@@ -50,8 +50,9 @@ const Courses: React.FC = () => {
         } else {
           setCourses(prev => [...prev, ...courseData])
         }
-        setHasNext(paginatedData.hasNext)
-        setLastId(paginatedData.nextCursor)
+        // For now, backend returns all courses at once, so no pagination
+        setHasNext(false)
+        setLastId(undefined)
       }
     } catch (error: any) {
       console.error('Error fetching courses:', error)
