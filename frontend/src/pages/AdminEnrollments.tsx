@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Enrollment, PaginatedResponse } from '../types/api'
-import { enrollmentsApi } from '../services/api'
+import { Enrollment, PaginatedResponse, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
+import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
+
+interface EnrollmentCreateRequest {
+  studentId: number
+  courseId: number
+  type: EnrollmentType
+  status?: EnrollmentStatus
+}
 
 const AdminEnrollments: React.FC = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
@@ -15,6 +22,43 @@ const AdminEnrollments: React.FC = () => {
     studentId: '',
     upcomingOnly: false
   })
+
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newEnrollment, setNewEnrollment] = useState<EnrollmentCreateRequest>({
+    studentId: 0,
+    courseId: 0,
+    type: EnrollmentType.CREDIT,
+    status: EnrollmentStatus.PENDING
+  })
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [students, setStudents] = useState<User[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+
+  useEffect(() => {
+    fetchEnrollments(true)
+    fetchStudentsAndCourses()
+  }, [filters])
+
+  const fetchStudentsAndCourses = async () => {
+    try {
+      // Fetch students (users with STUDENT role)
+      const studentsResponse = await usersApi.getUsers(undefined, 100, undefined, 'STUDENT')
+      if (studentsResponse.success && studentsResponse.data) {
+        const userData = Array.isArray(studentsResponse.data) ? studentsResponse.data : studentsResponse.data.content || []
+        setStudents(userData)
+      }
+
+      // Fetch courses
+      const coursesResponse = await coursesApi.getCourses()
+      if (coursesResponse.success && coursesResponse.data) {
+        const courseData = Array.isArray(coursesResponse.data) ? coursesResponse.data : coursesResponse.data.content || []
+        setCourses(courseData)
+      }
+    } catch (error: any) {
+      console.error('Error fetching students and courses:', error)
+    }
+  }
 
   useEffect(() => {
     fetchEnrollments(true)
@@ -71,6 +115,72 @@ const AdminEnrollments: React.FC = () => {
 
   const handleRefresh = () => {
     fetchEnrollments(true)
+  }
+
+  const handleCreateEnrollment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Clear previous errors
+    setFieldErrors({})
+    
+    if (!newEnrollment.studentId || !newEnrollment.courseId) {
+      toast.error('Please select both student and course')
+      return
+    }
+
+    try {
+      // Check if enrollment already exists
+      const existingEnrollments = enrollments.filter(enrollment => 
+        enrollment.student.id === newEnrollment.studentId && 
+        enrollment.course.id === newEnrollment.courseId
+      )
+      
+      if (existingEnrollments.length > 0) {
+        toast.error('Student is already enrolled in this course')
+        return
+      }
+
+      const enrollmentData = {
+        studentId: newEnrollment.studentId,
+        courseId: newEnrollment.courseId,
+        type: newEnrollment.type,
+        status: newEnrollment.status
+      }
+      
+      const response = await enrollmentsApi.createEnrollment(enrollmentData)
+      
+      if (response.success) {
+        toast.success('Enrollment created successfully')
+        setShowCreateModal(false)
+        setNewEnrollment({
+          studentId: 0,
+          courseId: 0,
+          type: EnrollmentType.CREDIT,
+          status: EnrollmentStatus.PENDING
+        })
+        setFieldErrors({})
+        
+        if (response.data) {
+          setEnrollments(prev => [...prev, response.data])
+        } else {
+          fetchEnrollments(true)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error creating enrollment:', error)
+      
+      // Handle field-level validation errors (400 responses)
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+        return
+      }
+      
+      toast.error(error.response?.data?.message || 'Failed to create enrollment')
+    }
   }
 
   const handleUpdateEnrollmentStatus = async (enrollmentId: number, newStatus: string) => {
@@ -135,13 +245,20 @@ const AdminEnrollments: React.FC = () => {
             Manage student enrollments and course participation.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-3">
           <button
             type="button"
             onClick={handleRefresh}
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Refresh
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Add Enrollment
           </button>
         </div>
       </div>
@@ -317,6 +434,130 @@ const AdminEnrollments: React.FC = () => {
           >
             {loading ? 'Loading...' : 'Load More'}
           </button>
+        </div>
+      )}
+
+      {/* Create Enrollment Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-2/3 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Enrollment</h3>
+              <form onSubmit={handleCreateEnrollment}>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Student <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.studentId ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      value={newEnrollment.studentId}
+                      onChange={(e) => setNewEnrollment({ ...newEnrollment, studentId: parseInt(e.target.value) || 0 })}
+                      required
+                    >
+                      <option value={0}>Select Student</option>
+                      {students.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {student.firstName} {student.lastName} ({student.email})
+                        </option>
+                      ))}
+                    </select>
+                    {fieldErrors.studentId && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.studentId}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Course <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.courseId ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      value={newEnrollment.courseId}
+                      onChange={(e) => setNewEnrollment({ ...newEnrollment, courseId: parseInt(e.target.value) || 0 })}
+                      required
+                    >
+                      <option value={0}>Select Course</option>
+                      {courses.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.name} ({course.code})
+                        </option>
+                      ))}
+                    </select>
+                    {fieldErrors.courseId && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.courseId}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.type ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      value={newEnrollment.type}
+                      onChange={(e) => setNewEnrollment({ ...newEnrollment, type: e.target.value as EnrollmentType })}
+                      required
+                    >
+                      <option value={EnrollmentType.CREDIT}>Credit</option>
+                      <option value={EnrollmentType.AUDIT}>Audit</option>
+                    </select>
+                    {fieldErrors.type && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.type}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Status <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.status ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      value={newEnrollment.status}
+                      onChange={(e) => setNewEnrollment({ ...newEnrollment, status: e.target.value as EnrollmentStatus })}
+                      required
+                    >
+                      <option value={EnrollmentStatus.PENDING}>Pending</option>
+                      <option value={EnrollmentStatus.APPROVED}>Approved</option>
+                      <option value={EnrollmentStatus.ACTIVE}>Active</option>
+                    </select>
+                    {fieldErrors.status && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.status}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false)
+                      setNewEnrollment({
+                        studentId: 0,
+                        courseId: 0,
+                        type: EnrollmentType.CREDIT,
+                        status: EnrollmentStatus.PENDING
+                      })
+                      setFieldErrors({})
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Add Enrollment
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>

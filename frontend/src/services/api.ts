@@ -184,6 +184,11 @@ export const enrollmentsApi = {
     const response = await api.post('/api/v1/enrollments', { courseId })
     return response.data
   },
+
+  createEnrollment: async (data: { studentId: number; courseId: number; type: string; status?: string }) => {
+    const response = await api.post('/api/v1/enrollments', data)
+    return response.data
+  },
 }
 
 export const gradesApi = {
