@@ -40,7 +40,7 @@ public class UsersController {
      * Admin only access.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> getUsers(
             @RequestParam(required = false) String after,
             @RequestParam(defaultValue = "25") int size,
@@ -156,7 +156,7 @@ public class UsersController {
      * Admin only access.
      */
     @GetMapping("/{id}/audit")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<ApiResponse<Object>> getUserAuditHistory(
             @PathVariable Long id,
             @RequestParam(required = false) String after,
@@ -173,7 +173,7 @@ public class UsersController {
      * Self-readable for the owner, admin can read any.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('STUDENT') and #id == authentication.details)")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or (hasRole('STUDENT') and #id == authentication.details)")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {
         User user = userService.findById(id);
         UserResponse userResponse = userService.convertToResponse(user);

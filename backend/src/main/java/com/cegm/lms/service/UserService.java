@@ -306,4 +306,40 @@ public class UserService {
         String name = user.getFirstName() + " " + user.getLastName();
         return new StudentResponse(user.getId(), name, user.getEmail());
     }
+
+    /**
+     * Change user password with validation
+     */
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = findById(userId);
+        
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid current password");
+        }
+        
+        // Validate new password strength
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password is too weak. Must be at least 8 characters.");
+        }
+        
+        // Additional password strength checks
+        if (!newPassword.matches(".*[A-Z].*") || 
+            !newPassword.matches(".*[a-z].*") || 
+            !newPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Password is too weak. Must contain uppercase, lowercase, and numbers.");
+        }
+        
+        // Check if new password is same as current
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+        
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        auditLogService.log(userId, "UserService", "PASSWORD_CHANGED", 
+                           "User password changed successfully");
+    }
 }

@@ -8,12 +8,15 @@ import com.cegm.lms.repository.EnrollmentRepository;
 import com.cegm.lms.repository.GradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 /**
  * Service for managing grades with SSoT compliance.
@@ -134,5 +137,21 @@ public class GradeService {
     public Page<Grade> getGradesByCourseAndStudent(Long courseId, Long studentId, Pageable pageable) {
         // TODO: Implement proper course + student filtering
         return gradeRepository.findByStudentId(studentId, pageable);
+    }
+
+    public List<Grade> getGradesByStudentId(Long studentId, int size, Long after) {
+        // Simple implementation using existing method with PageRequest
+        PageRequest pageRequest = PageRequest.of(0, size, Sort.by("createdAt").descending());
+        Page<Grade> gradePage = getGradesByStudent(studentId, pageRequest);
+        List<Grade> grades = gradePage.getContent();
+        
+        // Apply 'after' cursor filtering if provided
+        if (after != null) {
+            grades = grades.stream()
+                .filter(grade -> grade.getId() > after)
+                .collect(java.util.stream.Collectors.toList());
+        }
+        
+        return grades;
     }
 }

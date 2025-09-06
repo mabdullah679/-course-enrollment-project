@@ -31,7 +31,7 @@ public class GradesController {
      * Implements SSoT requirements for grade views.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STAFF')")
     public ResponseEntity<ApiResponse<Page<Grade>>> getGrades(
             @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) Long studentId,
@@ -92,7 +92,7 @@ public class GradesController {
      * Get grade by ID.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or " +
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STAFF') or " +
                   "(hasRole('STUDENT') and @gradeService.isStudentGrade(#id, authentication.details))")
     public ResponseEntity<ApiResponse<Grade>> getGradeById(@PathVariable Long id) {
         Grade grade = gradeService.findById(id);

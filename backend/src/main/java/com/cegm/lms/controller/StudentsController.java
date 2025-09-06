@@ -19,7 +19,7 @@ public class StudentsController {
     private UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<List<StudentResponse>> getStudents(
             @RequestParam(defaultValue = "50") int size) {
         

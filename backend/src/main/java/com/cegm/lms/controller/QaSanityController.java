@@ -8,6 +8,7 @@ import com.cegm.lms.repository.GradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +41,7 @@ public class QaSanityController {
      * Returns current system state for verification
      */
     @GetMapping("/_qa-sanity")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<Map<String, Object>> qaSanityCheck() {
         Map<String, Object> response = new HashMap<>();
         

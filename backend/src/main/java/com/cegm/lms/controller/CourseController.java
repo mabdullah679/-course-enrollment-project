@@ -42,7 +42,7 @@ public class CourseController {
     }
 
     @GetMapping("/minimal")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<List<CourseMinimalResponse>> getCoursesMinimal(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "100") int size) {
@@ -52,7 +52,7 @@ public class CourseController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<ApiResponse<Page<Course>>> getAllCourses(Pageable pageable) {
         Page<Course> courses = courseService.findAllCourses(pageable);
         return ResponseEntity.ok(ApiResponse.success(courses));
@@ -65,7 +65,7 @@ public class CourseController {
     }
 
     @GetMapping("/{id}/audit")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<List<AuditResponse>> getCourseAudit(@PathVariable Long id) {
         List<AuditResponse> auditHistory = courseService.getCourseAuditHistory(id);
         return ResponseEntity.ok(auditHistory);
