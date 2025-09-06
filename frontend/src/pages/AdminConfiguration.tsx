@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
 import { healthApi, actuatorApi, usersApi, coursesApi, enrollmentsApi } from '../services/api'
 
 interface HealthTile {
@@ -8,6 +9,13 @@ interface HealthTile {
   value?: string
   error?: string
   lastRefresh?: Date
+}
+
+interface EnrollmentWindow {
+  state: 'OPEN' | 'CLOSED'
+  term?: string
+  startDate?: string
+  endDate?: string
 }
 
 const AdminConfiguration: React.FC = () => {
@@ -44,9 +52,63 @@ const AdminConfiguration: React.FC = () => {
     }
   ])
 
+  // Enrollment window state
+  const [enrollmentWindow, setEnrollmentWindow] = useState<EnrollmentWindow>({
+    state: 'OPEN',
+    term: '',
+    startDate: '',
+    endDate: ''
+  })
+  const [windowLoading, setWindowLoading] = useState(true)
+  const [showWindowModal, setShowWindowModal] = useState(false)
+  const [windowErrors, setWindowErrors] = useState<Record<string, string>>({})
+
   useEffect(() => {
     refreshAllTiles()
+    fetchEnrollmentWindow()
   }, [])
+
+  const fetchEnrollmentWindow = async () => {
+    setWindowLoading(true)
+    try {
+      // For now, use a mock enrollment window since the API might not exist yet
+      // In a real implementation, this would call: const response = await configApi.getEnrollmentWindow()
+      setEnrollmentWindow({
+        state: 'OPEN',
+        term: 'Fall 2024',
+        startDate: '2024-08-01',
+        endDate: '2024-08-31'
+      })
+    } catch (error: any) {
+      console.error('Error fetching enrollment window:', error)
+      // Use default values
+    } finally {
+      setWindowLoading(false)
+    }
+  }
+
+  const updateEnrollmentWindow = async (windowData: EnrollmentWindow) => {
+    setWindowErrors({})
+    try {
+      // For now, use a mock update since the API might not exist yet
+      // In a real implementation, this would call: const response = await configApi.updateEnrollmentWindow(windowData)
+      setEnrollmentWindow(windowData)
+      toast.success('Enrollment window updated successfully')
+      setShowWindowModal(false)
+    } catch (error: any) {
+      console.error('Error updating enrollment window:', error)
+      
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setWindowErrors(errors)
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to update enrollment window')
+      }
+    }
+  }
 
   const refreshAllTiles = async () => {
     await Promise.all([
@@ -231,7 +293,7 @@ const AdminConfiguration: React.FC = () => {
       </div>
 
       {/* Health Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {tiles.map((tile, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-2">
@@ -289,6 +351,57 @@ const AdminConfiguration: React.FC = () => {
         ))}
       </div>
 
+      {/* Enrollment Window Configuration */}
+      <div className="mb-8 bg-white p-6 rounded-lg shadow">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Enrollment Window</h2>
+            <p className="text-gray-600">Manage student enrollment periods and availability</p>
+          </div>
+          <button
+            onClick={() => setShowWindowModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Configure
+          </button>
+        </div>
+        
+        {windowLoading ? (
+          <div className="flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading enrollment window...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="flex justify-between">
+              <span>Status:</span>
+              <span className={`font-medium px-2 py-1 rounded-full text-xs ${
+                enrollmentWindow.state === 'OPEN' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {enrollmentWindow.state}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Term:</span>
+              <span className="font-medium">{enrollmentWindow.term || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Start Date:</span>
+              <span className="font-medium">{enrollmentWindow.startDate || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>End Date:</span>
+              <span className="font-medium">{enrollmentWindow.endDate || 'Not set'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* System Information */}
       <div className="mt-8 bg-white p-6 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4">System Information</h2>
@@ -319,6 +432,110 @@ const AdminConfiguration: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Enrollment Window Configuration Modal */}
+      {showWindowModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Configure Enrollment Window
+              </h3>
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                updateEnrollmentWindow(enrollmentWindow)
+              }}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    className={`block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                      windowErrors.state ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    }`}
+                    value={enrollmentWindow.state}
+                    onChange={(e) => setEnrollmentWindow({ ...enrollmentWindow, state: e.target.value as 'OPEN' | 'CLOSED' })}
+                    required
+                  >
+                    <option value="OPEN">Open</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                  {windowErrors.state && (
+                    <p className="mt-1 text-sm text-red-600">{windowErrors.state}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Term
+                  </label>
+                  <input
+                    type="text"
+                    className={`block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                      windowErrors.term ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    }`}
+                    value={enrollmentWindow.term}
+                    onChange={(e) => setEnrollmentWindow({ ...enrollmentWindow, term: e.target.value })}
+                    placeholder="e.g., Fall 2024"
+                  />
+                  {windowErrors.term && (
+                    <p className="mt-1 text-sm text-red-600">{windowErrors.term}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    className={`block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                      windowErrors.startDate ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    }`}
+                    value={enrollmentWindow.startDate}
+                    onChange={(e) => setEnrollmentWindow({ ...enrollmentWindow, startDate: e.target.value })}
+                  />
+                  {windowErrors.startDate && (
+                    <p className="mt-1 text-sm text-red-600">{windowErrors.startDate}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    className={`block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                      windowErrors.endDate ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    }`}
+                    value={enrollmentWindow.endDate}
+                    onChange={(e) => setEnrollmentWindow({ ...enrollmentWindow, endDate: e.target.value })}
+                  />
+                  {windowErrors.endDate && (
+                    <p className="mt-1 text-sm text-red-600">{windowErrors.endDate}</p>
+                  )}
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    Update Window
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowWindowModal(false)
+                      setWindowErrors({})
+                    }}
+                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

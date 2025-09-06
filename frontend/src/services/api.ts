@@ -223,6 +223,16 @@ export const configApi = {
     const response = await api.get('/api/v1/config/meta')
     return response.data
   },
+
+  getEnrollmentWindow: async () => {
+    const response = await api.get('/api/v1/enrollment-window')
+    return response.data
+  },
+
+  updateEnrollmentWindow: async (data: { state: string; term?: string; startDate?: string; endDate?: string }) => {
+    const response = await api.put('/api/v1/enrollment-window', data)
+    return response.data
+  },
 }
 
 export const healthApi = {
