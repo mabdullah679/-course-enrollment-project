@@ -26,21 +26,22 @@ const AdminUsers: React.FC = () => {
   const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [filters, setFilters] = useState({
     role: searchParams.get('role') || '',
-    status: searchParams.get('status') || ''
+    status: searchParams.get('status') || '',
+    approved: searchParams.get('approved') || '',
+    active: searchParams.get('active') || ''
   })
   
   // Modal states
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
-  const [showStatusModal, setShowStatusModal] = useState(false)
   const [showAuditModal, setShowAuditModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showActionsMenu, setShowActionsMenu] = useState<number | null>(null)
   
   // Form states
   const [newRole, setNewRole] = useState<UserRole>(UserRole.STUDENT)
-  const [newActiveStatus, setNewActiveStatus] = useState(true)
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
   const { refreshUser } = useAuth()
 
@@ -54,7 +55,9 @@ const AdminUsers: React.FC = () => {
         20,
         debouncedSearchTerm || undefined,
         filters.role || undefined,
-        filters.status || undefined
+        filters.status || undefined,
+        filters.approved ? (filters.approved === 'true') : undefined,
+        filters.active ? (filters.active === 'true') : undefined
       )
       
       if (response.success && response.data) {
@@ -124,6 +127,7 @@ const AdminUsers: React.FC = () => {
         ))
         setShowRoleModal(false)
         setSelectedUser(null)
+        setFieldErrors({})
         
         if (response.data?.sessionRotated) {
           await refreshUser()
@@ -131,29 +135,72 @@ const AdminUsers: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error changing user role:', error)
-      toast.error(error.response?.data?.message || 'Failed to change user role')
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        // Handle field-level errors
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to change user role')
+      }
     }
   }
 
-  const handleChangeStatus = async () => {
-    if (!selectedUser) return
-
+  const handleToggleApproved = async (user: User) => {
     try {
-      const response = await usersApi.changeUserStatus(selectedUser.id, undefined, newActiveStatus)
+      const newApproved = !user.approved
+      const response = await usersApi.changeUserStatus(user.id, newApproved, undefined)
       
       if (response.success) {
-        toast.success('User status updated successfully')
-        setUsers(prev => prev.map(user => 
-          user.id === selectedUser.id 
-            ? { ...user, active: newActiveStatus }
-            : user
+        toast.success(`User ${newApproved ? 'approved' : 'set to pending'} successfully`)
+        setUsers(prev => prev.map(u => 
+          u.id === user.id 
+            ? { ...u, approved: newApproved }
+            : u
         ))
-        setShowStatusModal(false)
-        setSelectedUser(null)
       }
     } catch (error: any) {
-      console.error('Error changing user status:', error)
-      toast.error(error.response?.data?.message || 'Failed to change user status')
+      console.error('Error toggling approved status:', error)
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        // Handle field-level errors
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to update approval status')
+      }
+    }
+  }
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      const newActive = !user.active
+      const response = await usersApi.changeUserStatus(user.id, undefined, newActive)
+      
+      if (response.success) {
+        toast.success(`User ${newActive ? 'activated' : 'deactivated'} successfully`)
+        setUsers(prev => prev.map(u => 
+          u.id === user.id 
+            ? { ...u, active: newActive }
+            : u
+        ))
+      }
+    } catch (error: any) {
+      console.error('Error toggling active status:', error)
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        // Handle field-level errors
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to update active status')
+      }
     }
   }
 
@@ -180,12 +227,6 @@ const AdminUsers: React.FC = () => {
     setSelectedUser(user)
     setNewRole(user.role)
     setShowRoleModal(true)
-  }
-
-  const handleStatusClick = (user: User) => {
-    setSelectedUser(user)
-    setNewActiveStatus(user.active)
-    setShowStatusModal(true)
   }
 
   const handleRoleBadgeClick = (role: UserRole) => {
@@ -252,12 +293,15 @@ const AdminUsers: React.FC = () => {
   }
 
   const getStatusColor = (user: User) => {
-    if (user.approved && user.active) {
-      return 'bg-green-100 text-green-800'
-    } else if (user.approved && !user.active) {
-      return 'bg-yellow-100 text-yellow-800'
-    } else {
-      return 'bg-red-100 text-red-800'
+    switch (user.status) {
+      case UserStatus.APPROVED:
+        return 'bg-green-100 text-green-800'
+      case UserStatus.PENDING:
+        return 'bg-yellow-100 text-yellow-800'
+      case UserStatus.SUSPENDED:
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -282,7 +326,7 @@ const AdminUsers: React.FC = () => {
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="md:col-span-2">
             <form onSubmit={handleSearch}>
               <label className="block text-sm font-medium text-gray-700">Search Users</label>
@@ -330,6 +374,30 @@ const AdminUsers: React.FC = () => {
               <option value="SUSPENDED">Suspended</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Approved</label>
+            <select
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              value={filters.approved}
+              onChange={(e) => handleFilterChange('approved', e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="true">Approved</option>
+              <option value="false">Pending</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Active</label>
+            <select
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              value={filters.active}
+              onChange={(e) => handleFilterChange('active', e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -345,6 +413,12 @@ const AdminUsers: React.FC = () => {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Approved
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Active
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Created
@@ -384,11 +458,28 @@ const AdminUsers: React.FC = () => {
                   </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user)}`}>
+                    {user.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   <button
-                    onClick={() => handleStatusClick(user)}
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(user)}`}
+                    onClick={() => handleToggleApproved(user)}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 ${
+                      user.approved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
                   >
-                    {user.approved ? 'Approved' : 'Pending'} • {user.active ? 'Active' : 'Inactive'}
+                    {user.approved ? 'Approved' : 'Pending'}
+                  </button>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => handleToggleActive(user)}
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 ${
+                      user.active ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {user.active ? 'Active' : 'Inactive'}
                   </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -427,15 +518,6 @@ const AdminUsers: React.FC = () => {
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                           >
                             Change Role
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleStatusClick(user)
-                              setShowActionsMenu(null)
-                            }}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                          >
-                            Change Status
                           </button>
                           <button
                             onClick={() => {
@@ -504,7 +586,9 @@ const AdminUsers: React.FC = () => {
                   New Role
                 </label>
                 <select
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                    fieldErrors.role ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  }`}
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
                 >
@@ -513,6 +597,9 @@ const AdminUsers: React.FC = () => {
                   <option value={UserRole.STAFF}>Staff</option>
                   <option value={UserRole.ADMIN}>Admin</option>
                 </select>
+                {fieldErrors.role && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.role}</p>
+                )}
               </div>
               <div className="flex space-x-3">
                 <button
@@ -525,49 +612,7 @@ const AdminUsers: React.FC = () => {
                   onClick={() => {
                     setShowRoleModal(false)
                     setSelectedUser(null)
-                  }}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Status Change Modal */}
-      {showStatusModal && selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Change Status for {selectedUser.firstName} {selectedUser.lastName}
-              </h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Active Status
-                </label>
-                <select
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  value={newActiveStatus.toString()}
-                  onChange={(e) => setNewActiveStatus(e.target.value === 'true')}
-                >
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
-                </select>
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleChangeStatus}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                >
-                  Change Status
-                </button>
-                <button
-                  onClick={() => {
-                    setShowStatusModal(false)
-                    setSelectedUser(null)
+                    setFieldErrors({})
                   }}
                   className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
                 >
@@ -690,7 +735,23 @@ const AdminUsers: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
                     <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedUser)}`}>
-                      {selectedUser.approved ? 'Approved' : 'Pending'} • {selectedUser.active ? 'Active' : 'Inactive'}
+                      {selectedUser.status}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Approved</label>
+                    <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedUser.approved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedUser.approved ? 'Approved' : 'Pending'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Active</label>
+                    <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedUser.active ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedUser.active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                   <div>

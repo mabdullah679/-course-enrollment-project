@@ -108,12 +108,14 @@ export const coursesApi = {
 }
 
 export const usersApi = {
-  getUsers: async (after?: number, size = 20, q?: string, role?: string, status?: string) => {
+  getUsers: async (after?: number, size = 20, q?: string, role?: string, status?: string, approved?: boolean, active?: boolean) => {
     let url = `/api/v1/users?size=${size}`
     if (after) url += `&after=${after}`
     if (q) url += `&q=${encodeURIComponent(q)}`
     if (role) url += `&role=${role}`
     if (status) url += `&status=${status}`
+    if (approved !== undefined) url += `&approved=${approved}`
+    if (active !== undefined) url += `&active=${active}`
     const response = await api.get(url)
     return response.data
   },
