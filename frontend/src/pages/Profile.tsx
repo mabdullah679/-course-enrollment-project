@@ -2,10 +2,27 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRole } from '../types/api'
+import { toast } from 'react-hot-toast'
 
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth()
   const [refreshing, setRefreshing] = useState(false)
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [showUpdateProfileModal, setShowUpdateProfileModal] = useState(false)
+  
+  // Change Password form state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  
+  // Update Profile form state
+  const [profileForm, setProfileForm] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || ''
+  })
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -15,6 +32,46 @@ const Profile: React.FC = () => {
       console.error('Failed to refresh profile:', error)
     } finally {
       setRefreshing(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match')
+      return
+    }
+    
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long')
+      return
+    }
+    
+    try {
+      // TODO: Implement actual password change API call
+      toast.success('Password change functionality will be implemented in next sprint')
+      setShowChangePasswordModal(false)
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (error) {
+      toast.error('Failed to change password')
+    }
+  }
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!profileForm.firstName.trim() || !profileForm.lastName.trim() || !profileForm.email.trim()) {
+      toast.error('All fields are required')
+      return
+    }
+    
+    try {
+      // TODO: Implement actual profile update API call
+      toast.success('Profile update functionality will be implemented in next sprint')
+      setShowUpdateProfileModal(false)
+    } catch (error) {
+      toast.error('Failed to update profile')
     }
   }
 
@@ -128,11 +185,15 @@ const Profile: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
                     <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      user.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                      user.approved && user.active ? 'bg-green-100 text-green-800' :
+                      user.approved && !user.active ? 'bg-yellow-100 text-yellow-800' :
+                      !user.approved ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
-                      {user.status}
+                      {user.approved && user.active ? 'APPROVED & ACTIVE' :
+                       user.approved && !user.active ? 'APPROVED & INACTIVE' :
+                       !user.approved && user.active ? 'PENDING APPROVAL' :
+                       'PENDING APPROVAL'}
                     </span>
                   </div>
                   <div>
@@ -157,22 +218,144 @@ const Profile: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Account Settings</h3>
               <div className="flex space-x-4">
                 <button
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  disabled
+                  onClick={() => setShowChangePasswordModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Change Password (Coming Soon)
+                  Change Password
                 </button>
                 <button
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  disabled
+                  onClick={() => setShowUpdateProfileModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Update Profile (Coming Soon)
+                  Update Profile
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
+              <form onSubmit={handleChangePassword}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Current Password</label>
+                    <input
+                      type="password"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">New Password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePasswordModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    Change Password
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Update Profile Modal */}
+      {showUpdateProfileModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Update Profile</h3>
+              <form onSubmit={handleUpdateProfile}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={profileForm.firstName}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={profileForm.lastName}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowUpdateProfileModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    Update Profile
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
