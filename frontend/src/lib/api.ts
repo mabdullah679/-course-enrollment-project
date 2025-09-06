@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { extractErrorDetails } from './errorMapping'
-import { toast } from './toast'
+import { toastError } from './toast'
 import { requestTracker } from './requestTracker'
 
 const API_BASE_URL = 'http://localhost:8080'
@@ -84,9 +84,9 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
     
-    // Show friendly toast for other errors
+    // Show friendly toast for other errors using error code-based deduplication
     if (errorDetails.message) {
-      toast.error(errorDetails.message)
+      toastError(errorDetails.message, errorDetails.code, errorDetails.requestId)
     }
     
     return Promise.reject(error)
