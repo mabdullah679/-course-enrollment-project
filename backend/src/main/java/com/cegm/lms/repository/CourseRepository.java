@@ -24,4 +24,17 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Page<Course> findByStatusNot(CourseStatus status, Pageable pageable);
     
     List<Course> findByStatusAndNameContainingIgnoreCase(CourseStatus status, String name);
+    
+    // Count methods for metrics
+    long countByStatus(CourseStatus status);
+    
+    // Overloaded version for string parameter (for backward compatibility)
+    default long countByStatus(String status) {
+        try {
+            CourseStatus courseStatus = CourseStatus.valueOf(status.toUpperCase());
+            return countByStatus(courseStatus);
+        } catch (IllegalArgumentException e) {
+            return 0;
+        }
+    }
 }

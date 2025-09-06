@@ -34,6 +34,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     Page<User> findByRole(UserRole role, Pageable pageable);
     
+    // Count methods for metrics
+    long countByApprovedFalse();
+    
+    long countByActiveTrue();
+    
+    long countByRole(UserRole role);
+    
     @Query("SELECT u FROM User u WHERE u.approved = true AND u.active = true")
     Page<User> findActiveApprovedUsers(Pageable pageable);
     

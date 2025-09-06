@@ -252,6 +252,33 @@ export const healthApi = {
   },
 }
 
+export const metricsApi = {
+  getUsersCount: async () => {
+    const response = await api.get('/api/v1/metrics/users')
+    return response.data
+  },
+
+  getCoursesCount: async () => {
+    const response = await api.get('/api/v1/metrics/courses')
+    return response.data
+  },
+
+  getEnrollmentsCount: async () => {
+    const response = await api.get('/api/v1/metrics/enrollments')
+    return response.data
+  },
+
+  getGradesCount: async () => {
+    const response = await api.get('/api/v1/metrics/grades')
+    return response.data
+  },
+
+  getDashboardMetrics: async () => {
+    const response = await api.get('/api/v1/metrics/dashboard')
+    return response.data
+  },
+}
+
 export const actuatorApi = {
   getHealth: async () => {
     const response = await api.get('/actuator/health')

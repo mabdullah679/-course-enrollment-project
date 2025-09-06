@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { extractErrorDetails } from './errorMapping'
+import { toast } from './toast'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -29,15 +31,38 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor for error handling
+// Response interceptor for error handling with friendly toast messages
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Extract structured error details
+    const errorDetails = extractErrorDetails(error)
+    
+    // Handle 401 specially - clear session and redirect
     if (error.response?.status === 401) {
-      // Clear stored user data and redirect to login
       sessionStorage.removeItem('user')
+      // Broadcast auth state change to other tabs
+      if (typeof BroadcastChannel !== 'undefined') {
+        const authChannel = new BroadcastChannel('auth')
+        authChannel.postMessage({ type: 'logout', reason: 'unauthorized' })
+        authChannel.close()
+      }
       window.location.href = '/login'
+      return Promise.reject(error)
     }
+    
+    // Don't show toasts for validation errors with field details 
+    // (those should be handled by form components)
+    if (errorDetails.shouldShowField && errorDetails.field) {
+      // Let the component handle field-specific validation display
+      return Promise.reject(error)
+    }
+    
+    // Show friendly toast for other errors
+    if (errorDetails.message) {
+      toast.error(errorDetails.message)
+    }
+    
     return Promise.reject(error)
   }
 )

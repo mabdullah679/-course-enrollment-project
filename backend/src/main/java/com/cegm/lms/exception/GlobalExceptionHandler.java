@@ -1,10 +1,12 @@
 package com.cegm.lms.exception;
 
 import com.cegm.lms.dto.response.ApiResponse;
+import com.cegm.lms.dto.response.ErrorResponse;
 import com.cegm.lms.service.AuditLogService;
 import com.cegm.lms.service.SsotConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -31,78 +34,78 @@ public class GlobalExceptionHandler {
     private AuditLogService auditLogService;
 
     @ExceptionHandler(DuplicateUserException.class)
-    public ResponseEntity<ApiResponse<Object>> handleDuplicateUser(DuplicateUserException ex) {
+    public ResponseEntity<ErrorResponse> handleDuplicateUser(DuplicateUserException ex) {
         logError("DuplicateUserException", ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.duplicateResource(ex.getMessage()));
     }
 
     @ExceptionHandler(DuplicateEnrollmentException.class)
-    public ResponseEntity<ApiResponse<Object>> handleDuplicateEnrollment(DuplicateEnrollmentException ex) {
+    public ResponseEntity<ErrorResponse> handleDuplicateEnrollment(DuplicateEnrollmentException ex) {
         logError("DuplicateEnrollmentException", ex);
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.alreadyEnrolled(ex.getMessage()));
     }
 
     @ExceptionHandler(CourseNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleCourseNotFound(CourseNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleCourseNotFound(CourseNotFoundException ex) {
         logError("CourseNotFoundException", ex);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.notFound(ex.getMessage()));
     }
 
     @ExceptionHandler(EnrollmentNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleEnrollmentNotFound(EnrollmentNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleEnrollmentNotFound(EnrollmentNotFoundException ex) {
         logError("EnrollmentNotFoundException", ex);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.notFound(ex.getMessage()));
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleUserNotFound(UserNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         logError("UserNotFoundException", ex);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.notFound(ex.getMessage()));
     }
 
     @ExceptionHandler(GradeNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleGradeNotFound(GradeNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleGradeNotFound(GradeNotFoundException ex) {
         logError("GradeNotFoundException", ex);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.notFound(ex.getMessage()));
     }
 
     @ExceptionHandler(EnrollmentWindowClosedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleEnrollmentWindowClosed(EnrollmentWindowClosedException ex) {
+    public ResponseEntity<ErrorResponse> handleEnrollmentWindowClosed(EnrollmentWindowClosedException ex) {
         logError("EnrollmentWindowClosedException", ex);
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.enrollmentWindowClosed(ex.getMessage()));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleUnauthorized(UnauthorizedException ex) {
+    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
         logError("UnauthorizedException", ex);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.permissionDenied(ex.getMessage()));
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ApiResponse<Object>> handleForbidden(ForbiddenException ex) {
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
         logError("ForbiddenException", ex);
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(getStudentErrorMessage(), ex.getErrorCode()));
+                .body(ErrorResponse.permissionDenied(ex.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleAccessDenied(AccessDeniedException ex) {
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         logError("AccessDeniedException", ex);
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(getStudentErrorMessage(), "403"));
+                .body(ErrorResponse.permissionDenied("Access denied"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        String requestId = getRequestId();
+        String requestId = getOrCreateRequestId();
         Map<String, Object> response = new HashMap<>();
         Map<String, Object> errors = new HashMap<>();
         
@@ -126,40 +129,62 @@ public class GlobalExceptionHandler {
         }
         
         logger.error("Validation error [Request-ID: {}]: {}", requestId, errors);
+        
+        try {
+            auditLogService.logError(null, "ValidationService", "VALIDATION_ERROR", 
+                "Field validation failed: " + errors.keySet());
+        } catch (Exception e) {
+            logger.error("Failed to create audit log for validation error", e);
+        }
+        
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
-        String requestId = getRequestId();
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        String requestId = getOrCreateRequestId();
         logError("UnhandledException", ex);
         
-        ApiResponse<Object> response = ApiResponse.error(getStudentErrorMessage(), "500");
-        if (requestId != null) {
-            // Add requestId to response for support tracking
-            Map<String, Object> data = new HashMap<>();
-            data.put("requestId", requestId);
-            response.setData(data);
-        }
+        ErrorResponse errorResponse = ErrorResponse.serverError(
+            "An unexpected error occurred. Please contact support.", 
+            requestId
+        );
         
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
-    private String getRequestId() {
+    private String getOrCreateRequestId() {
         try {
+            // Try to get from MDC first
+            String requestId = MDC.get("requestId");
+            if (requestId != null) {
+                return requestId;
+            }
+            
+            // Try to get from request attributes
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes != null) {
                 HttpServletRequest request = attributes.getRequest();
-                return (String) request.getAttribute("X-Request-Id");
+                requestId = (String) request.getAttribute("X-Request-Id");
+                if (requestId != null) {
+                    return requestId;
+                }
+                
+                // Generate new request ID if none exists
+                requestId = UUID.randomUUID().toString();
+                request.setAttribute("X-Request-Id", requestId);
+                MDC.put("requestId", requestId);
+                return requestId;
             }
         } catch (Exception e) {
-            // Ignore if we can't get request ID
+            // Ignore if we can't get/create request ID
         }
-        return null;
+        return UUID.randomUUID().toString();
     }
 
     private void logError(String exceptionType, Exception ex) {
-        logger.error("{}: {}", exceptionType, ex.getMessage(), ex);
+        String requestId = getOrCreateRequestId();
+        logger.error("{} [Request-ID: {}]: {}", exceptionType, requestId, ex.getMessage(), ex);
         
         try {
             // Create audit log for error tracking

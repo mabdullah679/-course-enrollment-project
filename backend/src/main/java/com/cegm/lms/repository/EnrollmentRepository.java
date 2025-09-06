@@ -35,6 +35,19 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     
     List<Enrollment> findByCourseIdAndStatus(Long courseId, EnrollmentStatus status);
     
+    // Count methods for metrics
+    long countByStatus(EnrollmentStatus status);
+    
+    // Overloaded version for string parameter (for backward compatibility)
+    default long countByStatus(String status) {
+        try {
+            EnrollmentStatus enrollmentStatus = EnrollmentStatus.valueOf(status.toUpperCase());
+            return countByStatus(enrollmentStatus);
+        } catch (IllegalArgumentException e) {
+            return 0;
+        }
+    }
+    
     @Query("SELECT e FROM Enrollment e WHERE e.student.id = :studentId AND e.status = 'ACTIVE'")
     List<Enrollment> findActiveEnrollmentsByStudentId(@Param("studentId") Long studentId);
     
