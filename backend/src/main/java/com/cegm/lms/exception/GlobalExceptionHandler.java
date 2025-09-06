@@ -68,6 +68,15 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.notFound(ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransition(InvalidTransitionException ex) {
+        logError("InvalidTransitionException", ex);
+        String requestId = UUID.randomUUID().toString();
+        ErrorResponse error = new ErrorResponse("INVALID_TRANSITION", ex.getMessage());
+        error.setRequestId(requestId);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
     @ExceptionHandler(GradeNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleGradeNotFound(GradeNotFoundException ex) {
         logError("GradeNotFoundException", ex);

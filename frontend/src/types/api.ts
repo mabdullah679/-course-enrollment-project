@@ -17,7 +17,7 @@ export enum EnrollmentStatus {
   APPROVED = 'APPROVED', 
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
-  DROPPED = 'DROPPED'
+  REJECTED = 'REJECTED'
 }
 
 export enum EnrollmentType {
@@ -44,7 +44,7 @@ export interface Course {
   name: string
   description?: string
   credits: number
-  status: 'ACTIVE' | 'ARCHIVED' | 'CLOSED'
+  status: 'ACTIVE' | 'INACTIVE' | 'CLOSED'
   createdAt: string
 }
 

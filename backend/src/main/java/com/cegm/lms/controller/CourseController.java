@@ -2,6 +2,8 @@ package com.cegm.lms.controller;
 
 import com.cegm.lms.dto.request.CourseCreateRequest;
 import com.cegm.lms.dto.response.ApiResponse;
+import com.cegm.lms.dto.response.AuditResponse;
+import com.cegm.lms.dto.response.CourseResponse;
 import com.cegm.lms.model.Course;
 import com.cegm.lms.service.CourseService;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/courses")
@@ -23,22 +26,18 @@ public class CourseController {
     private CourseService courseService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Course>>> getCourses(
-            @RequestParam(required = false) Long ownerId,
-            @RequestParam(required = false) String term,
+    public ResponseEntity<List<CourseResponse>> getCourses(
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(required = false) String term,
+            @RequestParam(required = false) Long ownerId,
+            @RequestParam(required = false) Boolean assignable,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long after) {
         
-        List<Course> courses;
-        if (ownerId != null || term != null || status != null) {
-            // Apply filters - for now just return active courses
-            // TODO: Implement filtering by owner, term, status
-            courses = courseService.findActiveCourses();
-        } else {
-            courses = courseService.findActiveCourses();
-        }
-        return ResponseEntity.ok(ApiResponse.success(courses));
+        List<CourseResponse> courses = courseService.findCoursesWithFilters(
+            q, status, term, ownerId, assignable, size, after);
+        return ResponseEntity.ok(courses);
     }
 
     @GetMapping("/all")
@@ -52,6 +51,22 @@ public class CourseController {
     public ResponseEntity<ApiResponse<Course>> getCourseById(@PathVariable Long id) {
         Course course = courseService.findById(id);
         return ResponseEntity.ok(ApiResponse.success(course));
+    }
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AuditResponse>> getCourseAudit(@PathVariable Long id) {
+        List<AuditResponse> auditHistory = courseService.getCourseAuditHistory(id);
+        return ResponseEntity.ok(auditHistory);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseResponse> updateCourseStatus(@PathVariable Long id, 
+                                                           @RequestBody Map<String, String> request) {
+        String status = request.get("status");
+        CourseResponse course = courseService.updateCourseStatus(id, status);
+        return ResponseEntity.ok(course);
     }
 
     @GetMapping("/code/{code}")
@@ -85,6 +100,6 @@ public class CourseController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Course>> archiveCourse(@PathVariable Long id) {
         Course course = courseService.archiveCourse(id);
-        return ResponseEntity.ok(ApiResponse.success("Course archived successfully", course));
+        return ResponseEntity.ok(ApiResponse.success("Course inactivated successfully", course));
     }
 }

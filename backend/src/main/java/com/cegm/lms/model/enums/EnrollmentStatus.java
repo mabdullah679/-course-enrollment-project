@@ -6,5 +6,5 @@ package com.cegm.lms.model.enums;
  * PENDING -> REJECTED
  */
 public enum EnrollmentStatus {
-    PENDING, APPROVED, ACTIVE, COMPLETED, REJECTED, DROPPED
+    PENDING, APPROVED, ACTIVE, COMPLETED, REJECTED
 }

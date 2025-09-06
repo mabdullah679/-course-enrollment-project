@@ -107,10 +107,9 @@ public class EnrollmentService {
             case APPROVED:
                 return to == EnrollmentStatus.ACTIVE;
             case ACTIVE:
-                return to == EnrollmentStatus.COMPLETED || to == EnrollmentStatus.DROPPED;
+                return to == EnrollmentStatus.COMPLETED;
             case COMPLETED:
             case REJECTED:
-            case DROPPED:
                 return false; // Terminal states
             default:
                 return false;

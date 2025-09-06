@@ -34,6 +34,10 @@ public class Course {
     @NotNull
     private CourseStatus status = CourseStatus.ACTIVE;
 
+    private String term;
+
+    private Long ownerId;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -71,6 +75,12 @@ public class Course {
 
     public CourseStatus getStatus() { return status; }
     public void setStatus(CourseStatus status) { this.status = status; }
+
+    public String getTerm() { return term; }
+    public void setTerm(String term) { this.term = term; }
+
+    public Long getOwnerId() { return ownerId; }
+    public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

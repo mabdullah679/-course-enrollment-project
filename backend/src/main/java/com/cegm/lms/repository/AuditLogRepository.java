@@ -32,4 +32,6 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     
     @Query("SELECT a FROM AuditLog a WHERE a.userId = :userId AND a.errorCode IS NOT NULL")
     List<AuditLog> findErrorLogsByUserId(@Param("userId") Long userId);
+    
+    List<AuditLog> findByDetailsContainingOrderByTimestampDesc(String details);
 }
