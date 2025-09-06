@@ -43,6 +43,7 @@ const AdminCourses: React.FC = () => {
   })
   const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'CLOSED'>('ACTIVE')
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchCourses(true)
@@ -93,6 +94,9 @@ const AdminCourses: React.FC = () => {
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Clear previous errors
+    setFieldErrors({})
+    
     if (!newCourse.name.trim() || !newCourse.courseCode.trim() || !newCourse.credits) {
       toast.error('Please fill in all required fields')
       return
@@ -111,6 +115,7 @@ const AdminCourses: React.FC = () => {
           status: 'ACTIVE',
           description: ''
         })
+        setFieldErrors({})
         // Append to list instead of full refresh
         if (response.data) {
           setCourses(prev => [...prev, response.data])
@@ -120,6 +125,16 @@ const AdminCourses: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error creating course:', error)
+      
+      // Handle field-level validation errors (400 responses)
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+        return
+      }
       
       // Check for 403 with Cookie present (CSRF issue)
       if (error.response?.status === 403) {
@@ -418,11 +433,16 @@ const AdminCourses: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
                       value={newCourse.name}
                       onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
                       required
                     />
+                    {fieldErrors.name && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -430,11 +450,16 @@ const AdminCourses: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.courseCode || fieldErrors.code ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
                       value={newCourse.courseCode}
                       onChange={(e) => setNewCourse({ ...newCourse, courseCode: e.target.value })}
                       required
                     />
+                    {(fieldErrors.courseCode || fieldErrors.code) && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.courseCode || fieldErrors.code}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -444,18 +469,25 @@ const AdminCourses: React.FC = () => {
                       type="number"
                       min="1"
                       max="6"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.credits ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
                       value={newCourse.credits}
                       onChange={(e) => setNewCourse({ ...newCourse, credits: parseInt(e.target.value) || 0 })}
                       required
                     />
+                    {fieldErrors.credits && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.credits}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Status <span className="text-red-500">*</span>
                     </label>
                     <select
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                        fieldErrors.status ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
                       value={newCourse.status}
                       onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value as 'ACTIVE' | 'ARCHIVED' | 'CLOSED' })}
                       required
@@ -464,16 +496,24 @@ const AdminCourses: React.FC = () => {
                       <option value="ARCHIVED">Archived</option>
                       <option value="CLOSED">Closed</option>
                     </select>
+                    {fieldErrors.status && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.status}</p>
+                    )}
                   </div>
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700">Description</label>
                   <textarea
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
+                      fieldErrors.description ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                    }`}
                     rows={3}
                     value={newCourse.description}
                     onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                   />
+                  {fieldErrors.description && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.description}</p>
+                  )}
                 </div>
                 <div className="flex justify-end space-x-3">
                   <button
@@ -487,6 +527,7 @@ const AdminCourses: React.FC = () => {
                         status: 'ACTIVE',
                         description: ''
                       })
+                      setFieldErrors({})
                     }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   >

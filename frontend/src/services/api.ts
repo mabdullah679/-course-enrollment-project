@@ -82,7 +82,14 @@ export const coursesApi = {
   },
 
   createCourse: async (data: { name: string; courseCode: string; credits: number; status: string; description?: string }) => {
-    const response = await api.post('/api/v1/courses', data)
+    // Map frontend courseCode to backend code field
+    const backendData = {
+      name: data.name,
+      code: data.courseCode,
+      credits: data.credits,
+      description: data.description
+    }
+    const response = await api.post('/api/v1/courses', backendData)
     return response.data
   },
 
