@@ -97,7 +97,7 @@ public class DataSeeder implements CommandLineRunner {
         userRepository.save(staffUser);
         logger.info("Created staff user: staff@cegm.edu");
         
-        // Create sample student (pending approval)
+        // Create sample student (approved for testing)
         User studentUser = new User();
         studentUser.setUsername("student1");
         studentUser.setEmail("student@cegm.edu");
@@ -105,12 +105,12 @@ public class DataSeeder implements CommandLineRunner {
         studentUser.setLastName("Student");
         studentUser.setPassword(passwordEncoder.encode("student123"));
         studentUser.setRole(UserRole.STUDENT);
-        studentUser.setApproved(false); // Pending approval
+        studentUser.setApproved(true); // Approved for testing
         studentUser.setActive(true);
         studentUser.setCreatedAt(LocalDateTime.now());
         
         userRepository.save(studentUser);
-        logger.info("Created pending student user: student@cegm.edu");
+        logger.info("Created approved student user: student@cegm.edu");
     }
     
     private void seedCourses() {
