@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { configApi, actuatorApi, metricsApi } from '../services/api'
+import { configApi, metricsApi } from '../services/api'
 
 interface CapabilityStatus {
   available: boolean
@@ -81,35 +81,13 @@ const AdminDashboard: React.FC = () => {
       }))
     }
 
-    // Probe actuator health
-    try {
-      const healthResponse = await actuatorApi.getHealth()
-      setCapabilities(prev => ({
-        ...prev,
-        actuatorHealth: { available: true, probed: true, data: healthResponse }
-      }))
-    } catch (error: any) {
-      console.info('Actuator health endpoint unavailable:', error.response?.status)
-      setCapabilities(prev => ({
-        ...prev,
-        actuatorHealth: { available: false, probed: true, error: 'Endpoint unavailable' }
-      }))
-    }
-
-    // Probe actuator info
-    try {
-      const infoResponse = await actuatorApi.getInfo()
-      setCapabilities(prev => ({
-        ...prev,
-        actuatorInfo: { available: true, probed: true, data: infoResponse }
-      }))
-    } catch (error: any) {
-      console.info('Actuator info endpoint unavailable:', error.response?.status)
-      setCapabilities(prev => ({
-        ...prev,
-        actuatorInfo: { available: false, probed: true, error: 'Endpoint unavailable' }
-      }))
-    }
+    // Skip actuator probes in dev - tiles should stay disabled
+    // These endpoints are not available in dev environment per requirements
+    setCapabilities(prev => ({
+      ...prev,
+      actuatorHealth: { available: false, probed: true, error: 'Disabled in dev' },
+      actuatorInfo: { available: false, probed: true, error: 'Disabled in dev' }
+    }))
   }
 
   const handleRefreshTile = async (tileType: 'configMeta' | 'actuatorHealth' | 'actuatorInfo') => {
@@ -129,30 +107,12 @@ const AdminDashboard: React.FC = () => {
         }
         break
       case 'actuatorHealth':
-        if (capabilities.actuatorHealth.available) {
-          try {
-            const healthResponse = await actuatorApi.getHealth()
-            setCapabilities(prev => ({
-              ...prev,
-              actuatorHealth: { ...prev.actuatorHealth, data: healthResponse }
-            }))
-          } catch (error) {
-            console.error('Failed to refresh health status:', error)
-          }
-        }
+        // Skip refresh for disabled actuator endpoints in dev
+        console.info('Actuator health tile is disabled in dev environment')
         break
       case 'actuatorInfo':
-        if (capabilities.actuatorInfo.available) {
-          try {
-            const infoResponse = await actuatorApi.getInfo()
-            setCapabilities(prev => ({
-              ...prev,
-              actuatorInfo: { ...prev.actuatorInfo, data: infoResponse }
-            }))
-          } catch (error) {
-            console.error('Failed to refresh system info:', error)
-          }
-        }
+        // Skip refresh for disabled actuator endpoints in dev
+        console.info('Actuator info tile is disabled in dev environment')
         break
     }
   }

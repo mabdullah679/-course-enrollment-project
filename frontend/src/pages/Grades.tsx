@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { toast as hotToast } from 'react-hot-toast'
-import { gradesApi } from '../services/api'
+import { gradesApi, meApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { Grade, PaginatedResponse, UserRole } from '../types/api'
 
@@ -19,31 +19,38 @@ const Grades: React.FC = () => {
     setLoading(true)
     try {
       const currentAfter = reset ? undefined : lastId
-      let studentId: number | undefined
-      let courseId: number | undefined
 
-      // Filter based on user role
+      // Use different endpoints based on user role
       if (user?.role === UserRole.STUDENT) {
-        studentId = user.id
-      }
-      // For instructors and admin, show all grades (backend should filter by permissions)
-      
-      const response = await gradesApi.getGrades(
-        currentAfter,
-        20,
-        courseId,
-        studentId
-      )
-      
-      if (response.success && response.data) {
-        const paginatedData = response.data as PaginatedResponse<Grade>
+        // Students use the /me/grades endpoint
+        const gradesArray = await meApi.getMyGrades(20, currentAfter)
+        
         if (reset) {
-          setGrades(paginatedData.content)
+          setGrades(gradesArray)
         } else {
-          setGrades(prev => [...prev, ...paginatedData.content])
+          setGrades(prev => [...prev, ...gradesArray])
         }
-        setHasNext(paginatedData.hasNext)
-        setLastId(paginatedData.nextCursor)
+        setHasNext(gradesArray.length === 20) // Assume more if we got exactly the page size
+        if (gradesArray.length > 0) {
+          setLastId(gradesArray[gradesArray.length - 1].id)
+        }
+      } else {
+        // Admin/Instructor use the regular grades endpoint
+        const response = await gradesApi.getGrades(
+          currentAfter,
+          20
+        )
+        
+        if (response.success && response.data) {
+          const paginatedData = response.data as PaginatedResponse<Grade>
+          if (reset) {
+            setGrades(paginatedData.content)
+          } else {
+            setGrades(prev => [...prev, ...paginatedData.content])
+          }
+          setHasNext(paginatedData.hasNext)
+          setLastId(paginatedData.nextCursor)
+        }
       }
     } catch (error: any) {
       console.error('Error fetching grades:', error)

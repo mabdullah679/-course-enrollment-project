@@ -65,13 +65,16 @@ export const authApi = {
 }
 
 export const coursesApi = {
-  getCourses: async (after?: number, size = 20, ownerId?: number, term?: string, status?: string) => {
+  getCourses: async (after?: number, size = 20, ownerId?: number, term?: string, status?: string, q?: string, assignable?: boolean) => {
     let url = `/api/v1/courses?size=${size}`
     if (after) url += `&after=${after}`
     if (ownerId) url += `&ownerId=${ownerId}`
     if (term) url += `&term=${term}`
     if (status) url += `&status=${status}`
+    if (q) url += `&q=${q}`
+    if (assignable !== undefined) url += `&assignable=${assignable}`
     const response = await api.get(url)
+    // Return directly as the backend now returns an array instead of ApiResponse wrapper
     return response.data
   },
 
@@ -109,7 +112,7 @@ export const coursesApi = {
   },
 
   updateCourseStatus: async (id: number, status: string) => {
-    const response = await api.put(`/api/v1/courses/${id}/status`, { status })
+    const response = await api.patch(`/api/v1/courses/${id}/status`, { status })
     return response.data
   },
 
@@ -164,6 +167,13 @@ export const usersApi = {
 
   getUserProfile: async (id: number) => {
     const response = await api.get(`/api/v1/users/${id}`)
+    return response.data
+  },
+}
+
+export const studentsApi = {
+  getStudents: async (size = 50) => {
+    const response = await api.get(`/api/v1/students?size=${size}`)
     return response.data
   },
 }
@@ -235,12 +245,12 @@ export const configApi = {
   },
 
   getEnrollmentWindow: async () => {
-    const response = await api.get('/api/v1/enrollment-window')
+    const response = await api.get('/api/v1/config/enrollment-window')
     return response.data
   },
 
-  updateEnrollmentWindow: async (data: { state: string; term?: string; startDate?: string; endDate?: string }) => {
-    const response = await api.put('/api/v1/enrollment-window', data)
+  updateEnrollmentWindow: async (data: { status: string; term?: string; startDate?: string; endDate?: string }) => {
+    const response = await api.put('/api/v1/config/enrollment-window', data)
     return response.data
   },
 }
@@ -333,6 +343,23 @@ export const courseAssignmentsApi = {
 
   getAssignmentRequests: async () => {
     const response = await api.get('/api/v1/course-assignments/requests')
+    return response.data
+  },
+}
+
+export const meApi = {
+  getMyGrades: async (size = 10, after?: number) => {
+    let url = `/api/v1/me/grades?size=${size}`
+    if (after) url += `&after=${after}`
+    const response = await api.get(url)
+    return response.data
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const response = await api.post('/api/v1/me/password', {
+      currentPassword,
+      newPassword
+    })
     return response.data
   },
 }

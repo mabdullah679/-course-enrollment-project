@@ -11,10 +11,16 @@ export interface ErrorCodeMapping {
 export const ERROR_CODE_MESSAGES: ErrorCodeMapping = {
   // Validation errors
   'VALIDATION_ERROR': 'Please fix the highlighted fields.',
+  'INVALID_TRANSITION': "That status change isn't allowed.",
   
   // Resource conflicts
   'DUPLICATE_RESOURCE': 'Already exists.',
-  'ALREADY_ENROLLED': "You're already enrolled.",
+  'ALREADY_ENROLLED': "Student is already enrolled in this course.",
+  
+  // Password errors
+  'WEAK_PASSWORD': 'Password is too weak.',
+  'PASSWORD_MISMATCH': 'Passwords do not match.',
+  'INVALID_CURRENT_PASSWORD': 'Current password is incorrect.',
   
   // Not found errors
   'NOT_FOUND': 'Item no longer exists.',
@@ -23,16 +29,16 @@ export const ERROR_CODE_MESSAGES: ErrorCodeMapping = {
   'ENROLLMENT_WINDOW_CLOSED': 'Enrollment window is closed.',
   
   // Permission errors
-  'PERMISSION_DENIED': "You don't have permission to do that.",
-  'UNAUTHORIZED': "You don't have permission to do that.",
-  'FORBIDDEN': "You don't have permission to do that.",
+  'PERMISSION_DENIED': "You don't have permission.",
+  'UNAUTHORIZED': "Please sign in again.",
+  'FORBIDDEN': "You don't have permission.",
   
   // Server errors (5xx fallback)
-  'SERVER_ERROR': 'Something went wrong. Try again.',
-  'INTERNAL_SERVER_ERROR': 'Something went wrong. Try again.',
+  'SERVER_ERROR': 'Unexpected error.',
+  'INTERNAL_SERVER_ERROR': 'Unexpected error.',
   
   // Fallback for unknown codes
-  'UNKNOWN_ERROR': 'Something went wrong. Try again.',
+  'UNKNOWN_ERROR': 'Unexpected error.',
 }
 
 /**
@@ -131,14 +137,14 @@ export function extractErrorDetails(error: any): {
   if (status) {
     if (status === 401) {
       return {
-        code: 'PERMISSION_DENIED',
-        message: getErrorMessage('PERMISSION_DENIED'),
+        code: 'UNAUTHORIZED',
+        message: getErrorMessage('UNAUTHORIZED'),
         shouldShowField: false
       }
     } else if (status === 403) {
       return {
-        code: 'PERMISSION_DENIED',
-        message: getErrorMessage('PERMISSION_DENIED'),
+        code: 'FORBIDDEN',
+        message: getErrorMessage('FORBIDDEN'),
         shouldShowField: false
       }
     } else if (status === 404) {
@@ -146,6 +152,18 @@ export function extractErrorDetails(error: any): {
         code: 'NOT_FOUND',
         message: getErrorMessage('NOT_FOUND'),
         shouldShowField: false
+      }
+    } else if (status === 409) {
+      return {
+        code: 'ALREADY_ENROLLED',
+        message: getErrorMessage('ALREADY_ENROLLED'),
+        shouldShowField: false
+      }
+    } else if (status === 422) {
+      return {
+        code: 'VALIDATION_ERROR',
+        message: getErrorMessage('VALIDATION_ERROR'),
+        shouldShowField: true
       }
     } else if (status >= 500) {
       return {
