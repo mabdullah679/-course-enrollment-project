@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Grade, PaginatedResponse, Enrollment } from '../types/api'
-import { gradesApi, enrollmentsApi } from '../services/api'
+import { Grade, PaginatedResponse, Course, Enrollment } from '../types/api'
+import { gradesApi, enrollmentsApi, coursesApi } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 interface GradeCreateRequest {
   studentId: number
@@ -10,15 +11,15 @@ interface GradeCreateRequest {
   feedback?: string
 }
 
-const AdminGrades: React.FC = () => {
+const InstructorGradebook: React.FC = () => {
+  const { user } = useAuth()
   const [grades, setGrades] = useState<Grade[]>([])
   const [loading, setLoading] = useState(true)
   const [hasNext, setHasNext] = useState(false)
   const [lastId, setLastId] = useState<number | undefined>(undefined)
   const [filters, setFilters] = useState({
     courseId: '',
-    studentId: '',
-    status: ''
+    studentId: ''
   })
 
   // Modal states
@@ -32,19 +33,40 @@ const AdminGrades: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null)
+  const [instructorCourses, setInstructorCourses] = useState<Course[]>([])
 
   useEffect(() => {
+    fetchInstructorCourses()
     fetchGrades(true)
     fetchEnrollments()
   }, [filters])
+
+  const fetchInstructorCourses = async () => {
+    try {
+      // Fetch courses owned by the instructor
+      const response = await coursesApi.getCourses(undefined, 100, user?.id)
+      if (response.success && response.data) {
+        let courseData = Array.isArray(response.data) ? response.data : response.data.content || []
+        setInstructorCourses(courseData)
+      }
+    } catch (error: any) {
+      console.error('Error fetching instructor courses:', error)
+    }
+  }
 
   const fetchEnrollments = async () => {
     try {
       const response = await enrollmentsApi.getEnrollments()
       if (response.success && response.data) {
-        // Handle both array and paginated response
         let enrollmentData = Array.isArray(response.data) ? response.data : response.data.content || []
-        setEnrollments(enrollmentData)
+        
+        // Filter enrollments to only include instructor's courses
+        const instructorCourseIds = instructorCourses.map(course => course.id)
+        const filteredEnrollments = enrollmentData.filter((enrollment: Enrollment) => 
+          instructorCourseIds.includes(enrollment.course.id)
+        )
+        
+        setEnrollments(filteredEnrollments)
       }
     } catch (error: any) {
       console.error('Error fetching enrollments:', error)
@@ -59,19 +81,29 @@ const AdminGrades: React.FC = () => {
         currentAfter,
         20,
         filters.courseId ? parseInt(filters.courseId) : undefined,
-        filters.studentId ? parseInt(filters.studentId) : undefined,
-        filters.status || undefined
+        filters.studentId ? parseInt(filters.studentId) : undefined
       )
       
       if (response.success && response.data) {
         const paginatedData = response.data as PaginatedResponse<Grade>
+        let gradesData = Array.isArray(paginatedData) ? paginatedData : paginatedData.content || []
+        
+        // Filter grades to only include instructor's courses
+        const instructorCourseIds = instructorCourses.map(course => course.id)
+        const filteredGrades = gradesData.filter((grade: Grade) => 
+          instructorCourseIds.includes(grade.enrollment.course.id)
+        )
+        
         if (reset) {
-          setGrades(paginatedData.content)
+          setGrades(filteredGrades)
         } else {
-          setGrades(prev => [...prev, ...paginatedData.content])
+          setGrades(prev => [...prev, ...filteredGrades])
         }
-        setHasNext(paginatedData.hasNext)
-        setLastId(paginatedData.nextCursor)
+        
+        if (!Array.isArray(paginatedData)) {
+          setHasNext(paginatedData.hasNext)
+          setLastId(paginatedData.nextCursor)
+        }
       }
     } catch (error: any) {
       console.error('Error fetching grades:', error)
@@ -79,18 +111,6 @@ const AdminGrades: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }))
-    setLastId(undefined)
-  }
-
-  const handleRefresh = () => {
-    fetchGrades(true)
   }
 
   const handleCreateGrade = async (e: React.FormEvent) => {
@@ -104,8 +124,14 @@ const AdminGrades: React.FC = () => {
       return
     }
 
+    // Verify the enrollment belongs to instructor's courses
+    const instructorCourseIds = instructorCourses.map(course => course.id)
+    if (!instructorCourseIds.includes(selectedEnrollment.course.id)) {
+      toast.error('You can only add grades for your own courses')
+      return
+    }
+
     try {
-      // Use enrollment ID directly as per backend API
       const gradeData = {
         enrollmentId: selectedEnrollment.id,
         score: newGrade.score,
@@ -125,7 +151,7 @@ const AdminGrades: React.FC = () => {
         })
         setSelectedEnrollment(null)
         setFieldErrors({})
-        // Append to list if data returned, otherwise refresh
+        
         if (response.data) {
           setGrades(prev => [...prev, response.data])
         } else {
@@ -135,7 +161,6 @@ const AdminGrades: React.FC = () => {
     } catch (error: any) {
       console.error('Error creating grade:', error)
       
-      // Handle field-level validation errors (400 responses)
       if (error.response?.status === 400 && error.response?.data?.details) {
         const errors = error.response.data.details.reduce((acc: any, detail: any) => {
           acc[detail.field] = detail.reason
@@ -166,6 +191,20 @@ const AdminGrades: React.FC = () => {
     }
   }
 
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }))
+    setLastId(undefined)
+  }
+
+  const handleRefresh = () => {
+    fetchInstructorCourses()
+    fetchGrades(true)
+    fetchEnrollments()
+  }
+
   if (loading) {
     return (
       <div className="p-6">
@@ -178,9 +217,9 @@ const AdminGrades: React.FC = () => {
     <div className="p-6">
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
         <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Grade Management</h1>
+          <h1 className="text-xl font-semibold text-gray-900">My Gradebook</h1>
           <p className="mt-2 text-sm text-gray-700">
-            Administrative oversight of all grades and student assessments.
+            Manage grades for your courses and provide feedback to students.
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-3">
@@ -203,16 +242,21 @@ const AdminGrades: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Course ID</label>
-            <input
-              type="number"
+            <label className="block text-sm font-medium text-gray-700">Course</label>
+            <select
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="Filter by course ID..."
               value={filters.courseId}
               onChange={(e) => handleFilterChange('courseId', e.target.value)}
-            />
+            >
+              <option value="">All My Courses</option>
+              {instructorCourses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name} ({course.code})
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Student ID</label>
@@ -223,20 +267,6 @@ const AdminGrades: React.FC = () => {
               value={filters.studentId}
               onChange={(e) => handleFilterChange('studentId', e.target.value)}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Status</label>
-            <select
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="SUBMITTED">Submitted</option>
-              <option value="GRADED">Graded</option>
-              <option value="APPROVED">Approved</option>
-            </select>
           </div>
         </div>
       </div>
@@ -313,7 +343,7 @@ const AdminGrades: React.FC = () => {
         
         {grades.length === 0 && !loading && (
           <div className="text-center py-12">
-            <p className="text-sm text-gray-500">No grades found.</p>
+            <p className="text-sm text-gray-500">No grades found for your courses.</p>
           </div>
         )}
       </div>
@@ -433,4 +463,4 @@ const AdminGrades: React.FC = () => {
   )
 }
 
-export default AdminGrades
+export default InstructorGradebook

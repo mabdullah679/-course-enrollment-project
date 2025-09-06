@@ -15,6 +15,7 @@ import AdminCourses from './pages/AdminCourses'
 import AdminGrades from './pages/AdminGrades'
 import AdminConfiguration from './pages/AdminConfiguration'
 import AdminEnrollments from './pages/AdminEnrollments'
+import InstructorGradebook from './pages/InstructorGradebook'
 import { UserRole } from './types/api'
 
 function App() {
@@ -95,6 +96,7 @@ function AppRoutes() {
             <Route path="/" element={<Navigate to="/instructor" />} />
             <Route path="/instructor" element={<Dashboard />} />
             <Route path="/instructor/courses" element={<AdminCourses />} />
+            <Route path="/instructor/gradebook" element={<InstructorGradebook />} />
             <Route path="/instructor/grades" element={<Grades />} />
             <Route path="/profile" element={<Profile />} />
             {/* Block access to admin routes */}

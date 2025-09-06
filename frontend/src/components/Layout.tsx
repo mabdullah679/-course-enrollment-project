@@ -73,6 +73,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         return [
           { name: 'Dashboard', href: '/instructor' },
           { name: 'My Courses', href: '/instructor/courses' },
+          { name: 'Gradebook', href: '/instructor/gradebook' },
           { name: 'Grades', href: '/instructor/grades' },
           { name: 'Profile', href: '/profile' }
         ]
