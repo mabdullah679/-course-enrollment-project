@@ -16,5 +16,7 @@ public interface EnrollmentWindowRepository extends JpaRepository<EnrollmentWind
     
     Optional<EnrollmentWindow> findTopByOrderByUpdatedAtDesc();
     
+    Optional<EnrollmentWindow> findTopByOrderByCreatedAtDesc();
+    
     Optional<EnrollmentWindow> findByStatus(EnrollmentWindowStatus status);
 }

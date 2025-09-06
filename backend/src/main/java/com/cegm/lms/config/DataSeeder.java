@@ -2,10 +2,18 @@ package com.cegm.lms.config;
 
 import com.cegm.lms.model.User;
 import com.cegm.lms.model.Course;
+import com.cegm.lms.model.Enrollment;
+import com.cegm.lms.model.Grade;
+import com.cegm.lms.model.EnrollmentWindow;
 import com.cegm.lms.model.enums.UserRole;
 import com.cegm.lms.model.enums.CourseStatus;
+import com.cegm.lms.model.enums.EnrollmentStatus;
+import com.cegm.lms.model.enums.EnrollmentWindowStatus;
 import com.cegm.lms.repository.UserRepository;
 import com.cegm.lms.repository.CourseRepository;
+import com.cegm.lms.repository.EnrollmentRepository;
+import com.cegm.lms.repository.GradeRepository;
+import com.cegm.lms.repository.EnrollmentWindowRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -27,6 +36,15 @@ public class DataSeeder implements CommandLineRunner {
     private CourseRepository courseRepository;
     
     @Autowired
+    private EnrollmentRepository enrollmentRepository;
+    
+    @Autowired
+    private GradeRepository gradeRepository;
+    
+    @Autowired
+    private EnrollmentWindowRepository enrollmentWindowRepository;
+    
+    @Autowired
     private PasswordEncoder passwordEncoder;
     
     @Override
@@ -36,6 +54,8 @@ public class DataSeeder implements CommandLineRunner {
         try {
             seedUsers();
             seedCourses();
+            seedEnrollmentWindow();
+            seedEnrollmentsAndGrades();
             logger.info("Data seeding completed successfully");
         } catch (Exception e) {
             logger.error("Data seeding failed", e);
@@ -44,7 +64,7 @@ public class DataSeeder implements CommandLineRunner {
     }
     
     private void seedUsers() {
-        // Check if admin already exists
+        // Check if admin already exists (idempotent)
         if (userRepository.findByEmail("admin@cegm.edu").isPresent()) {
             logger.info("Admin user already exists, skipping user seeding");
             return;
@@ -111,18 +131,33 @@ public class DataSeeder implements CommandLineRunner {
         
         userRepository.save(studentUser);
         logger.info("Created approved student user: student@cegm.edu");
+        
+        // Create a pending student for testing approval workflow
+        User pendingStudentUser = new User();
+        pendingStudentUser.setUsername("pending1");
+        pendingStudentUser.setEmail("pending@cegm.edu");
+        pendingStudentUser.setFirstName("Alice");
+        pendingStudentUser.setLastName("Pending");
+        pendingStudentUser.setPassword(passwordEncoder.encode("pending123"));
+        pendingStudentUser.setRole(UserRole.STUDENT);
+        pendingStudentUser.setApproved(false); // Pending approval
+        pendingStudentUser.setActive(true);
+        pendingStudentUser.setCreatedAt(LocalDateTime.now());
+        
+        userRepository.save(pendingStudentUser);
+        logger.info("Created pending student user: pending@cegm.edu");
     }
     
     private void seedCourses() {
-        // Check if courses already exist
-        if (courseRepository.count() > 0) {
+        // Check if courses already exist (idempotent)
+        if (courseRepository.findByCode("CS101").isPresent()) {
             logger.info("Courses already exist, skipping course seeding");
             return;
         }
         
         logger.info("Seeding sample courses...");
         
-        // Create sample courses
+        // Create sample courses as per requirements: CS101, MATH201, ENG301
         Course course1 = new Course();
         course1.setCode("CS101");
         course1.setName("Introduction to Computer Science");
@@ -155,5 +190,74 @@ public class DataSeeder implements CommandLineRunner {
         
         courseRepository.save(course3);
         logger.info("Created course: ENG301");
+    }
+    
+    private void seedEnrollmentWindow() {
+        // Check if enrollment window already exists (idempotent)
+        if (enrollmentWindowRepository.count() > 0) {
+            logger.info("Enrollment window already exists, skipping enrollment window seeding");
+            return;
+        }
+        
+        logger.info("Seeding enrollment window...");
+        
+        // Create enrollment window OPEN by default as per requirements
+        EnrollmentWindow enrollmentWindow = new EnrollmentWindow();
+        enrollmentWindow.setStatus(EnrollmentWindowStatus.ON);
+        enrollmentWindow.setUpdatedBy("system");
+        enrollmentWindow.setCreatedAt(LocalDateTime.now());
+        
+        enrollmentWindowRepository.save(enrollmentWindow);
+        logger.info("Created enrollment window: OPEN");
+    }
+    
+    private void seedEnrollmentsAndGrades() {
+        // Check if enrollments already exist (idempotent)
+        if (enrollmentRepository.count() > 0) {
+            logger.info("Enrollments already exist, skipping enrollment and grade seeding");
+            return;
+        }
+        
+        logger.info("Seeding enrollments and grades...");
+        
+        // Get required entities
+        User student = userRepository.findByEmail("student@cegm.edu")
+            .orElseThrow(() -> new RuntimeException("Student user not found"));
+        Course cs101 = courseRepository.findByCode("CS101")
+            .orElseThrow(() -> new RuntimeException("CS101 course not found"));
+        
+        // Create enrollment: student@cegm.edu enrolled in CS101
+        Enrollment enrollment = new Enrollment();
+        enrollment.setStudent(student);
+        enrollment.setCourse(cs101);
+        enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        enrollment.setEnrolledAt(LocalDateTime.now());
+        
+        enrollmentRepository.save(enrollment);
+        logger.info("Created enrollment: student@cegm.edu -> CS101");
+        
+        // Create grade for the enrollment as per requirements
+        Grade grade = new Grade();
+        grade.setEnrollment(enrollment);
+        grade.setStudent(student);
+        grade.setAssignmentName("Midterm Exam");
+        grade.setScore(new BigDecimal("85.5"));
+        grade.setFeedback("Good understanding of basic concepts. Could improve on algorithm efficiency.");
+        grade.setAssignedAt(LocalDateTime.now());
+        
+        gradeRepository.save(grade);
+        logger.info("Created grade: student@cegm.edu CS101 Midterm = 85.5");
+        
+        // Add a second grade for more realistic data
+        Grade grade2 = new Grade();
+        grade2.setEnrollment(enrollment);
+        grade2.setStudent(student);
+        grade2.setAssignmentName("Programming Assignment 1");
+        grade2.setScore(new BigDecimal("92.0"));
+        grade2.setFeedback("Excellent implementation. Clean code and good documentation.");
+        grade2.setAssignedAt(LocalDateTime.now().minusDays(7));
+        
+        gradeRepository.save(grade2);
+        logger.info("Created grade: student@cegm.edu CS101 Programming Assignment 1 = 92.0");
     }
 }
