@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { coursesApi, exportsApi } from '../services/api'
+import { coursesApi, exportsApi, courseAssignmentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRole, Course, CourseCreateRequest } from '../types/api'
 import { useDebounce } from '../hooks/useDebounce'
@@ -44,6 +44,10 @@ const AdminCourses: React.FC = () => {
   const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'CLOSED'>('ACTIVE')
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  
+  // Course assignment request state (for instructors)
+  const [selectedCoursesForAssignment, setSelectedCoursesForAssignment] = useState<number[]>([])
+  const [showRequestAssignmentModal, setShowRequestAssignmentModal] = useState(false)
 
   useEffect(() => {
     fetchCourses(true)
@@ -224,6 +228,38 @@ const AdminCourses: React.FC = () => {
     fetchCourses(true)
   }
 
+  const handleRequestCourseAssignment = async () => {
+    if (!user || selectedCoursesForAssignment.length === 0) {
+      toast.error('Please select at least one course')
+      return
+    }
+
+    try {
+      const response = await courseAssignmentsApi.requestCourseAssignment({
+        instructorId: user.id,
+        courseIds: selectedCoursesForAssignment,
+        semesterId: 'current'
+      })
+
+      if (response.success) {
+        toast.success('Course assignment request submitted successfully')
+        setShowRequestAssignmentModal(false)
+        setSelectedCoursesForAssignment([])
+      }
+    } catch (error: any) {
+      console.error('Error requesting course assignment:', error)
+      // API interceptor will handle error toast display
+    }
+  }
+
+  const handleToggleCourseSelection = (courseId: number) => {
+    setSelectedCoursesForAssignment(prev => 
+      prev.includes(courseId) 
+        ? prev.filter(id => id !== courseId)
+        : [...prev, courseId]
+    )
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
@@ -276,6 +312,15 @@ const AdminCourses: React.FC = () => {
               className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Create Course
+            </button>
+          )}
+          {user?.role === UserRole.INSTRUCTOR && (
+            <button
+              type="button"
+              onClick={() => setShowRequestAssignmentModal(true)}
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              Request Assignment
             </button>
           )}
         </div>
@@ -655,6 +700,66 @@ const AdminCourses: React.FC = () => {
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Course Assignment Modal (for instructors) */}
+      {showRequestAssignmentModal && user?.role === UserRole.INSTRUCTOR && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-2/3 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Request Course Assignment</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Select the courses you would like to be assigned to teach:
+              </p>
+              
+              <div className="max-h-96 overflow-y-auto mb-4">
+                {courses.length > 0 ? (
+                  <div className="space-y-2">
+                    {courses.map((course) => (
+                      <label key={course.id} className="flex items-center p-3 border rounded-md hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                          checked={selectedCoursesForAssignment.includes(course.id)}
+                          onChange={() => handleToggleCourseSelection(course.id)}
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="font-medium text-gray-900">{course.code}</div>
+                          <div className="text-sm text-gray-500">{course.name}</div>
+                          <div className="text-xs text-gray-400">{course.credits} credits</div>
+                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(course.status)}`}>
+                          {course.status}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No courses available</p>
+                )}
+              </div>
+              
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => {
+                    setShowRequestAssignmentModal(false)
+                    setSelectedCoursesForAssignment([])
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRequestCourseAssignment}
+                  disabled={selectedCoursesForAssignment.length === 0}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Submit Request
                 </button>
               </div>
             </div>

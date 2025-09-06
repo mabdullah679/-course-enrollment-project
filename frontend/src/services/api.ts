@@ -324,3 +324,15 @@ export const exportsApi = {
     return response.data
   },
 }
+
+export const courseAssignmentsApi = {
+  requestCourseAssignment: async (data: { instructorId: number; courseIds: number[]; semesterId?: string }) => {
+    const response = await api.post('/api/v1/course-assignments/requests', data)
+    return response.data
+  },
+
+  getAssignmentRequests: async () => {
+    const response = await api.get('/api/v1/course-assignments/requests')
+    return response.data
+  },
+}
