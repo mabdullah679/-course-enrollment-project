@@ -3,6 +3,7 @@ package com.cegm.lms.controller;
 import com.cegm.lms.dto.request.CourseCreateRequest;
 import com.cegm.lms.dto.response.ApiResponse;
 import com.cegm.lms.dto.response.AuditResponse;
+import com.cegm.lms.dto.response.CourseMinimalResponse;
 import com.cegm.lms.dto.response.CourseResponse;
 import com.cegm.lms.model.Course;
 import com.cegm.lms.service.CourseService;
@@ -37,6 +38,16 @@ public class CourseController {
         
         List<CourseResponse> courses = courseService.findCoursesWithFilters(
             q, status, term, ownerId, assignable, size, after);
+        return ResponseEntity.ok(courses);
+    }
+
+    @GetMapping("/minimal")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CourseMinimalResponse>> getCoursesMinimal(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "100") int size) {
+        
+        List<CourseMinimalResponse> courses = courseService.findCoursesMinimal(status, size);
         return ResponseEntity.ok(courses);
     }
 

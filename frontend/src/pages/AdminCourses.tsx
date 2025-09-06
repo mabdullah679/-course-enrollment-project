@@ -41,7 +41,7 @@ const AdminCourses: React.FC = () => {
     status: 'ACTIVE',
     description: ''
   })
-  const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'CLOSED'>('ACTIVE')
+  const [newStatus, setNewStatus] = useState<'ACTIVE' | 'INACTIVE' | 'CLOSED'>('ACTIVE')
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
@@ -264,7 +264,7 @@ const AdminCourses: React.FC = () => {
     switch (status) {
       case 'ACTIVE':
         return 'bg-green-100 text-green-800'
-      case 'ARCHIVED':
+      case 'INACTIVE':
         return 'bg-yellow-100 text-yellow-800'
       case 'CLOSED':
         return 'bg-red-100 text-red-800'
@@ -348,7 +348,7 @@ const AdminCourses: React.FC = () => {
             >
               <option value="">All Status</option>
               <option value="ACTIVE">Active</option>
-              <option value="ARCHIVED">Archived</option>
+              <option value="INACTIVE">Inactive</option>
               <option value="CLOSED">Closed</option>
             </select>
           </div>
@@ -534,11 +534,11 @@ const AdminCourses: React.FC = () => {
                         fieldErrors.status ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
                       }`}
                       value={newCourse.status}
-                      onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value as 'ACTIVE' | 'ARCHIVED' | 'CLOSED' })}
+                      onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'CLOSED' })}
                       required
                     >
                       <option value="ACTIVE">Active</option>
-                      <option value="ARCHIVED">Archived</option>
+                      <option value="INACTIVE">Inactive</option>
                       <option value="CLOSED">Closed</option>
                     </select>
                     {fieldErrors.status && (
@@ -605,10 +605,10 @@ const AdminCourses: React.FC = () => {
                 <select
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as 'ACTIVE' | 'ARCHIVED' | 'CLOSED')}
+                  onChange={(e) => setNewStatus(e.target.value as 'ACTIVE' | 'INACTIVE' | 'CLOSED')}
                 >
                   <option value="ACTIVE">Active</option>
-                  <option value="ARCHIVED">Archived</option>
+                  <option value="INACTIVE">Inactive</option>
                   <option value="CLOSED">Closed</option>
                 </select>
               </div>

@@ -2,6 +2,7 @@ package com.cegm.lms.service;
 
 import com.cegm.lms.dto.request.CourseCreateRequest;
 import com.cegm.lms.dto.response.AuditResponse;
+import com.cegm.lms.dto.response.CourseMinimalResponse;
 import com.cegm.lms.dto.response.CourseResponse;
 import com.cegm.lms.exception.CourseNotFoundException;
 import com.cegm.lms.exception.InvalidTransitionException;
@@ -258,6 +259,38 @@ public class CourseService {
             null, // from - could be extracted from details if needed
             null, // to - could be extracted from details if needed
             auditLog.getDetails()
+        );
+    }
+
+    public List<CourseMinimalResponse> findCoursesMinimal(String status, int size) {
+        List<Course> courses = courseRepository.findAll();
+        
+        if (status != null) {
+            try {
+                CourseStatus courseStatus = CourseStatus.valueOf(status.toUpperCase());
+                courses = courses.stream()
+                    .filter(course -> course.getStatus() == courseStatus)
+                    .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
+        }
+        
+        // Limit results
+        if (size > 0 && courses.size() > size) {
+            courses = courses.subList(0, size);
+        }
+        
+        return courses.stream()
+            .map(this::convertToCourseMinimalResponse)
+            .collect(Collectors.toList());
+    }
+    
+    private CourseMinimalResponse convertToCourseMinimalResponse(Course course) {
+        return new CourseMinimalResponse(
+            course.getId(),
+            course.getCode(),
+            course.getName()
         );
     }
 }

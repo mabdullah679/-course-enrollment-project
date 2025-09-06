@@ -74,8 +74,10 @@ public class EnrollmentsController {
     public ResponseEntity<ApiResponse<Enrollment>> createEnrollment(@RequestBody Map<String, Object> request) {
         Long courseId = Long.valueOf(request.get("courseId").toString());
         Long studentId = Long.valueOf(request.get("studentId").toString());
+        String type = request.containsKey("type") ? request.get("type").toString() : "CREDIT";
+        String status = request.containsKey("status") ? request.get("status").toString() : "PENDING";
         
-        Enrollment enrollment = enrollmentService.createEnrollment(studentId, courseId);
+        Enrollment enrollment = enrollmentService.createEnrollment(studentId, courseId, type, status);
         return ResponseEntity.ok(ApiResponse.success("Enrollment created successfully", enrollment));
     }
 

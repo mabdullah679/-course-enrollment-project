@@ -1,6 +1,7 @@
 package com.cegm.lms.model;
 
 import com.cegm.lms.model.enums.EnrollmentStatus;
+import com.cegm.lms.model.enums.EnrollmentType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -31,6 +32,10 @@ public class Enrollment {
     @Enumerated(EnumType.STRING)
     @NotNull
     private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    private EnrollmentType type = EnrollmentType.CREDIT;
 
     @CreationTimestamp
     private LocalDateTime enrolledAt;
@@ -63,6 +68,9 @@ public class Enrollment {
 
     public EnrollmentStatus getStatus() { return status; }
     public void setStatus(EnrollmentStatus status) { this.status = status; }
+
+    public EnrollmentType getType() { return type; }
+    public void setType(EnrollmentType type) { this.type = type; }
 
     public LocalDateTime getEnrolledAt() { return enrolledAt; }
     public void setEnrolledAt(LocalDateTime enrolledAt) { this.enrolledAt = enrolledAt; }

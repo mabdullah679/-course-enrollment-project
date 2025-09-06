@@ -89,7 +89,7 @@ const Courses: React.FC = () => {
     switch (status) {
       case 'ACTIVE':
         return 'bg-green-100 text-green-800'
-      case 'ARCHIVED':
+      case 'INACTIVE':
         return 'bg-yellow-100 text-yellow-800'
       case 'CLOSED':
         return 'bg-red-100 text-red-800'

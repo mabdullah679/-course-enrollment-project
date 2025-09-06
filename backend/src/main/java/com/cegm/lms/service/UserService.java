@@ -1,6 +1,7 @@
 package com.cegm.lms.service;
 
 import com.cegm.lms.dto.request.SignUpRequest;
+import com.cegm.lms.dto.response.StudentResponse;
 import com.cegm.lms.dto.response.UserResponse;
 import com.cegm.lms.exception.*;
 import com.cegm.lms.model.User;
@@ -13,7 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -283,5 +286,24 @@ public class UserService {
             "hasNext", false,
             "cursor", ""
         );
+    }
+
+    /**
+     * Get students for enrollment modal
+     */
+    public List<StudentResponse> getStudentsForModal(int size) {
+        List<User> students = userRepository.findByRoleAndApprovedTrueAndActiveTrueOrderByFirstNameAscLastNameAsc(UserRole.STUDENT)
+                .stream()
+                .limit(size)
+                .collect(Collectors.toList());
+        
+        return students.stream()
+                .map(this::convertToStudentResponse)
+                .collect(Collectors.toList());
+    }
+    
+    private StudentResponse convertToStudentResponse(User user) {
+        String name = user.getFirstName() + " " + user.getLastName();
+        return new StudentResponse(user.getId(), name, user.getEmail());
     }
 }

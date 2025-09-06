@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -55,4 +56,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByEmailContainingIgnoreCaseOrUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
             @Param("query") String email, @Param("query") String username, 
             @Param("query") String firstName, @Param("query") String lastName, Pageable pageable);
+    
+    List<User> findByRoleAndApprovedTrueAndActiveTrueOrderByFirstNameAscLastNameAsc(UserRole role);
 }

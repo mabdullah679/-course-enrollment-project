@@ -8,6 +8,7 @@ import com.cegm.lms.model.Course;
 import com.cegm.lms.model.Enrollment;
 import com.cegm.lms.model.User;
 import com.cegm.lms.model.enums.EnrollmentStatus;
+import com.cegm.lms.model.enums.EnrollmentType;
 import com.cegm.lms.repository.CourseRepository;
 import com.cegm.lms.repository.EnrollmentRepository;
 import com.cegm.lms.repository.UserRepository;
@@ -65,6 +66,51 @@ public class EnrollmentService {
         
         auditLogService.log(studentId, "EnrollmentService", "ENROLLMENT_CREATED", 
             String.format("Student %s enrolled in course %s", student.getUsername(), course.getCode()));
+        
+        return savedEnrollment;
+    }
+
+    /**
+     * Create new enrollment with type and status specification (for admin use).
+     */
+    public Enrollment createEnrollment(Long studentId, Long courseId, String typeString, String statusString) {
+        User student = userRepository.findById(studentId)
+            .orElseThrow(() -> new UserNotFoundException("Student not found"));
+        
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new CourseNotFoundException("Course not found"));
+
+        // Check for duplicate enrollment
+        if (ssotConfigService.getDuplicateEnrollmentErrorCode() == 409 &&
+            enrollmentRepository.existsByStudentIdAndCourseId(studentId, courseId)) {
+            throw new DuplicateEnrollmentException("Student is already enrolled in this course.");
+        }
+
+        // Parse and validate type
+        EnrollmentType type;
+        try {
+            type = EnrollmentType.valueOf(typeString.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            type = EnrollmentType.CREDIT; // Default to CREDIT
+        }
+
+        // Parse and validate status
+        EnrollmentStatus status;
+        try {
+            status = EnrollmentStatus.valueOf(statusString.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            status = EnrollmentStatus.PENDING; // Default to PENDING
+        }
+
+        Enrollment enrollment = new Enrollment(student, course);
+        enrollment.setStatus(status);
+        enrollment.setType(type);
+        
+        Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+        
+        auditLogService.log(studentId, "EnrollmentService", "ENROLLMENT_CREATED", 
+            String.format("Student %s enrolled in course %s (type: %s, status: %s)", 
+                         student.getUsername(), course.getCode(), type, status));
         
         return savedEnrollment;
     }
