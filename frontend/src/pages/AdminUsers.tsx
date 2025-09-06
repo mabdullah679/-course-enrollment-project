@@ -107,8 +107,8 @@ const AdminUsers: React.FC = () => {
         ))
       }
     } catch (error: any) {
+      // API interceptor handles error toast display automatically
       console.error('Error approving user:', error)
-      toast.error(error.response?.data?.message || 'Failed to approve user')
     }
   }
 

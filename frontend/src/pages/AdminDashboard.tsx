@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { configApi, actuatorApi, usersApi, coursesApi, enrollmentsApi, gradesApi } from '../services/api'
+import { configApi, actuatorApi, metricsApi } from '../services/api'
 
 interface CapabilityStatus {
   available: boolean
@@ -44,17 +44,17 @@ const AdminDashboard: React.FC = () => {
   const loadCounts = async () => {
     try {
       const [usersResp, coursesResp, enrollmentsResp, gradesResp] = await Promise.all([
-        usersApi.getUsers(undefined, 1),
-        coursesApi.getCourses(undefined, 1),
-        enrollmentsApi.getEnrollments(undefined, 1),
-        gradesApi.getGrades(undefined, 1)
+        metricsApi.getUsersCount(),
+        metricsApi.getCoursesCount(), 
+        metricsApi.getEnrollmentsCount(),
+        metricsApi.getGradesCount()
       ])
       
       setCounts({
-        users: usersResp.data?.content?.length || 0,
-        courses: coursesResp.data?.content?.length || 0,
-        enrollments: enrollmentsResp.data?.content?.length || 0,
-        grades: gradesResp.data?.content?.length || 0,
+        users: usersResp.count || 0,
+        courses: coursesResp.count || 0,
+        enrollments: enrollmentsResp.count || 0,
+        grades: gradesResp.count || 0,
         loading: false
       })
     } catch (error) {

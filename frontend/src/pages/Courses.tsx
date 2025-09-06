@@ -70,27 +70,14 @@ const Courses: React.FC = () => {
         // Don't refresh immediately as enrollment might be pending approval
       }
     } catch (error: any) {
+      // Let the API interceptor handle error toast display with friendly messages
+      // The interceptor will map error codes to appropriate messages:
+      // ALREADY_ENROLLED → "You're already enrolled."
+      // ENROLLMENT_WINDOW_CLOSED → "Enrollment window is closed."
+      // PERMISSION_DENIED → "You don't have permission to do that."
+      // NOT_FOUND → "Item no longer exists."
+      // SERVER_ERROR → "Something went wrong. Try again."
       console.error('Error enrolling in course:', error)
-      
-      // Handle specific enrollment errors
-      if (error.response?.status === 400) {
-        const errorMessage = error.response.data?.message
-        if (errorMessage?.includes('already enrolled')) {
-          toast.error('You are already enrolled in this course')
-        } else if (errorMessage?.includes('enrollment window') || errorMessage?.includes('closed')) {
-          toast.error('Enrollment window is currently closed. Please try again during the enrollment period.')
-        } else if (errorMessage?.includes('capacity')) {
-          toast.error('Course is at full capacity. Please try enrolling in a different section.')
-        } else {
-          toast.error(errorMessage || 'Unable to enroll: Invalid enrollment request')
-        }
-      } else if (error.response?.status === 403) {
-        toast.error('You do not have permission to enroll in this course')
-      } else if (error.response?.status === 404) {
-        toast.error('Course not found or no longer available')
-      } else {
-        toast.error('Failed to enroll in course. Please try again later.')
-      }
     }
   }
 
