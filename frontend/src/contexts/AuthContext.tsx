@@ -66,7 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Verify session is still valid by fetching current user
         try {
-          await refreshUser()
+          const response = await apiRequest('/api/v1/auth/me', { 
+            method: 'GET',
+            headers: { 'X-Suppress-Error-Toast': 'true' }
+          })
+          if (response.success && response.data) {
+            setUser(response.data)
+          }
         } catch (error) {
           // Session is invalid, clear stored data
           logout()
@@ -74,9 +80,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // Try to get current user in case we have a valid cookie
         try {
-          await refreshUser()
+          // Use a flag to suppress error toasts for initial auth check
+          const response = await apiRequest('/api/v1/auth/me', { 
+            method: 'GET',
+            headers: { 'X-Suppress-Error-Toast': 'true' }
+          })
+          if (response.success && response.data) {
+            setUser(response.data)
+            sessionStorage.setItem('user', JSON.stringify(response.data))
+          }
         } catch (error) {
-          // No valid session
+          // No valid session - this is expected and not an error
           console.log('No valid session found')
         }
       }

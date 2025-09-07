@@ -84,6 +84,11 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
     
+    // Don't show toasts if error suppression is requested (e.g., initial auth checks)
+    if (error.config?.headers?.['X-Suppress-Error-Toast'] === 'true') {
+      return Promise.reject(error)
+    }
+    
     // Show friendly toast for other errors using error code-based deduplication
     if (errorDetails.message) {
       toastError(errorDetails.message, errorDetails.code, errorDetails.requestId)
