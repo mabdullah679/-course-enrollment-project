@@ -69,8 +69,8 @@ class UserServiceTest {
 
         // Then
         assertEquals(UserRole.ADMIN, result.getRole());
-        verify(auditLogService).log(eq(1L), eq("UsersController"), eq("ROLE_CHANGE"), 
-                                   argThat(message -> message.contains("STUDENT to ADMIN") && message.contains(requestId)));
+        verify(auditLogService).logWithCorrelation(eq(1L), eq("UsersController"), eq("ROLE_CHANGE"), 
+                                   contains("STUDENT to ADMIN"), eq(requestId));
     }
 
     @Test
@@ -118,6 +118,10 @@ class UserServiceTest {
         // Then
         assertTrue(result.getApproved());
         assertFalse(result.getActive());
-        verify(auditLogService, times(2)).log(eq(1L), eq("UsersController"), eq("STATUS_CHANGE"), anyString());
+        // Verify that both audit logs are called with correlation ID
+        verify(auditLogService).logWithCorrelation(eq(1L), eq("UsersController"), eq("STATUS_CHANGE"), 
+                                                   contains("Approved status changed from false to true"), eq("req_67890"));
+        verify(auditLogService).logWithCorrelation(eq(1L), eq("UsersController"), eq("STATUS_CHANGE"), 
+                                                   contains("Active status changed from true to false"), eq("req_67890"));
     }
 }
