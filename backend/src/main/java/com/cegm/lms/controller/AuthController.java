@@ -15,6 +15,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -146,6 +147,104 @@ public class AuthController {
         response.addCookie(sessionCookie);
         
         return ResponseEntity.ok(ApiResponse.success("Session rotated successfully"));
+    }
+
+    /**
+     * Update current user's profile.
+     */
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            @RequestBody Map<String, String> request, 
+            HttpServletRequest httpRequest) {
+        
+        String requestId = (String) httpRequest.getAttribute("X-Request-Id");
+        String token = extractTokenFromRequest(httpRequest);
+        
+        if (token == null || !tokenProvider.validateToken(token)) {
+            throw new UnauthorizedException("Invalid or missing token");
+        }
+        
+        String username = tokenProvider.getUsernameFromToken(token);
+        User user = userService.findByUsername(username);
+        
+        // Update fields that are provided
+        boolean updated = false;
+        if (request.containsKey("firstName") && request.get("firstName") != null) {
+            user.setFirstName(request.get("firstName"));
+            updated = true;
+        }
+        if (request.containsKey("lastName") && request.get("lastName") != null) {
+            user.setLastName(request.get("lastName"));
+            updated = true;
+        }
+        if (request.containsKey("email") && request.get("email") != null) {
+            String newEmail = request.get("email");
+            // Validate email format and uniqueness
+            if (!newEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid email format", "INVALID_EMAIL"));
+            }
+            if (!user.getEmail().equals(newEmail) && userService.existsByEmail(newEmail)) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Email already exists", "EMAIL_EXISTS"));
+            }
+            user.setEmail(newEmail);
+            updated = true;
+        }
+        
+        if (!updated) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("No valid fields provided for update", "NO_FIELDS"));
+        }
+        
+        User savedUser = userService.updateProfile(user, requestId);
+        UserResponse userResponse = userService.convertToResponse(savedUser);
+        
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", userResponse));
+    }
+
+    /**
+     * Change current user's password.
+     */
+    @PostMapping("/me/password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @RequestBody Map<String, String> request, 
+            HttpServletRequest httpRequest) {
+        
+        String requestId = (String) httpRequest.getAttribute("X-Request-Id");
+        String token = extractTokenFromRequest(httpRequest);
+        
+        if (token == null || !tokenProvider.validateToken(token)) {
+            throw new UnauthorizedException("Invalid or missing token");
+        }
+        
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+        
+        if (currentPassword == null || currentPassword.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Current password is required", "MISSING_CURRENT_PASSWORD"));
+        }
+        
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("New password is required", "MISSING_NEW_PASSWORD"));
+        }
+        
+        if (newPassword.length() < 6) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("New password must be at least 6 characters", "PASSWORD_TOO_SHORT"));
+        }
+        
+        String username = tokenProvider.getUsernameFromToken(token);
+        
+        try {
+            userService.changePassword(username, currentPassword, newPassword, requestId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(403)
+                .body(ApiResponse.error("Current password is incorrect", "WRONG_CURRENT_PASSWORD"));
+        }
     }
 
     private String extractTokenFromRequest(HttpServletRequest request) {

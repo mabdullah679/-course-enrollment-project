@@ -226,11 +226,12 @@ public class UserService {
         user.setRole(newRole);
         
         String auditMessage = String.format("Role changed from %s to %s", oldRole, newRole);
-        if (requestId != null) {
-            auditMessage += " [Request-ID: " + requestId + "]";
-        }
         
-        auditLogService.log(userId, "UsersController", "ROLE_CHANGE", auditMessage);
+        if (requestId != null) {
+            auditLogService.logWithCorrelation(userId, "UsersController", "ROLE_CHANGE", auditMessage, requestId);
+        } else {
+            auditLogService.log(userId, "UsersController", "ROLE_CHANGE", auditMessage);
+        }
         
         return userRepository.save(user);
     }
@@ -253,9 +254,10 @@ public class UserService {
             user.setApproved(approved);
             String auditMessage = String.format("Approved status changed from %s to %s", oldApproved, approved);
             if (requestId != null) {
-                auditMessage += " [Request-ID: " + requestId + "]";
+                auditLogService.logWithCorrelation(userId, "UsersController", "STATUS_CHANGE", auditMessage, requestId);
+            } else {
+                auditLogService.log(userId, "UsersController", "STATUS_CHANGE", auditMessage);
             }
-            auditLogService.log(userId, "UsersController", "STATUS_CHANGE", auditMessage);
         }
         
         if (active != null) {
@@ -263,9 +265,10 @@ public class UserService {
             user.setActive(active);
             String auditMessage = String.format("Active status changed from %s to %s", oldActive, active);
             if (requestId != null) {
-                auditMessage += " [Request-ID: " + requestId + "]";
+                auditLogService.logWithCorrelation(userId, "UsersController", "STATUS_CHANGE", auditMessage, requestId);
+            } else {
+                auditLogService.log(userId, "UsersController", "STATUS_CHANGE", auditMessage);
             }
-            auditLogService.log(userId, "UsersController", "STATUS_CHANGE", auditMessage);
         }
         
         return userRepository.save(user);
@@ -283,5 +286,52 @@ public class UserService {
             "hasNext", false,
             "cursor", ""
         );
+    }
+
+    /**
+     * Check if email exists.
+     */
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    /**
+     * Update user profile.
+     */
+    public User updateProfile(User user, String requestId) {
+        String auditMessage = "Profile updated";
+        
+        if (requestId != null) {
+            auditLogService.logWithCorrelation(user.getId(), "AuthController", "PROFILE_UPDATE", auditMessage, requestId);
+        } else {
+            auditLogService.log(user.getId(), "AuthController", "PROFILE_UPDATE", auditMessage);
+        }
+        
+        return userRepository.save(user);
+    }
+
+    /**
+     * Change user password.
+     */
+    public void changePassword(String username, String currentPassword, String newPassword, String requestId) {
+        User user = findByUsername(username);
+        
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        
+        // Set new password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        
+        String auditMessage = "Password changed";
+        
+        if (requestId != null) {
+            auditLogService.logWithCorrelation(user.getId(), "AuthController", "PASSWORD_CHANGE", auditMessage, requestId);
+        } else {
+            auditLogService.log(user.getId(), "AuthController", "PASSWORD_CHANGE", auditMessage);
+        }
+        
+        userRepository.save(user);
     }
 }

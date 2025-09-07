@@ -13,6 +13,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/courses")
@@ -86,5 +88,46 @@ public class CourseController {
     public ResponseEntity<ApiResponse<Course>> archiveCourse(@PathVariable Long id) {
         Course course = courseService.archiveCourse(id);
         return ResponseEntity.ok(ApiResponse.success("Course archived successfully", course));
+    }
+
+    /**
+     * Change course status.
+     * Admin only access.
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Course>> changeCourseStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        
+        String requestId = (String) httpRequest.getAttribute("X-Request-Id");
+        
+        String statusString = request.get("status");
+        if (statusString == null) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Status is required", "MISSING_STATUS"));
+        }
+        
+        // Validate status values (ACTIVE, ARCHIVED, DRAFT)
+        if (!statusString.matches("^(ACTIVE|ARCHIVED|DRAFT)$")) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Invalid status. Must be ACTIVE, ARCHIVED, or DRAFT", "INVALID_STATUS"));
+        }
+        
+        Course course = courseService.changeCourseStatus(id, statusString, requestId);
+        return ResponseEntity.ok(ApiResponse.success("Course status updated successfully", course));
+    }
+
+    /**
+     * Get courses count.
+     * Admin access.
+     */
+    @GetMapping("/count")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> getCoursesCount() {
+        int count = courseService.getCoursesCount();
+        Map<String, Integer> result = Map.of("count", count);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

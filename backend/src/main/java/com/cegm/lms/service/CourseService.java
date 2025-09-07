@@ -99,4 +99,30 @@ public class CourseService {
     public List<Course> searchCoursesByName(String name) {
         return courseRepository.findByStatusAndNameContainingIgnoreCase(CourseStatus.ACTIVE, name);
     }
+
+    /**
+     * Change course status.
+     */
+    public Course changeCourseStatus(Long courseId, String status, String requestId) {
+        Course course = findById(courseId);
+        CourseStatus oldStatus = course.getStatus();
+        
+        CourseStatus newStatus = CourseStatus.valueOf(status);
+        course.setStatus(newStatus);
+        
+        Course savedCourse = courseRepository.save(course);
+        
+        auditLogService.logWithCorrelation(null, "CourseService", "COURSE_STATUS_CHANGED", 
+                          String.format("Course status changed from %s to %s for course: %s", 
+                                      oldStatus, newStatus, course.getCode()), requestId);
+        
+        return savedCourse;
+    }
+
+    /**
+     * Get total courses count.
+     */
+    public int getCoursesCount() {
+        return (int) courseRepository.count();
+    }
 }
