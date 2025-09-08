@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(response.data)
         sessionStorage.setItem('user', JSON.stringify(response.data))
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to refresh user:', error)
       // Only logout if this was a session expiry (401 on /auth/me)
       if (error.response?.status === 401) {
