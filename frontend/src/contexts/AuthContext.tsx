@@ -22,6 +22,7 @@ export { AuthContext }
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false) // Prevent parallel refreshes
 
   // BroadcastChannel for role change propagation
   useEffect(() => {
@@ -31,6 +32,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event.data.type === 'roleChanged') {
         // Refetch user data when role changes
         refreshUser()
+      } else if (event.data.type === 'logout') {
+        // Handle logout from other tabs
+        setUser(null)
+        sessionStorage.removeItem('user')
       }
     })
 
@@ -40,16 +45,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const refreshUser = async () => {
+    // Prevent parallel requests
+    if (isRefreshing) return
+    
+    setIsRefreshing(true)
     try {
-      const response = await apiRequest('/api/v1/auth/me')
+      const response = await apiRequest('/api/v1/auth/me', { 
+        method: 'GET',
+        headers: { 'X-Suppress-Error-Toast': 'true' }
+      })
       if (response.success && response.data) {
         setUser(response.data)
         sessionStorage.setItem('user', JSON.stringify(response.data))
       }
     } catch (error) {
       console.error('Failed to refresh user:', error)
-      // If refresh fails, logout
-      logout()
+      // Only logout if this was a session expiry (401 on /auth/me)
+      if (error.response?.status === 401) {
+        logout()
+      }
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -64,42 +80,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsedUser = JSON.parse(storedUser)
         setUser(parsedUser)
         
-        // Verify session is still valid by fetching current user
-        try {
-          const response = await apiRequest('/api/v1/auth/me', { 
-            method: 'GET',
-            headers: { 'X-Suppress-Error-Toast': 'true' }
-          })
-          if (response.success && response.data) {
-            setUser(response.data)
-          }
-        } catch (error) {
-          // Session is invalid, clear stored data
-          logout()
-        }
+        // Verify session is still valid by fetching current user (single call)
+        await refreshUser()
       } else {
-        // Try to get current user in case we have a valid cookie
-        try {
-          // Use a flag to suppress error toasts for initial auth check
-          const response = await apiRequest('/api/v1/auth/me', { 
-            method: 'GET',
-            headers: { 'X-Suppress-Error-Toast': 'true' }
-          })
-          if (response.success && response.data) {
-            setUser(response.data)
-            sessionStorage.setItem('user', JSON.stringify(response.data))
-          }
-        } catch (error) {
-          // No valid session - this is expected and not an error
-          console.log('No valid session found')
-        }
+        // Try to get current user in case we have a valid cookie (single call)
+        await refreshUser()
       }
       
       setIsLoading(false)
     }
     
     initAuth()
-  }, [])
+  }, []) // Remove refreshUser dependency to prevent loops
 
   const login = async (email: string, password: string) => {
     try {

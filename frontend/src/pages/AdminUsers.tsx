@@ -136,8 +136,9 @@ const AdminUsers: React.FC = () => {
         setShowRoleModal(false)
         setFieldErrors({})
         
-        // Refetch audit history and show audit drawer
-        await handleViewAuditHistory(selectedUser)
+        // Refetch users list using current filters and show audit drawer
+        await fetchUsers(true)
+        await handleViewAuditHistory({ ...selectedUser, role: newRole })
         
         if (response.data?.sessionRotated) {
           await refreshUser()
@@ -171,8 +172,9 @@ const AdminUsers: React.FC = () => {
             : u
         ))
         
-        // Show audit drawer after status change
-        await handleViewAuditHistory(user)
+        // Refetch users list and show audit drawer with fresh data
+        await fetchUsers(true)
+        await handleViewAuditHistory({ ...user, approved: newApproved })
       }
     } catch (error: any) {
       console.error('Error toggling approved status:', error)
@@ -202,8 +204,9 @@ const AdminUsers: React.FC = () => {
             : u
         ))
         
-        // Show audit drawer after status change
-        await handleViewAuditHistory(user)
+        // Refetch users list and show audit drawer with fresh data
+        await fetchUsers(true)
+        await handleViewAuditHistory({ ...user, active: newActive })
       }
     } catch (error: any) {
       console.error('Error toggling active status:', error)

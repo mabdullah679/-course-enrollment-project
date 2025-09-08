@@ -64,13 +64,14 @@ api.interceptors.response.use(
     // Extract structured error details
     const errorDetails = extractErrorDetails(error)
     
-    // Handle 401 specially - clear session and redirect
-    if (error.response?.status === 401) {
+    // Handle 401 on /auth/me specifically - clear session and redirect
+    // Do NOT auto-logout on 403 or other 401s as they may be authorization issues
+    if (error.response?.status === 401 && error.config?.url?.includes('/auth/me')) {
       sessionStorage.removeItem('user')
       // Broadcast auth state change to other tabs
       if (typeof BroadcastChannel !== 'undefined') {
         const authChannel = new BroadcastChannel('auth')
-        authChannel.postMessage({ type: 'logout', reason: 'unauthorized' })
+        authChannel.postMessage({ type: 'logout', reason: 'session_expired' })
         authChannel.close()
       }
       window.location.href = '/login'

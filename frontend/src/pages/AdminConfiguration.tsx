@@ -248,9 +248,15 @@ const AdminConfiguration: React.FC = () => {
     try {
       const response = await usersApi.getUsers(undefined, 1) // Just get count info
       if (response.success && response.data) {
+        let count = 0
+        if (response.data.content) {
+          count = response.data.totalElements || response.data.content.length
+        } else if (Array.isArray(response.data)) {
+          count = response.data.length
+        }
         updateTile(index, {
           status: 'success',
-          value: `${response.data.content?.length || 0}+ users`,
+          value: `${count}+ users`,
           error: undefined
         })
       }
@@ -269,9 +275,17 @@ const AdminConfiguration: React.FC = () => {
     try {
       const response = await coursesApi.getCourses(undefined, 1) // Just get count info
       if (response.success && response.data) {
+        let count = 0
+        if (response.data.content) {
+          count = response.data.totalElements || response.data.content.length
+        } else if (response.data.items) {
+          count = response.data.items.length
+        } else if (Array.isArray(response.data)) {
+          count = response.data.length
+        }
         updateTile(index, {
           status: 'success',
-          value: `${response.data.content?.length || 0}+ courses`,
+          value: `${count}+ courses`,
           error: undefined
         })
       }
@@ -290,9 +304,15 @@ const AdminConfiguration: React.FC = () => {
     try {
       const response = await enrollmentsApi.getEnrollments(undefined, 1) // Just get count info
       if (response.success && response.data) {
+        let count = 0
+        if (response.data.content) {
+          count = response.data.totalElements || response.data.content.length
+        } else if (Array.isArray(response.data)) {
+          count = response.data.length
+        }
         updateTile(index, {
           status: 'success',
-          value: `${response.data.content?.length || 0}+ enrollments`,
+          value: `${count}+ enrollments`,
           error: undefined
         })
       }
@@ -389,6 +409,8 @@ const AdminConfiguration: React.FC = () => {
                 className={`inline-flex items-center font-medium text-sm ${
                   tile.status === 'loading' 
                     ? 'text-gray-400 cursor-not-allowed' 
+                    : tile.status === 'error'
+                    ? 'text-red-600 hover:text-red-800'
                     : 'text-blue-600 hover:text-blue-800'
                 }`}
               >
@@ -400,6 +422,8 @@ const AdminConfiguration: React.FC = () => {
                     </svg>
                     Refreshing...
                   </>
+                ) : tile.status === 'error' ? (
+                  'Retry'
                 ) : (
                   'Refresh'
                 )}

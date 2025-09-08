@@ -27,6 +27,9 @@ const AdminCourses: React.FC = () => {
     term: ''
   })
   
+  // Request cancellation
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
+  
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
@@ -51,9 +54,24 @@ const AdminCourses: React.FC = () => {
 
   useEffect(() => {
     fetchCourses(true)
+    
+    // Cleanup function to cancel requests on unmount
+    return () => {
+      if (abortController) {
+        abortController.abort()
+      }
+    }
   }, [debouncedSearchTerm, filters])
 
   const fetchCourses = async (reset = false) => {
+    // Cancel previous request
+    if (abortController) {
+      abortController.abort()
+    }
+    
+    const newController = new AbortController()
+    setAbortController(newController)
+    
     setLoading(true)
     try {
       const currentAfter = reset ? undefined : lastId
@@ -65,8 +83,13 @@ const AdminCourses: React.FC = () => {
         filters.status || undefined
       )
       
+      // Check if request was cancelled
+      if (newController.signal.aborted) {
+        return
+      }
+      
       if (response.success && response.data) {
-        // Handle both array and {items, page} response formats
+        // Handle multiple response formats gracefully
         let courseData: Course[]
         let hasMore = false
         let nextCursor: number | undefined
@@ -88,7 +111,7 @@ const AdminCourses: React.FC = () => {
           courseData = []
         }
         
-        // Apply search filter client-side if needed
+        // Only apply client-side filtering for polish, not as substitute for server filtering
         if (debouncedSearchTerm) {
           courseData = courseData.filter(course => 
             course.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
@@ -106,10 +129,15 @@ const AdminCourses: React.FC = () => {
         setLastId(nextCursor)
       }
     } catch (error: any) {
-      console.error('Error fetching courses:', error)
-      toast.error('Failed to fetch courses')
+      // Don't show error if request was cancelled
+      if (error.name !== 'AbortError' && !newController.signal.aborted) {
+        console.error('Error fetching courses:', error)
+        toast.error('Failed to fetch courses')
+      }
     } finally {
-      setLoading(false)
+      if (!newController.signal.aborted) {
+        setLoading(false)
+      }
     }
   }
 

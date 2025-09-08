@@ -329,10 +329,15 @@ const Profile: React.FC = () => {
                     <input
                       type="password"
                       required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        fieldErrors.currentPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
                     />
+                    {fieldErrors.currentPassword && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.currentPassword}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">New Password</label>
@@ -340,10 +345,15 @@ const Profile: React.FC = () => {
                       type="password"
                       required
                       minLength={6}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        fieldErrors.newPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                     />
+                    {fieldErrors.newPassword && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.newPassword}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
@@ -351,10 +361,15 @@ const Profile: React.FC = () => {
                       type="password"
                       required
                       minLength={6}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        fieldErrors.confirmPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     />
+                    {fieldErrors.confirmPassword && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 mt-6">
