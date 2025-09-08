@@ -66,8 +66,27 @@ const AdminCourses: React.FC = () => {
       )
       
       if (response.success && response.data) {
-        // Handle direct array response from backend
-        let courseData = response.data as Course[]
+        // Handle both array and {items, page} response formats
+        let courseData: Course[]
+        let hasMore = false
+        let nextCursor: number | undefined
+        
+        if (Array.isArray(response.data)) {
+          // Direct array response
+          courseData = response.data as Course[]
+        } else if (response.data.items) {
+          // {items, page} response format
+          courseData = response.data.items as Course[]
+          hasMore = response.data.page?.nextAfter !== undefined
+          nextCursor = response.data.page?.nextAfter
+        } else if (response.data.content) {
+          // PaginatedResponse format
+          courseData = response.data.content as Course[]
+          hasMore = response.data.hasNext
+          nextCursor = response.data.nextCursor
+        } else {
+          courseData = []
+        }
         
         // Apply search filter client-side if needed
         if (debouncedSearchTerm) {
@@ -83,9 +102,8 @@ const AdminCourses: React.FC = () => {
         } else {
           setCourses(prev => [...prev, ...courseData])
         }
-        // For now, backend returns all courses at once, so no pagination
-        setHasNext(false)
-        setLastId(undefined)
+        setHasNext(hasMore)
+        setLastId(nextCursor)
       }
     } catch (error: any) {
       console.error('Error fetching courses:', error)

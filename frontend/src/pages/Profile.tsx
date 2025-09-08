@@ -24,6 +24,16 @@ const Profile: React.FC = () => {
     lastName: user?.lastName || '',
     email: user?.email || ''
   })
+  
+  // Store original values to detect changes
+  const [originalProfile] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || ''
+  })
+  
+  // Field errors for inline display
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -39,13 +49,16 @@ const Profile: React.FC = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Clear previous field errors
+    setFieldErrors({})
+    
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match')
+      setFieldErrors({ confirmPassword: 'Passwords do not match' })
       return
     }
     
     if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long')
+      setFieldErrors({ newPassword: 'Password must be at least 6 characters long' })
       return
     }
     
@@ -55,40 +68,88 @@ const Profile: React.FC = () => {
         newPassword: passwordForm.newPassword
       })
       
-      if (response.success) {
+      // Check for 204 success status (no content)
+      if (response.status === 204 || response.success) {
         toast.success('Password changed successfully')
         setShowChangePasswordModal(false)
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        setFieldErrors({})
       }
     } catch (error: any) {
       console.error('Error changing password:', error)
-      toast.error(error.response?.data?.message || 'Failed to change password')
+      
+      if (error.response?.status === 403) {
+        setFieldErrors({ currentPassword: 'Current password is incorrect' })
+      } else if (error.response?.status === 400 && error.response?.data?.details) {
+        // Handle field-level errors from backend
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to change password')
+      }
     }
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Clear previous field errors
+    setFieldErrors({})
+    
     if (!profileForm.firstName.trim() || !profileForm.lastName.trim() || !profileForm.email.trim()) {
-      toast.error('All fields are required')
+      setFieldErrors({
+        ...(profileForm.firstName.trim() ? {} : { firstName: 'First name is required' }),
+        ...(profileForm.lastName.trim() ? {} : { lastName: 'Last name is required' }),
+        ...(profileForm.email.trim() ? {} : { email: 'Email is required' })
+      })
       return
     }
     
     try {
-      const response = await authApi.updateProfile({
-        firstName: profileForm.firstName,
-        lastName: profileForm.lastName,
-        email: profileForm.email
-      })
+      // JSON Merge Patch semantics: only send changed fields
+      const changedFields: any = {}
+      
+      if (profileForm.firstName !== originalProfile.firstName) {
+        changedFields.firstName = profileForm.firstName
+      }
+      if (profileForm.lastName !== originalProfile.lastName) {
+        changedFields.lastName = profileForm.lastName
+      }
+      if (profileForm.email !== originalProfile.email) {
+        changedFields.email = profileForm.email
+      }
+      
+      // Only make request if there are changes
+      if (Object.keys(changedFields).length === 0) {
+        toast.info('No changes to save')
+        setShowUpdateProfileModal(false)
+        return
+      }
+      
+      const response = await authApi.updateProfile(changedFields)
       
       if (response.success) {
         toast.success('Profile updated successfully')
         await refreshUser() // Refresh to get updated user data
         setShowUpdateProfileModal(false)
+        setFieldErrors({})
       }
     } catch (error: any) {
       console.error('Error updating profile:', error)
-      toast.error(error.response?.data?.message || 'Failed to update profile')
+      
+      if (error.response?.status === 400 && error.response?.data?.details) {
+        // Handle field-level errors from backend
+        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
+          acc[detail.field] = detail.reason
+          return acc
+        }, {})
+        setFieldErrors(errors)
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to update profile')
+      }
     }
   }
 
