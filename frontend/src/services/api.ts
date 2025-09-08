@@ -252,6 +252,18 @@ export const healthApi = {
   },
 }
 
+export const enrollmentWindowApi = {
+  getEnrollmentWindow: async () => {
+    const response = await api.get('/api/v1/enrollment-window')
+    return response.data
+  },
+
+  updateEnrollmentWindow: async (data: any) => {
+    const response = await api.put('/api/v1/enrollment-window', data)
+    return response.data
+  },
+}
+
 export const metricsApi = {
   getUsersCount: async () => {
     const response = await api.get('/api/v1/metrics/users')

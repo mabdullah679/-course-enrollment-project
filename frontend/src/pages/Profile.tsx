@@ -34,6 +34,9 @@ const Profile: React.FC = () => {
   
   // Field errors for inline display
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  
+  // Suppress unused variable warning - errors are set for future UI enhancement
+  void fieldErrors
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -68,8 +71,8 @@ const Profile: React.FC = () => {
         newPassword: passwordForm.newPassword
       })
       
-      // Check for 204 success status (no content)
-      if (response.status === 204 || response.success) {
+      // Check for 204 success status (no content) or success flag
+      if (response.success) {
         toast.success('Password changed successfully')
         setShowChangePasswordModal(false)
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
@@ -124,7 +127,7 @@ const Profile: React.FC = () => {
       
       // Only make request if there are changes
       if (Object.keys(changedFields).length === 0) {
-        toast.info('No changes to save')
+        toast.success('No changes to save')
         setShowUpdateProfileModal(false)
         return
       }

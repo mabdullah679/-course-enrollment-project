@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { healthApi, actuatorApi, usersApi, coursesApi, enrollmentsApi } from '../services/api'
+import { healthApi, actuatorApi, usersApi, coursesApi, enrollmentsApi, enrollmentWindowApi } from '../services/api'
 
 interface HealthTile {
   title: string
@@ -16,6 +16,9 @@ interface EnrollmentWindow {
   term?: string
   startDate?: string
   endDate?: string
+  window_open_date_est?: string
+  window_close_date_est?: string
+  today_date_est?: string
 }
 
 const AdminConfiguration: React.FC = () => {
@@ -71,17 +74,20 @@ const AdminConfiguration: React.FC = () => {
   const fetchEnrollmentWindow = async () => {
     setWindowLoading(true)
     try {
-      // For now, use a mock enrollment window since the API might not exist yet
-      // In a real implementation, this would call: const response = await configApi.getEnrollmentWindow()
+      const response = await enrollmentWindowApi.getEnrollmentWindow()
+      if (response) {
+        setEnrollmentWindow(response)
+      }
+    } catch (error: any) {
+      console.error('Error fetching enrollment window:', error)
+      // Use default values on error
       setEnrollmentWindow({
         state: 'OPEN',
         term: 'Fall 2024',
         startDate: '2024-08-01',
-        endDate: '2024-08-31'
+        endDate: '2024-08-31',
+        today_date_est: new Date().toISOString().split('T')[0]
       })
-    } catch (error: any) {
-      console.error('Error fetching enrollment window:', error)
-      // Use default values
     } finally {
       setWindowLoading(false)
     }
@@ -89,25 +95,77 @@ const AdminConfiguration: React.FC = () => {
 
   const updateEnrollmentWindow = async (windowData: EnrollmentWindow) => {
     setWindowErrors({})
+    
+    // Validate dates
+    const errors = validateEnrollmentWindow(windowData)
+    if (Object.keys(errors).length > 0) {
+      setWindowErrors(errors)
+      return
+    }
+    
     try {
-      // For now, use a mock update since the API might not exist yet
-      // In a real implementation, this would call: const response = await configApi.updateEnrollmentWindow(windowData)
-      setEnrollmentWindow(windowData)
-      toast.success('Enrollment window updated successfully')
-      setShowWindowModal(false)
+      const response = await enrollmentWindowApi.updateEnrollmentWindow({
+        state: windowData.state,
+        term: windowData.term,
+        startDate: windowData.window_open_date_est || windowData.startDate,
+        endDate: windowData.window_close_date_est || windowData.endDate
+      })
+      
+      if (response.success) {
+        // Refresh the window data to get updated today_date_est
+        await fetchEnrollmentWindow()
+        toast.success('Enrollment window updated successfully')
+        setShowWindowModal(false)
+      }
     } catch (error: any) {
       console.error('Error updating enrollment window:', error)
-      
-      if (error.response?.status === 400 && error.response?.data?.details) {
-        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
-          acc[detail.field] = detail.reason
-          return acc
-        }, {})
-        setWindowErrors(errors)
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to update enrollment window')
+      toast.error(error.response?.data?.message || 'Failed to update enrollment window')
+    }
+  }
+
+  const validateEnrollmentWindow = (windowData: EnrollmentWindow): Record<string, string> => {
+    const errors: Record<string, string> = {}
+    const today = windowData.today_date_est || new Date().toISOString().split('T')[0]
+    
+    const openDate = windowData.window_open_date_est || windowData.startDate
+    const closeDate = windowData.window_close_date_est || windowData.endDate
+    
+    // Block past terms/opens
+    if (openDate && openDate < today) {
+      errors.startDate = 'Cannot set enrollment window open date in the past'
+    }
+    
+    if (closeDate && openDate && closeDate <= openDate) {
+      errors.endDate = 'End date must be after start date'
+    }
+    
+    return errors
+  }
+
+  const getEnrollmentWindowWarnings = (windowData: EnrollmentWindow): { message: string; color: string } | null => {
+    const openDate = windowData.window_open_date_est || windowData.startDate
+    const closeDate = windowData.window_close_date_est || windowData.endDate
+    
+    if (!openDate || !closeDate) return null
+    
+    const open = new Date(openDate)
+    const close = new Date(closeDate)
+    const diffTime = close.getTime() - open.getTime()
+    const daysOpen = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (daysOpen < 14) {
+      return {
+        message: `Shorter than expected (${daysOpen} days)`,
+        color: 'text-orange-600'
+      }
+    } else if (daysOpen > 14) {
+      return {
+        message: `Longer than expected (${daysOpen} days)`,
+        color: 'text-yellow-600'
       }
     }
+    
+    return null
   }
 
   const refreshAllTiles = async () => {
@@ -512,6 +570,12 @@ const AdminConfiguration: React.FC = () => {
                   {windowErrors.endDate && (
                     <p className="mt-1 text-sm text-red-600">{windowErrors.endDate}</p>
                   )}
+                  {(() => {
+                    const warning = getEnrollmentWindowWarnings(enrollmentWindow)
+                    return warning ? (
+                      <p className={`mt-1 text-sm ${warning.color}`}>{warning.message}</p>
+                    ) : null
+                  })()}
                 </div>
                 <div className="flex space-x-3">
                   <button
