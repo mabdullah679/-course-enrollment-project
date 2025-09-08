@@ -4,6 +4,7 @@ import { coursesApi, exportsApi, courseAssignmentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRole, Course, CourseCreateRequest } from '../types/api'
 import { useDebounce } from '../hooks/useDebounce'
+import { normalizePage } from '../utils/normalize'
 
 interface AuditEntry {
   id: number
@@ -89,31 +90,25 @@ const AdminCourses: React.FC = () => {
       }
       
       if (response.success && response.data) {
-        // Handle multiple response formats gracefully
-        let courseData: Course[]
+        // Use normalize function to handle multiple response formats
+        const courseData = normalizePage<Course>(response.data)
+        
+        // Handle pagination info
         let hasMore = false
         let nextCursor: number | undefined
         
-        if (Array.isArray(response.data)) {
-          // Direct array response
-          courseData = response.data as Course[]
-        } else if (response.data.items) {
-          // {items, page} response format
-          courseData = response.data.items as Course[]
+        if (response.data.items) {
           hasMore = response.data.page?.nextAfter !== undefined
           nextCursor = response.data.page?.nextAfter
         } else if (response.data.content) {
-          // PaginatedResponse format
-          courseData = response.data.content as Course[]
           hasMore = response.data.hasNext
           nextCursor = response.data.nextCursor
-        } else {
-          courseData = []
         }
         
         // Only apply client-side filtering for polish, not as substitute for server filtering
+        let filteredData = courseData
         if (debouncedSearchTerm) {
-          courseData = courseData.filter(course => 
+          filteredData = courseData.filter(course => 
             course.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             course.code.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             course.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
@@ -121,9 +116,9 @@ const AdminCourses: React.FC = () => {
         }
         
         if (reset) {
-          setCourses(courseData)
+          setCourses(filteredData)
         } else {
-          setCourses(prev => [...prev, ...courseData])
+          setCourses(prev => [...prev, ...filteredData])
         }
         setHasNext(hasMore)
         setLastId(nextCursor)
@@ -170,7 +165,7 @@ const AdminCourses: React.FC = () => {
         if (response.data) {
           setCourses(prev => [...prev, response.data])
         } else {
-          fetchCourses(true) // Fallback if no data returned
+          await fetchCourses(true) // Fallback to refetch
         }
       }
     } catch (error: any) {

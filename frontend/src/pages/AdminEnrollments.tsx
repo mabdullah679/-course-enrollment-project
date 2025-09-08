@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Enrollment, PaginatedResponse, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
+import { Enrollment, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
 import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
+import { normalizePage } from '../utils/normalize'
 
 interface EnrollmentCreateRequest {
   studentId: number
@@ -45,14 +46,14 @@ const AdminEnrollments: React.FC = () => {
       // Fetch students (users with STUDENT role)
       const studentsResponse = await usersApi.getUsers(undefined, 100, undefined, 'STUDENT')
       if (studentsResponse.success && studentsResponse.data) {
-        const userData = Array.isArray(studentsResponse.data) ? studentsResponse.data : studentsResponse.data.content || []
+        const userData = normalizePage<User>(studentsResponse.data)
         setStudents(userData)
       }
 
       // Fetch courses
       const coursesResponse = await coursesApi.getCourses()
       if (coursesResponse.success && coursesResponse.data) {
-        const courseData = Array.isArray(coursesResponse.data) ? coursesResponse.data : coursesResponse.data.content || []
+        const courseData = normalizePage<Course>(coursesResponse.data)
         setCourses(courseData)
       }
     } catch (error: any) {
@@ -78,8 +79,8 @@ const AdminEnrollments: React.FC = () => {
       )
       
       if (response.success && response.data) {
-        const paginatedData = response.data as PaginatedResponse<Enrollment>
-        let enrollmentData = paginatedData.content
+        // Use normalize function to handle multiple response formats
+        let enrollmentData = normalizePage<Enrollment>(response.data)
         
         // Apply upcoming filter client-side if needed
         if (filters.upcomingOnly) {
@@ -89,13 +90,22 @@ const AdminEnrollments: React.FC = () => {
           )
         }
         
+        // Handle pagination info
+        let hasMore = false
+        let nextCursor: number | undefined
+        
+        if (response.data.content) {
+          hasMore = response.data.hasNext
+          nextCursor = response.data.nextCursor
+        }
+        
         if (reset) {
           setEnrollments(enrollmentData)
         } else {
           setEnrollments(prev => [...prev, ...enrollmentData])
         }
-        setHasNext(paginatedData.hasNext)
-        setLastId(paginatedData.nextCursor)
+        setHasNext(hasMore)
+        setLastId(nextCursor)
       }
     } catch (error: any) {
       console.error('Error fetching enrollments:', error)
@@ -163,7 +173,7 @@ const AdminEnrollments: React.FC = () => {
         if (response.data) {
           setEnrollments(prev => [...prev, response.data])
         } else {
-          fetchEnrollments(true)
+          await fetchEnrollments(true)
         }
       }
     } catch (error: any) {

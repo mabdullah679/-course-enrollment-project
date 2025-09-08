@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { healthApi, actuatorApi, usersApi, coursesApi, enrollmentsApi, enrollmentWindowApi } from '../services/api'
+import { normalizePage } from '../utils/normalize'
 
 interface HealthTile {
   title: string
@@ -114,6 +115,8 @@ const AdminConfiguration: React.FC = () => {
       if (response.success) {
         // Refresh the window data to get updated today_date_est
         await fetchEnrollmentWindow()
+        // Refresh all tiles to reflect new state
+        await refreshAllTiles()
         toast.success('Enrollment window updated successfully')
         setShowWindowModal(false)
       }
@@ -248,17 +251,23 @@ const AdminConfiguration: React.FC = () => {
     try {
       const response = await usersApi.getUsers(undefined, 1) // Just get count info
       if (response.success && response.data) {
-        let count = 0
-        if (response.data.content) {
-          count = response.data.totalElements || response.data.content.length
-        } else if (Array.isArray(response.data)) {
-          count = response.data.length
+        const users = normalizePage(response.data)
+        let count = users.length
+        
+        // Try to get total count from response metadata
+        if (response.data.totalElements) {
+          count = response.data.totalElements
+        } else if (response.data.content) {
+          count = response.data.content.length
         }
+        
         updateTile(index, {
           status: 'success',
           value: `${count}+ users`,
           error: undefined
         })
+      } else {
+        throw new Error('No data received')
       }
     } catch (error: any) {
       updateTile(index, {
@@ -275,19 +284,23 @@ const AdminConfiguration: React.FC = () => {
     try {
       const response = await coursesApi.getCourses(undefined, 1) // Just get count info
       if (response.success && response.data) {
-        let count = 0
-        if (response.data.content) {
-          count = response.data.totalElements || response.data.content.length
+        const courses = normalizePage(response.data)
+        let count = courses.length
+        
+        // Try to get total count from response metadata
+        if (response.data.totalElements) {
+          count = response.data.totalElements
         } else if (response.data.items) {
           count = response.data.items.length
-        } else if (Array.isArray(response.data)) {
-          count = response.data.length
         }
+        
         updateTile(index, {
           status: 'success',
           value: `${count}+ courses`,
           error: undefined
         })
+      } else {
+        throw new Error('No data received')
       }
     } catch (error: any) {
       updateTile(index, {
@@ -304,17 +317,23 @@ const AdminConfiguration: React.FC = () => {
     try {
       const response = await enrollmentsApi.getEnrollments(undefined, 1) // Just get count info
       if (response.success && response.data) {
-        let count = 0
-        if (response.data.content) {
-          count = response.data.totalElements || response.data.content.length
-        } else if (Array.isArray(response.data)) {
-          count = response.data.length
+        const enrollments = normalizePage(response.data)
+        let count = enrollments.length
+        
+        // Try to get total count from response metadata
+        if (response.data.totalElements) {
+          count = response.data.totalElements
+        } else if (response.data.content) {
+          count = response.data.content.length
         }
+        
         updateTile(index, {
           status: 'success',
           value: `${count}+ enrollments`,
           error: undefined
         })
+      } else {
+        throw new Error('No data received')
       }
     } catch (error: any) {
       updateTile(index, {

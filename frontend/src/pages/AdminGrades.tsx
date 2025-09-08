@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Grade, PaginatedResponse, Enrollment } from '../types/api'
+import { Grade, Enrollment } from '../types/api'
 import { gradesApi, enrollmentsApi } from '../services/api'
+import { normalizePage } from '../utils/normalize'
 
 interface GradeCreateRequest {
   studentId: number
@@ -42,8 +43,8 @@ const AdminGrades: React.FC = () => {
     try {
       const response = await enrollmentsApi.getEnrollments()
       if (response.success && response.data) {
-        // Handle both array and paginated response
-        let enrollmentData = Array.isArray(response.data) ? response.data : response.data.content || []
+        // Use normalize function to handle multiple response formats
+        const enrollmentData = normalizePage<Enrollment>(response.data)
         setEnrollments(enrollmentData)
       }
     } catch (error: any) {
@@ -64,14 +65,25 @@ const AdminGrades: React.FC = () => {
       )
       
       if (response.success && response.data) {
-        const paginatedData = response.data as PaginatedResponse<Grade>
-        if (reset) {
-          setGrades(paginatedData.content)
-        } else {
-          setGrades(prev => [...prev, ...paginatedData.content])
+        // Use normalize function to handle multiple response formats
+        const gradeData = normalizePage<Grade>(response.data)
+        
+        // Handle pagination info
+        let hasMore = false
+        let nextCursor: number | undefined
+        
+        if (response.data.content) {
+          hasMore = response.data.hasNext
+          nextCursor = response.data.nextCursor
         }
-        setHasNext(paginatedData.hasNext)
-        setLastId(paginatedData.nextCursor)
+        
+        if (reset) {
+          setGrades(gradeData)
+        } else {
+          setGrades(prev => [...prev, ...gradeData])
+        }
+        setHasNext(hasMore)
+        setLastId(nextCursor)
       }
     } catch (error: any) {
       console.error('Error fetching grades:', error)
@@ -129,7 +141,7 @@ const AdminGrades: React.FC = () => {
         if (response.data) {
           setGrades(prev => [...prev, response.data])
         } else {
-          fetchGrades(true)
+          await fetchGrades(true)
         }
       }
     } catch (error: any) {

@@ -86,7 +86,13 @@ const Profile: React.FC = () => {
       } else if (error.response?.status === 400 && error.response?.data?.details) {
         // Handle field-level errors from backend
         const errors = error.response.data.details.reduce((acc: any, detail: any) => {
-          acc[detail.field] = detail.reason
+          if (detail.field === 'currentPassword') {
+            acc.currentPassword = detail.reason
+          } else if (detail.field === 'newPassword') {
+            acc.newPassword = detail.reason
+          } else if (detail.field === 'confirmPassword') {
+            acc.confirmPassword = detail.reason
+          }
           return acc
         }, {})
         setFieldErrors(errors)
@@ -136,7 +142,7 @@ const Profile: React.FC = () => {
       
       if (response.success) {
         toast.success('Profile updated successfully')
-        await refreshUser() // Refresh to get updated user data
+        await refreshUser() // Refresh to get updated user data and update header
         setShowUpdateProfileModal(false)
         setFieldErrors({})
       }
@@ -146,7 +152,13 @@ const Profile: React.FC = () => {
       if (error.response?.status === 400 && error.response?.data?.details) {
         // Handle field-level errors from backend
         const errors = error.response.data.details.reduce((acc: any, detail: any) => {
-          acc[detail.field] = detail.reason
+          if (detail.field === 'firstName') {
+            acc.firstName = detail.reason
+          } else if (detail.field === 'lastName') {
+            acc.lastName = detail.reason
+          } else if (detail.field === 'email') {
+            acc.email = detail.reason
+          }
           return acc
         }, {})
         setFieldErrors(errors)
@@ -406,30 +418,45 @@ const Profile: React.FC = () => {
                     <input
                       type="text"
                       required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        fieldErrors.firstName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={profileForm.firstName}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
                     />
+                    {fieldErrors.firstName && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.firstName}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Last Name</label>
                     <input
                       type="text"
                       required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        fieldErrors.lastName ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={profileForm.lastName}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
                     />
+                    {fieldErrors.lastName && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.lastName}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Email</label>
                     <input
                       type="email"
                       required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                        fieldErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                       value={profileForm.email}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
                     />
+                    {fieldErrors.email && (
+                      <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 mt-6">
