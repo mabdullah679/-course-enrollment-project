@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
-import { Grade, Enrollment } from '../types/api'
-import { gradesApi, enrollmentsApi } from '../services/api'
+import { toast, toastHttpError } from '../lib/toast'
+import { Grade, Enrollment, Course, User } from '../types/api'
+import { gradesApi, enrollmentsApi, coursesApi } from '../services/api'
 import { normalizePage } from '../utils/normalize'
 
 interface GradeCreateRequest {
@@ -33,11 +33,65 @@ const AdminGrades: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null)
+  
+  // New picker flow state
+  const [courses, setCourses] = useState<Course[]>([])
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+  const [availableStudents, setAvailableStudents] = useState<User[]>([])
+  const [selectedStudent, setSelectedStudent] = useState<User | null>(null)
 
   useEffect(() => {
     fetchGrades(true)
     fetchEnrollments()
+    fetchCourses()
   }, [filters])
+
+  const fetchCourses = async () => {
+    try {
+      const response = await coursesApi.getCourses()
+      if (response.success && response.data) {
+        const courseData = normalizePage<Course>(response.data)
+        setCourses(courseData)
+      }
+    } catch (error: any) {
+      console.error('Error fetching courses:', error)
+      toastHttpError(error, 'Failed to fetch courses')
+    }
+  }
+
+  const handleCourseSelection = (courseId: string) => {
+    const course = courses.find(c => c.id === parseInt(courseId))
+    setSelectedCourse(course || null)
+    setSelectedStudent(null) // Reset student selection
+    
+    if (course) {
+      // Filter enrollments to get students enrolled in the selected course
+      const enrolledStudents = enrollments
+        .filter(enrollment => enrollment.course.id === course.id && enrollment.status === 'ACTIVE')
+        .map(enrollment => enrollment.student)
+        .filter((student, index, self) => 
+          // Remove duplicates by student ID
+          index === self.findIndex(s => s.id === student.id)
+        )
+      
+      setAvailableStudents(enrolledStudents)
+    } else {
+      setAvailableStudents([])
+    }
+  }
+
+  const handleStudentSelection = (studentId: string) => {
+    const student = availableStudents.find(s => s.id === parseInt(studentId))
+    setSelectedStudent(student || null)
+    
+    // Find the enrollment for this student and course
+    if (student && selectedCourse) {
+      const enrollment = enrollments.find(e => 
+        e.student.id === student.id && e.course.id === selectedCourse.id
+      )
+      setSelectedEnrollment(enrollment || null)
+    }
+  }
 
   const fetchEnrollments = async () => {
     try {
@@ -111,8 +165,24 @@ const AdminGrades: React.FC = () => {
     // Clear previous errors
     setFieldErrors({})
     
-    if (!selectedEnrollment || !newGrade.score) {
-      toast.error('Please select an enrollment and enter a score')
+    // Validate course and student selection
+    if (!selectedCourse) {
+      toast.error('Please select a course')
+      return
+    }
+    
+    if (!selectedStudent) {
+      toast.error('Please select a student')
+      return
+    }
+    
+    if (!selectedEnrollment) {
+      toast.error('Selected student is not enrolled in the selected course')
+      return
+    }
+    
+    if (!newGrade.score || newGrade.score < 0 || newGrade.score > 100) {
+      toast.error('Please enter a valid score (0-100)')
       return
     }
 
@@ -129,36 +199,27 @@ const AdminGrades: React.FC = () => {
       if (response.success) {
         toast.success('Grade created successfully')
         setShowCreateModal(false)
-        setNewGrade({
-          studentId: 0,
-          courseId: 0,
-          score: 0,
-          feedback: ''
-        })
-        setSelectedEnrollment(null)
-        setFieldErrors({})
-        // Append to list if data returned, otherwise refresh
-        if (response.data) {
-          setGrades(prev => [...prev, response.data])
-        } else {
-          await fetchGrades(true)
-        }
+        resetCreateGradeForm()
+        fetchGrades(true) // Refresh grades list
       }
     } catch (error: any) {
       console.error('Error creating grade:', error)
-      
-      // Handle field-level validation errors (400 responses)
-      if (error.response?.status === 400 && error.response?.data?.details) {
-        const errors = error.response.data.details.reduce((acc: any, detail: any) => {
-          acc[detail.field] = detail.reason
-          return acc
-        }, {})
-        setFieldErrors(errors)
-        return
-      }
-      
-      toast.error(error.response?.data?.message || 'Failed to create grade')
+      toastHttpError(error, 'Failed to create grade')
     }
+  }
+
+  const resetCreateGradeForm = () => {
+    setNewGrade({
+      studentId: 0,
+      courseId: 0,
+      score: 0,
+      feedback: ''
+    })
+    setSelectedCourse(null)
+    setSelectedStudent(null)
+    setSelectedEnrollment(null)
+    setAvailableStudents([])
+    setFieldErrors({})
   }
 
   const handleUpdateGrade = async (gradeId: number, score: number, feedback?: string) => {
@@ -350,30 +411,55 @@ const AdminGrades: React.FC = () => {
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Grade</h3>
               <form onSubmit={handleCreateGrade}>
+                {/* Course Selection - First Dropdown */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Student & Course <span className="text-red-500">*</span>
+                    Course <span className="text-red-500">*</span>
                   </label>
                   <select
-                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
-                      fieldErrors.enrollmentId ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-                    }`}
-                    value={selectedEnrollment?.id || ''}
-                    onChange={(e) => {
-                      const enrollment = enrollments.find(enr => enr.id === parseInt(e.target.value))
-                      setSelectedEnrollment(enrollment || null)
-                    }}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value={selectedCourse?.id || ''}
+                    onChange={(e) => handleCourseSelection(e.target.value)}
                     required
                   >
-                    <option value="">Select Student & Course</option>
-                    {enrollments.map((enrollment) => (
-                      <option key={enrollment.id} value={enrollment.id}>
-                        {enrollment.student.firstName} {enrollment.student.lastName} - {enrollment.course.name} ({enrollment.course.code})
+                    <option value="">Select a course</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name} ({course.code})
                       </option>
                     ))}
                   </select>
-                  {fieldErrors.enrollmentId && (
-                    <p className="mt-1 text-sm text-red-600">{fieldErrors.enrollmentId}</p>
+                </div>
+
+                {/* Student Selection - Second Dropdown */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Student <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                      !selectedCourse ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'
+                    }`}
+                    value={selectedStudent?.id || ''}
+                    onChange={(e) => handleStudentSelection(e.target.value)}
+                    disabled={!selectedCourse}
+                    required
+                  >
+                    <option value="">
+                      {!selectedCourse ? 'Select a course first' : 'Select a student'}
+                    </option>
+                    {availableStudents.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.firstName} {student.lastName} ({student.email})
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Empty state hint */}
+                  {selectedCourse && availableStudents.length === 0 && (
+                    <p className="mt-2 text-sm text-gray-500 italic">
+                      No enrolled students for this course.
+                    </p>
                   )}
                 </div>
                 <div className="mb-4">
@@ -416,14 +502,7 @@ const AdminGrades: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false)
-                      setNewGrade({
-                        studentId: 0,
-                        courseId: 0,
-                        score: 0,
-                        feedback: ''
-                      })
-                      setSelectedEnrollment(null)
-                      setFieldErrors({})
+                      resetCreateGradeForm()
                     }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   >

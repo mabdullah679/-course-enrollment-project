@@ -147,22 +147,29 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <div className="relative">
                 <div className="flex items-center space-x-4">
                   <div className="text-sm">
-                    <Link 
-                      to="/profile"
-                      className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
-                    >
-                      {user.firstName} {user.lastName}
-                    </Link>
-                    {(user.role === UserRole.ADMIN || user.role === UserRole.STAFF) ? (
+                    <div className="mb-1">
                       <Link 
-                        to={getProfileBadgeRoute()}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        to="/profile"
+                        className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
                       >
-                        {getRoleDisplayName(user.role)}
+                        {user.firstName} {user.lastName}
                       </Link>
-                    ) : (
-                      <div className="text-gray-500">{getRoleDisplayName(user.role)}</div>
-                    )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div></div>
+                      {(user.role === UserRole.ADMIN || user.role === UserRole.STAFF) ? (
+                        <Link 
+                          to={getProfileBadgeRoute()}
+                          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium hover:bg-blue-200 transition-colors"
+                        >
+                          {getRoleDisplayName(user.role)}
+                        </Link>
+                      ) : (
+                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
+                          {getRoleDisplayName(user.role)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -208,14 +215,20 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="px-4">
-                <Link 
-                  to="/profile"
-                  className="text-base font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {user.firstName} {user.lastName}
-                </Link>
-                <div className="text-sm text-gray-500">{getRoleDisplayName(user.role)}</div>
+                <div className="mb-1">
+                  <Link 
+                    to="/profile"
+                    className="text-base font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {user.firstName} {user.lastName}
+                  </Link>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                    {getRoleDisplayName(user.role)}
+                  </span>
+                </div>
               </div>
               <div className="mt-3 px-4">
                 <button

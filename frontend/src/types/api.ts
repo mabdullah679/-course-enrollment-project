@@ -44,7 +44,7 @@ export interface Course {
   name: string
   description?: string
   credits: number
-  status: 'ACTIVE' | 'ARCHIVED' | 'CLOSED'
+  status: 'ACTIVE' | 'ARCHIVED' | 'DRAFT' | 'CLOSED'
   createdAt: string
 }
 
@@ -102,7 +102,7 @@ export interface CourseCreateRequest {
   name: string
   courseCode: string
   credits: number
-  status: 'ACTIVE' | 'ARCHIVED' | 'CLOSED'
+  status: 'ACTIVE' | 'ARCHIVED' | 'DRAFT' | 'CLOSED'
   description?: string
 }
 

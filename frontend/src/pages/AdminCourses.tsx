@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import { toast, toastHttpError } from '../lib/toast'
 import { coursesApi, exportsApi, courseAssignmentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { UserRole, Course, CourseCreateRequest } from '../types/api'
@@ -45,7 +45,7 @@ const AdminCourses: React.FC = () => {
     status: 'ACTIVE',
     description: ''
   })
-  const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'CLOSED'>('ACTIVE')
+  const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'DRAFT' | 'CLOSED'>('ACTIVE')
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
@@ -236,18 +236,21 @@ const AdminCourses: React.FC = () => {
       const response = await coursesApi.updateCourseStatus(selectedCourse.id, newStatus)
       
       if (response.success) {
-        toast.success('Course status updated successfully')
+        toast.success('Course status updated.')
+        
+        // Update course list immediately to reflect new status
         setCourses(prev => prev.map(course => 
           course.id === selectedCourse.id 
             ? { ...course, status: newStatus }
             : course
         ))
+        
         setShowStatusModal(false)
         setSelectedCourse(null)
       }
     } catch (error: any) {
       console.error('Error changing course status:', error)
-      toast.error(error.response?.data?.message || 'Failed to change course status')
+      toastHttpError(error, 'Couldn\'t update course status. Please try again.')
     }
   }
 
@@ -307,6 +310,8 @@ const AdminCourses: React.FC = () => {
         return 'bg-green-100 text-green-800'
       case 'ARCHIVED':
         return 'bg-yellow-100 text-yellow-800'
+      case 'DRAFT':
+        return 'bg-blue-100 text-blue-800'
       case 'CLOSED':
         return 'bg-red-100 text-red-800'
       default:
@@ -390,6 +395,7 @@ const AdminCourses: React.FC = () => {
               <option value="">All Status</option>
               <option value="ACTIVE">Active</option>
               <option value="ARCHIVED">Archived</option>
+              <option value="DRAFT">Draft</option>
               <option value="CLOSED">Closed</option>
             </select>
           </div>
@@ -646,10 +652,11 @@ const AdminCourses: React.FC = () => {
                 <select
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as 'ACTIVE' | 'ARCHIVED' | 'CLOSED')}
+                  onChange={(e) => setNewStatus(e.target.value as 'ACTIVE' | 'ARCHIVED' | 'DRAFT' | 'CLOSED')}
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="ARCHIVED">Archived</option>
+                  <option value="DRAFT">Draft</option>
                   <option value="CLOSED">Closed</option>
                 </select>
               </div>
