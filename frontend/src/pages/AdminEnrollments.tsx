@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import { toast, toastHttpError } from '../lib/toast'
 import { Enrollment, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
 import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
 import { normalizePage } from '../utils/normalize'
@@ -35,6 +35,11 @@ const AdminEnrollments: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [students, setStudents] = useState<User[]>([])
   const [courses, setCourses] = useState<Course[]>([])
+  
+  // Rejection modal state
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [enrollmentToReject, setEnrollmentToReject] = useState<Enrollment | null>(null)
+  const [showRejectInfo, setShowRejectInfo] = useState(false)
 
   useEffect(() => {
     fetchEnrollments(true)
@@ -206,8 +211,39 @@ const AdminEnrollments: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error updating enrollment status:', error)
-      toast.error(error.response?.data?.message || 'Failed to update enrollment status')
+      toastHttpError(error, 'Failed to update enrollment status')
     }
+  }
+
+  const handleRejectClick = (enrollment: Enrollment) => {
+    setEnrollmentToReject(enrollment)
+    setShowRejectModal(true)
+  }
+
+  const handleRejectConfirm = async () => {
+    if (!enrollmentToReject) return
+    
+    try {
+      const response = await enrollmentsApi.rejectEnrollment(enrollmentToReject.id)
+      if (response.success) {
+        toast.success('Enrollment rejected.')
+        setEnrollments(prev => prev.map(enrollment => 
+          enrollment.id === enrollmentToReject.id 
+            ? { ...enrollment, status: 'REJECTED' as any }
+            : enrollment
+        ))
+        setShowRejectModal(false)
+        setEnrollmentToReject(null)
+      }
+    } catch (error: any) {
+      console.error('Error rejecting enrollment:', error)
+      toastHttpError(error, 'Couldn\'t reject enrollment. Please try again.')
+    }
+  }
+
+  const handleRejectCancel = () => {
+    setShowRejectModal(false)
+    setEnrollmentToReject(null)
   }
 
   const getStatusColor = (status: string) => {
@@ -221,6 +257,8 @@ const AdminEnrollments: React.FC = () => {
       case 'COMPLETED':
         return 'bg-purple-100 text-purple-800'
       case 'DROPPED':
+        return 'bg-red-100 text-red-800'
+      case 'REJECTED':
         return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -398,10 +436,28 @@ const AdminEnrollments: React.FC = () => {
                         Approve
                       </button>
                       <button
-                        onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'DROPPED')}
-                        className="text-red-600 hover:text-red-900"
+                        onClick={() => handleRejectClick(enrollment)}
+                        className="text-red-600 hover:text-red-900 inline-flex items-center"
                       >
                         Reject
+                        <button
+                          className="ml-1 text-gray-400 hover:text-gray-600"
+                          onMouseEnter={() => setShowRejectInfo(true)}
+                          onMouseLeave={() => setShowRejectInfo(false)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowRejectInfo(!showRejectInfo)
+                          }}
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        {showRejectInfo && (
+                          <div className="absolute z-10 p-2 bg-gray-800 text-white text-xs rounded shadow-lg max-w-xs -mt-8 ml-8">
+                            This will confirm the rejection, and this enrollment request will need to be resubmitted.
+                          </div>
+                        )}
                       </button>
                     </>
                   )}
@@ -566,6 +622,50 @@ const AdminEnrollments: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Enrollment Confirmation Modal */}
+      {showRejectModal && enrollmentToReject && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Confirm Rejection
+              </h3>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to reject the enrollment for{' '}
+                  <span className="font-medium">
+                    {enrollmentToReject.student.firstName} {enrollmentToReject.student.lastName}
+                  </span>{' '}
+                  in{' '}
+                  <span className="font-medium">
+                    {enrollmentToReject.course.name}
+                  </span>?
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  This will confirm the rejection, and this enrollment request will need to be resubmitted.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={handleRejectCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRejectConfirm}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  Confirm rejection
+                </button>
+              </div>
             </div>
           </div>
         </div>

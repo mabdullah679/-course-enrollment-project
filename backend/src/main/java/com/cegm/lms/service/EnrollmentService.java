@@ -1,5 +1,6 @@
 package com.cegm.lms.service;
 
+import com.cegm.lms.event.EnrollmentRejectedEvent;
 import com.cegm.lms.exception.DuplicateEnrollmentException;
 import com.cegm.lms.exception.CourseNotFoundException;
 import com.cegm.lms.exception.EnrollmentNotFoundException;
@@ -12,6 +13,7 @@ import com.cegm.lms.repository.CourseRepository;
 import com.cegm.lms.repository.EnrollmentRepository;
 import com.cegm.lms.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,9 @@ public class EnrollmentService {
 
     @Autowired
     private SsotConfigService ssotConfigService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * Create new enrollment with policy validation.
@@ -95,6 +100,29 @@ public class EnrollmentService {
             String.format("Enrollment %d status changed from %s to %s", enrollmentId, currentStatus, newStatus));
         
         return updatedEnrollment;
+    }
+
+    /**
+     * Reject enrollment with notification event emission.
+     * Simplified method for rejection flow UX.
+     */
+    public Enrollment rejectEnrollment(Long enrollmentId) {
+        Enrollment enrollment = findById(enrollmentId);
+        
+        // Use the standard status update method to ensure validation
+        Enrollment rejectedEnrollment = updateEnrollmentStatus(enrollmentId, EnrollmentStatus.REJECTED);
+        
+        // Emit rejection event for notification system
+        eventPublisher.publishEvent(new EnrollmentRejectedEvent(
+            this,
+            rejectedEnrollment.getId(),
+            rejectedEnrollment.getStudent().getId(),
+            rejectedEnrollment.getCourse().getId(),
+            rejectedEnrollment.getCourse().getName(),
+            rejectedEnrollment.getStudent().getFirstName() + " " + rejectedEnrollment.getStudent().getLastName()
+        ));
+        
+        return rejectedEnrollment;
     }
 
     /**

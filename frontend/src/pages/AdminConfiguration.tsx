@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import { toast, toastHttpError } from '../lib/toast'
 import { healthApi, actuatorApi, usersApi, coursesApi, enrollmentsApi, enrollmentWindowApi } from '../services/api'
 import { normalizePage } from '../utils/normalize'
 
@@ -58,7 +58,7 @@ const AdminConfiguration: React.FC = () => {
 
   // Enrollment window state
   const [enrollmentWindow, setEnrollmentWindow] = useState<EnrollmentWindow>({
-    state: 'OPEN',
+    state: 'CLOSED',
     term: '',
     startDate: '',
     endDate: ''
@@ -81,13 +81,22 @@ const AdminConfiguration: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error fetching enrollment window:', error)
-      // Use default values on error
+      toastHttpError(error, 'Failed to fetch enrollment window')
+      
+      // Use default values on error per requirements: CLOSED, today's date, blank term
+      const today = new Date().toLocaleDateString('en-US', { 
+        month: '2-digit', 
+        day: '2-digit', 
+        year: 'numeric',
+        timeZone: 'America/New_York'
+      })
+      
       setEnrollmentWindow({
-        state: 'OPEN',
-        term: 'Fall 2024',
-        startDate: '2024-08-01',
-        endDate: '2024-08-31',
-        today_date_est: new Date().toISOString().split('T')[0]
+        state: 'CLOSED',
+        term: '',
+        startDate: today,
+        endDate: today,
+        today_date_est: today
       })
     } finally {
       setWindowLoading(false)
@@ -117,12 +126,12 @@ const AdminConfiguration: React.FC = () => {
         await fetchEnrollmentWindow()
         // Refresh all tiles to reflect new state
         await refreshAllTiles()
-        toast.success('Enrollment window updated successfully')
+        toast.success('Enrollment window updated.')
         setShowWindowModal(false)
       }
     } catch (error: any) {
       console.error('Error updating enrollment window:', error)
-      toast.error(error.response?.data?.message || 'Failed to update enrollment window')
+      toastHttpError(error, 'Couldn\'t update enrollment window. Please try again.')
     }
   }
 

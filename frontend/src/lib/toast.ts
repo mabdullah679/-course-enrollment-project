@@ -129,6 +129,59 @@ export const toastError = (message: string, code: string, requestId?: string) =>
   return toast.error(message, { code, requestId, dedupe: true })
 }
 
+// Standardized error message mapping for HTTP status codes
+export const getStandardErrorMessage = (status: number | string, defaultMessage?: string): string => {
+  const statusCode = typeof status === 'string' ? parseInt(status, 10) : status
+
+  switch (statusCode) {
+    case 401:
+    case 403:
+      return "You don't have permission to do that."
+    case 404:
+      return "Not found."
+    case 409:
+      return "Conflict. Please refresh and try again."
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+    default:
+      if (statusCode >= 500) {
+        return "Something went wrong. Please try again."
+      }
+      return defaultMessage || "Something went wrong. Please try again."
+  }
+}
+
+// Enhanced error toast with HTTP status mapping
+export const toastHttpError = (error: any, fallbackMessage?: string, requestId?: string) => {
+  let message: string
+  let code: string
+  
+  // Extract status code from error
+  const status = error?.response?.status || error?.status
+  
+  if (status) {
+    message = getStandardErrorMessage(status, fallbackMessage)
+    code = `HTTP_${status}`
+  } else {
+    message = fallbackMessage || "Something went wrong. Please try again."
+    code = 'UNKNOWN_ERROR'
+  }
+  
+  // Log the error details for debugging (but don't show to user)
+  if (requestId || error?.response?.data?.requestId) {
+    console.error('API Error:', {
+      status,
+      message,
+      requestId: requestId || error?.response?.data?.requestId,
+      error
+    })
+  }
+  
+  return toast.error(message, { code, dedupe: true })
+}
+
 // Get stats for QA console
 export const getToastStats = () => {
   return {

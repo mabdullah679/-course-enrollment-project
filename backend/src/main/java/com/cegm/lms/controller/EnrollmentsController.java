@@ -80,6 +80,17 @@ public class EnrollmentsController {
     }
 
     /**
+     * Reject enrollment with notification event.
+     * Simplified endpoint for enrollment rejection UX.
+     */
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+    public ResponseEntity<ApiResponse<Enrollment>> rejectEnrollment(@PathVariable Long id) {
+        Enrollment enrollment = enrollmentService.rejectEnrollment(id);
+        return ResponseEntity.ok(ApiResponse.success("Enrollment rejected.", enrollment));
+    }
+
+    /**
      * Update enrollment status with state machine validation.
      * Valid transitions: PENDING -> APPROVED -> ACTIVE -> COMPLETED or PENDING -> REJECTED
      */

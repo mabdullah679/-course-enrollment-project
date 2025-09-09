@@ -226,6 +226,12 @@ export const enrollmentsApi = {
     const response = await api.put(`/api/v1/enrollments/${id}/status`, { status })
     return response.data
   },
+
+  // Reject enrollment with dedicated endpoint
+  rejectEnrollment: async (id: number) => {
+    const response = await api.post(`/api/v1/enrollments/${id}/reject`)
+    return response.data
+  },
 }
 
 /* ---------------------------- GRADES ---------------------------- */

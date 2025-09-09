@@ -4,10 +4,10 @@ import jakarta.validation.constraints.NotNull;
 
 public class EnrollmentWindowUpdateRequest {
     @NotNull
-    private String status; // "ON" | "OFF"
+    private String status; // Accepts "ON" | "OFF" | "OPEN" | "CLOSED"
     private String term;   // optional
-    private String startDate; // optional ISO date string
-    private String endDate;   // optional ISO date string
+    private String startDate; // optional ISO date string or MM/dd/yyyy
+    private String endDate;   // optional ISO date string or MM/dd/yyyy
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
