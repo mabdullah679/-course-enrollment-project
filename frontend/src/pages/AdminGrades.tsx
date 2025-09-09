@@ -302,7 +302,7 @@ const AdminGrades: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(grade.createdAt || grade.assignedAt).toLocaleDateString()}
+                  {new Date(grade.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
