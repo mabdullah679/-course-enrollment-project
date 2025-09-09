@@ -1,0 +1,1231 @@
+CEGM Dev Context Dump
+Generated: Mon Sep  8 10:36:41 EDT 2025
+Repo: /Users/muhammadabdullah/cegm
+Backend URL: http://localhost:8080
+
+== Tool Versions ==
+node: v24.6.0
+npm:  11.5.1
+java: openjdk version "21.0.8" 2025-07-15
+mvn:  Apache Maven 3.9.11 (3e54c93a704957b63ee3494413a2b544fd3d825b)
+rg:   ripgrep 14.1.1
+
+== Frontend env (.env.local) ==
+VITE_API_BASE_URL=<redacted>
+VITE_API_V1_BASE_URL=<redacted>
+
+== vite.config.ts proxy/server ==
+4-// https://vitejs.dev/config/
+5-export default defineConfig({
+6:  server: {
+7-    port: 5173,
+8:    proxy: {
+9-      '/api': { target: "http://localhost:8080", changeOrigin: true, secure: false }
+10-    }
+11-  },
+12-  plugins: [react()],
+13:  server: {
+14-    port: 3000,
+15-    host: true,
+
+== FE call sites for admin config/count/enrollment/profile ==
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:1:import { api } from '../lib/api'
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:2:import { User, ApiResponse, AuthResponse, SignUpRequest, LoginRequest } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-3-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-4-// Generic API request function
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-30-export const authApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-31-  signup: async (data: SignUpRequest): Promise<ApiResponse<User>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:32:    const response = await api.post('/api/v1/auth/signup', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-33-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-34-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-35-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-36-  login: async (data: LoginRequest): Promise<ApiResponse<AuthResponse>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:37:    const response = await api.post('/api/v1/auth/login', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-38-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-39-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-40-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-41-  logout: async (): Promise<ApiResponse<string>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:42:    const response = await api.post('/api/v1/auth/logout')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-43-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-44-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-45-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-46-  getCurrentUser: async (): Promise<ApiResponse<User>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:47:    const response = await api.get('/api/v1/auth/me')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-48-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-49-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-50-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-51-  rotateSession: async (): Promise<ApiResponse<string>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:52:    const response = await api.post('/api/v1/auth/rotate-session')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-53-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-54-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-55-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-56-  updateProfile: async (data: { firstName?: string; lastName?: string; email?: string }): Promise<ApiResponse<User>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:57:    const response = await api.patch('/api/v1/me', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-58-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-59-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-60-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-61-  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<ApiResponse<string>> => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:62:    const response = await api.post('/api/v1/me/password', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-63-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-64-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-67-export const coursesApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-68-  getCourses: async (after?: number, size = 20, ownerId?: number, term?: string, status?: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:69:    let url = `/api/v1/courses?size=${size}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-70-    if (after) url += `&after=${after}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-71-    if (ownerId) url += `&ownerId=${ownerId}`
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-77-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-78-  getStudentCourses: async (enrolled = true) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:79:    const url = enrolled ? '/api/v1/courses?enrolled=true' : '/api/v1/courses'
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-80-    const response = await api.get(url)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-81-    return response.data
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-83-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-84-  getCourseById: async (id: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:85:    const response = await api.get(`/api/v1/courses/${id}`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-86-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-87-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-88-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-89-  searchCourses: async (name: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:90:    const response = await api.get(`/api/v1/courses/search?name=${name}`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-91-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-92-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-100-      description: data.description
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-101-    }
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:102:    const response = await api.post('/api/v1/courses', backendData)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-103-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-104-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-105-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-106-  updateCourse: async (id: number, data: any) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:107:    const response = await api.put(`/api/v1/courses/${id}`, data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-108-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-109-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-110-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-111-  updateCourseStatus: async (id: number, status: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:112:    const response = await api.put(`/api/v1/courses/${id}/status`, { status })
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-113-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-114-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-115-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-116-  getCourseAuditHistory: async (id: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:117:    const response = await api.get(`/api/v1/courses/${id}/audit`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-118-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-119-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-120-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-121-  archiveCourse: async (id: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:122:    const response = await api.put(`/api/v1/courses/${id}/archive`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-123-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-124-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-127-export const usersApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-128-  getUsers: async (after?: number, size = 20, q?: string, role?: string, status?: string, approved?: boolean, active?: boolean) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:129:    let url = `/api/v1/users?size=${size}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-130-    if (after) url += `&after=${after}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-131-    if (q) url += `&q=${encodeURIComponent(q)}`
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-139-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-140-  approveUser: async (id: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:141:    const response = await api.post(`/api/v1/users/${id}/approve`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-142-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-143-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-144-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-145-  changeUserRole: async (id: number, role: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:146:    const response = await api.post(`/api/v1/users/${id}/role`, { role })
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-147-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-148-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-152-    if (approved !== undefined) body.approved = approved
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-153-    if (active !== undefined) body.active = active
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:154:    const response = await api.put(`/api/v1/users/${id}/status`, body)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-155-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-156-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-157-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-158-  getUserAuditHistory: async (id: number, after?: string, limit = 25) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:159:    let url = `/api/v1/users/${id}/audit?limit=${limit}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-160-    if (after) url += `&after=${after}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-161-    const response = await api.get(url)
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-164-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-165-  getUserProfile: async (id: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:166:    const response = await api.get(`/api/v1/users/${id}`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-167-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-168-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-171-export const enrollmentsApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-172-  getEnrollments: async (after?: number, size = 20, type?: string, semester?: string, courseId?: number, studentId?: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:173:    let url = `/api/v1/enrollments?size=${size}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-174-    if (after) url += `&after=${after}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-175-    if (type) url += `&type=${type}`
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-182-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-183-  getStudentEnrollments: async (studentId: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:184:    const response = await api.get(`/api/v1/enrollments?studentId=${studentId}`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-185-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-186-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-187-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-188-  updateEnrollmentStatus: async (id: number, status: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:189:    const response = await api.put(`/api/v1/enrollments/${id}/status`, { status })
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-190-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-191-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-192-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-193-  enrollInCourse: async (courseId: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:194:    const response = await api.post('/api/v1/enrollments', { courseId })
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-195-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-196-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-197-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-198-  createEnrollment: async (data: { studentId: number; courseId: number; type: string; status?: string }) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:199:    const response = await api.post('/api/v1/enrollments', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-200-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-201-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-204-export const gradesApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-205-  getGrades: async (after?: number, size = 20, courseId?: number, studentId?: number, status?: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:206:    let url = `/api/v1/grades?size=${size}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-207-    if (after) url += `&after=${after}`
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-208-    if (courseId) url += `&courseId=${courseId}`
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-214-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-215-  getStudentGrades: async (studentId: number) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:216:    const response = await api.get(`/api/v1/grades?studentId=${studentId}`)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-217-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-218-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-219-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-220-  updateGrade: async (id: number, score: number, feedback?: string) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:221:    const response = await api.put(`/api/v1/grades/${id}`, { score, feedback })
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-222-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-223-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-224-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-225-  createGrade: async (data: { enrollmentId: number; score: number; feedback?: string }) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:226:    const response = await api.post('/api/v1/grades', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-227-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-228-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-231-export const configApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-232-  getMeta: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:233:    const response = await api.get('/api/v1/config/meta')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-234-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-235-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-236-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-237-  getEnrollmentWindow: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:238:    const response = await api.get('/api/v1/enrollment-window')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-239-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-240-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-241-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-242-  updateEnrollmentWindow: async (data: { state: string; term?: string; startDate?: string; endDate?: string }) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:243:    const response = await api.put('/api/v1/enrollment-window', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-244-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-245-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-248-export const healthApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-249-  getHealth: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:250:    const response = await api.get('/api/v1/health')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-251-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-252-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-255-export const enrollmentWindowApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-256-  getEnrollmentWindow: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:257:    const response = await api.get('/api/v1/enrollment-window')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-258-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-259-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-260-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-261-  updateEnrollmentWindow: async (data: any) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:262:    const response = await api.put('/api/v1/enrollment-window', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-263-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-264-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-267-export const metricsApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-268-  getUsersCount: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:269:    const response = await api.get('/api/v1/metrics/users')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-270-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-271-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-272-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-273-  getCoursesCount: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:274:    const response = await api.get('/api/v1/metrics/courses')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-275-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-276-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-277-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-278-  getEnrollmentsCount: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:279:    const response = await api.get('/api/v1/metrics/enrollments')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-280-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-281-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-282-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-283-  getGradesCount: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:284:    const response = await api.get('/api/v1/metrics/grades')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-285-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-286-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-287-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-288-  getDashboardMetrics: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:289:    const response = await api.get('/api/v1/metrics/dashboard')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-290-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-291-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-306-export const exportsApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-307-  exportUsers: async (filters?: any) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:308:    const response = await api.post('/api/v1/exports/csv', {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-309-      resource: 'users',
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-310-      filters: filters || {}
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-314-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-315-  exportCourses: async (filters?: any) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:316:    const response = await api.post('/api/v1/exports/csv', {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-317-      resource: 'courses',
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-318-      filters: filters || {}
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-322-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-323-  exportEnrollments: async (filters?: any) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:324:    const response = await api.post('/api/v1/exports/csv', {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-325-      resource: 'enrollments',
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-326-      filters: filters || {}
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-330-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-331-  exportGrades: async (filters?: any) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:332:    const response = await api.post('/api/v1/exports/csv', {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-333-      resource: 'grades',
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-334-      filters: filters || {}
+--
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-340-export const courseAssignmentsApi = {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-341-  requestCourseAssignment: async (data: { instructorId: number; courseIds: number[]; semesterId?: string }) => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:342:    const response = await api.post('/api/v1/course-assignments/requests', data)
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-343-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-344-  },
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-345-
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-346-  getAssignmentRequests: async () => {
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts:347:    const response = await api.get('/api/v1/course-assignments/requests')
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-348-    return response.data
+/Users/muhammadabdullah/cegm/frontend/src/services/api.ts-349-  },
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx:3:import { coursesApi, exportsApi, courseAssignmentsApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx-4-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx:5:import { UserRole, Course, CourseCreateRequest } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx-6-import { useDebounce } from '../hooks/useDebounce'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminCourses.tsx-7-import { normalizePage } from '../utils/normalize'
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-2-import { Link } from 'react-router-dom'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:3:import { configApi, actuatorApi, metricsApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-4-
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-5-interface CapabilityStatus {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-21-}
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-22-
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:23:const AdminDashboard: React.FC = () => {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-24-  const [capabilities, setCapabilities] = useState({
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-25-    configMeta: { available: false, probed: false } as CapabilityStatus,
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-28-  })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-29-  
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:30:  const [counts, setCounts] = useState({
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-31-    users: 0,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-32-    courses: 0,
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-52-      
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-53-      setCounts({
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:54:        users: usersResp.count || 0,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:55:        courses: coursesResp.count || 0,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:56:        enrollments: enrollmentsResp.count || 0,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:57:        grades: gradesResp.count || 0,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-58-        loading: false
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-59-      })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-60-    } catch (error) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:61:      console.error('Error loading counts:', error)
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-62-      setCounts(prev => ({ ...prev, loading: false }))
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-63-    }
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-172-      href: '/admin/users',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-173-      status: 'info',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:174:      value: counts.loading ? 'Loading...' : `${counts.users}+ users`
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-175-    },
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-176-    {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-179-      href: '/admin/course-management',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-180-      status: 'info',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:181:      value: counts.loading ? 'Loading...' : `${counts.courses}+ courses`
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-182-    },
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-183-    {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-186-      href: '/admin/grade-management',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-187-      status: 'info',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:188:      value: counts.loading ? 'Loading...' : `${counts.grades}+ grades`
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-189-    },
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-190-    {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-193-      href: '/admin/enrollments',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-194-      status: 'info',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:195:      value: counts.loading ? 'Loading...' : `${counts.enrollments}+ enrollments`
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-196-    },
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-197-    {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-358-}
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx-359-
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminDashboard.tsx:360:export default AdminDashboard
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminEnrollments.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminEnrollments.tsx-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminEnrollments.tsx:3:import { Enrollment, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminEnrollments.tsx:4:import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminEnrollments.tsx-5-import { normalizePage } from '../utils/normalize'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminEnrollments.tsx-6-
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminUsers.tsx-2-import { useSearchParams, useNavigate } from 'react-router-dom'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminUsers.tsx-3-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminUsers.tsx:4:import { User, UserRole, UserStatus, PaginatedResponse } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminUsers.tsx:5:import { usersApi, exportsApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminUsers.tsx-6-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminUsers.tsx-7-import { useDebounce } from '../hooks/useDebounce'
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt:3:import { coursesApi, exportsApi, courseAssignmentsApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt-4-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt:5:import { UserRole, Course, CourseCreateRequest } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt-6-import { useDebounce } from '../hooks/useDebounce'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.txt-7-import { normalizePage } from '../utils/normalize'
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-2-import { Link } from 'react-router-dom'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-3-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx:4:import { UserRole } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx:5:import { authApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-6-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-7-
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-211-                <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-212-                <p className="mt-1 text-sm text-gray-600">
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx:213:                  Your account information and preferences
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-214-                </p>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-215-              </div>
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-257-              
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-258-              <div>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx:259:                <h3 className="text-lg font-medium text-gray-900 mb-4">Account Status</h3>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-260-                <div className="space-y-4">
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-261-                  <div>
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-291-                  </div>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-292-                  <div>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx:293:                    <label className="block text-sm font-medium text-gray-700">Account Active</label>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-294-                    <p className={`mt-1 text-sm font-medium ${
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-295-                      user.active ? 'text-green-600' : 'text-red-600'
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-309-            
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-310-            <div className="mt-8 pt-6 border-t border-gray-200">
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx:311:              <h3 className="text-lg font-medium text-gray-900 mb-4">Account Settings</h3>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-312-              <div className="flex space-x-4">
+/Users/muhammadabdullah/cegm/frontend/src/pages/Profile.tsx-313-                <button
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.txt-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.txt-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.txt:3:import { Enrollment, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.txt:4:import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.txt-5-import { normalizePage } from '../utils/normalize'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.txt-6-
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx-5-export const Enrollments = () => <div className="p-6"><h1>Enrollments Page</h1></div>;
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx-6-export const Grades = () => <div className="p-6"><h1>Grades Page</h1></div>;
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx:7:export const AdminDashboard = () => <div className="p-6"><h1>Admin Dashboard</h1></div>;
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx-8-export const AdminUsers = () => <div className="p-6"><h1>Admin Users</h1></div>;
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx-9-export const AdminCourses = () => <div className="p-6"><h1>Admin Courses</h1></div>;
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx-10-
+/Users/muhammadabdullah/cegm/frontend/src/pages/index.tsx:11:export default { Courses, Enrollments, Grades, AdminDashboard, AdminUsers, AdminCourses };
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/InstructorGradebook.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/InstructorGradebook.tsx-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/InstructorGradebook.tsx:3:import { Grade, PaginatedResponse, Course, Enrollment } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/InstructorGradebook.tsx:4:import { gradesApi, enrollmentsApi, coursesApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/InstructorGradebook.tsx-5-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/InstructorGradebook.tsx-6-
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:3:import { healthApi, actuatorApi, usersApi, coursesApi, enrollmentsApi, enrollmentWindowApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-4-import { normalizePage } from '../utils/normalize'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-5-
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-23-}
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-24-
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:25:const AdminConfiguration: React.FC = () => {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-26-  const [tiles, setTiles] = useState<HealthTile[]>([
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-27-    {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-250-    updateTile(index, { status: 'loading' })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-251-    try {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:252:      const response = await usersApi.getUsers(undefined, 1) // Just get count info
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-253-      if (response.success && response.data) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-254-        const users = normalizePage(response.data)
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:255:        let count = users.length
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-256-        
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:257:        // Try to get total count from response metadata
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-258-        if (response.data.totalElements) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:259:          count = response.data.totalElements
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-260-        } else if (response.data.content) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:261:          count = response.data.content.length
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-262-        }
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-263-        
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-264-        updateTile(index, {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-265-          status: 'success',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:266:          value: `${count}+ users`,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-267-          error: undefined
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-268-        })
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-274-        status: 'error',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-275-        value: 'Error',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:276:        error: 'Failed to get user count'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-277-      })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-278-    }
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-283-    updateTile(index, { status: 'loading' })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-284-    try {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:285:      const response = await coursesApi.getCourses(undefined, 1) // Just get count info
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-286-      if (response.success && response.data) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-287-        const courses = normalizePage(response.data)
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:288:        let count = courses.length
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-289-        
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:290:        // Try to get total count from response metadata
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-291-        if (response.data.totalElements) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:292:          count = response.data.totalElements
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-293-        } else if (response.data.items) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:294:          count = response.data.items.length
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-295-        }
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-296-        
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-297-        updateTile(index, {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-298-          status: 'success',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:299:          value: `${count}+ courses`,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-300-          error: undefined
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-301-        })
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-307-        status: 'error',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-308-        value: 'Error',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:309:        error: 'Failed to get course count'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-310-      })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-311-    }
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-316-    updateTile(index, { status: 'loading' })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-317-    try {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:318:      const response = await enrollmentsApi.getEnrollments(undefined, 1) // Just get count info
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-319-      if (response.success && response.data) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-320-        const enrollments = normalizePage(response.data)
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:321:        let count = enrollments.length
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-322-        
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:323:        // Try to get total count from response metadata
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-324-        if (response.data.totalElements) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:325:          count = response.data.totalElements
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-326-        } else if (response.data.content) {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:327:          count = response.data.content.length
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-328-        }
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-329-        
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-330-        updateTile(index, {
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-331-          status: 'success',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:332:          value: `${count}+ enrollments`,
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-333-          error: undefined
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-334-        })
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-340-        status: 'error',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-341-        value: 'Error',
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:342:        error: 'Failed to get enrollment count'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-343-      })
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-344-    }
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-648-}
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx-649-
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminConfiguration.tsx:650:export default AdminConfiguration
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx-2-import { toast as hotToast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx:3:import { gradesApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx-4-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx:5:import { Grade, PaginatedResponse, UserRole } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx-6-
+/Users/muhammadabdullah/cegm/frontend/src/pages/Grades.tsx-7-const Grades: React.FC = () => {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-2-import { Link } from 'react-router-dom'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-3-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx:4:import { UserRole } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx:5:import { coursesApi, enrollmentsApi, gradesApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-6-import RefreshButton from '../components/common/RefreshButton'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-7-import LoadingSpinner from '../components/common/LoadingSpinner'
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-94-      title: 'Profile',
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-95-      description: 'View and update your profile',
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx:96:      href: '/student/profile'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-97-    }
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-98-  ]
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-150-        return getStaffTiles()
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-151-      case UserRole.ADMIN:
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx:152:        // Admin uses separate AdminDashboard component
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-153-        return []
+/Users/muhammadabdullah/cegm/frontend/src/pages/Dashboard.tsx-154-      default:
+--
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-10-import Grades from './pages/Grades'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-11-import Profile from './pages/Profile'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:12:import AdminDashboard from './pages/AdminDashboard'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-13-import AdminUsers from './pages/AdminUsers'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-14-import AdminCourses from './pages/AdminCourses'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-15-import AdminGrades from './pages/AdminGrades'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:16:import AdminConfiguration from './pages/AdminConfiguration'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-17-import AdminEnrollments from './pages/AdminEnrollments'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-18-import InstructorGradebook from './pages/InstructorGradebook'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-19-import QaConsole from './components/common/QaConsole'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:20:import { UserRole } from './types/api'
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-21-
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-22-function App() {
+--
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-82-            <Route path="/student/enrollments" element={<Enrollments />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-83-            <Route path="/student/grades" element={<Grades />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:84:            <Route path="/student/profile" element={<Profile />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-85-            {/* Redirect root level routes to student paths */}
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-86-            <Route path="/dashboard" element={<Navigate to="/student" />} />
+--
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-88-            <Route path="/enrollments" element={<Navigate to="/student/enrollments" />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-89-            <Route path="/grades" element={<Navigate to="/student/grades" />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:90:            <Route path="/profile" element={<Navigate to="/student/profile" />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-91-            {/* Block access to admin/staff routes */}
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-92-            <Route path="/admin/*" element={<Navigate to="/student" />} />
+--
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-102-            <Route path="/instructor/gradebook" element={<InstructorGradebook />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-103-            <Route path="/instructor/grades" element={<Grades />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:104:            <Route path="/profile" element={<Profile />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-105-            {/* Block access to admin routes */}
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-106-            <Route path="/admin/*" element={<Navigate to="/instructor" />} />
+--
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-113-            <Route path="/staff" element={<Dashboard />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-114-            <Route path="/staff/users" element={<AdminStaffRoute><AdminUsers /></AdminStaffRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:115:            <Route path="/staff/support" element={<AdminDashboard />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:116:            <Route path="/profile" element={<Profile />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-117-            {/* Block access to admin-only routes */}
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-118-            <Route path="/admin/*" element={<Navigate to="/staff" />} />
+--
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-123-          <>
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-124-            <Route path="/" element={<Navigate to="/admin" />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:125:            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-126-            <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-127-            <Route path="/admin/course-management" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-128-            <Route path="/admin/grade-management" element={<AdminRoute><AdminGrades /></AdminRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-129-            <Route path="/admin/enrollments" element={<AdminRoute><AdminEnrollments /></AdminRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:130:            <Route path="/admin/config" element={<AdminRoute><AdminConfiguration /></AdminRoute>} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx:131:            <Route path="/profile" element={<Profile />} />
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-132-            {/* Redirect old course route to new name */}
+/Users/muhammadabdullah/cegm/frontend/src/App.tsx-133-            <Route path="/admin/courses" element={<Navigate to="/admin/course-management" />} />
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Login.tsx-38-              className="font-medium text-blue-600 hover:text-blue-500"
+/Users/muhammadabdullah/cegm/frontend/src/pages/Login.tsx-39-            >
+/Users/muhammadabdullah/cegm/frontend/src/pages/Login.tsx:40:              create a new account
+/Users/muhammadabdullah/cegm/frontend/src/pages/Login.tsx-41-            </button>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Login.tsx-42-          </p>
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-2-import { useNavigate } from 'react-router-dom'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-3-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:4:import { UserRole } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:5:import { apiRequest } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-6-
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-7-const Signup: React.FC = () => {
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-11-    email: '',
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-12-    password: '',
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:13:    accountType: UserRole.STUDENT
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-14-  })
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-15-  const [isLoading, setIsLoading] = useState(false)
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-21-
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-22-    try {
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:23:      const response = await apiRequest('/api/v1/auth/signup', {
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-24-        method: 'POST',
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-25-        body: JSON.stringify(formData)
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-31-          navigate('/login')
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-32-        } else {
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:33:          toast.success('Your account is pending admin approval. Please wait for approval before logging in.')
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-34-          navigate('/login')
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-35-        }
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-57-        <div>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-58-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:59:            Create your CEGM LMS account
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-60-          </h2>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-61-          <p className="mt-2 text-center text-sm text-gray-600">
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-65-              className="font-medium text-blue-600 hover:text-blue-500"
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-66-            >
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:67:              sign in to your existing account
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-68-            </button>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-69-          </p>
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-136-            
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-137-            <div>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:138:              <label htmlFor="accountType" className="block text-sm font-medium text-gray-700">
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:139:                Account Type *
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-140-              </label>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-141-              <select
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:142:                id="accountType"
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:143:                name="accountType"
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-144-                required
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-145-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:146:                value={formData.accountType}
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-147-                onChange={handleInputChange}
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-148-              >
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-161-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-162-            >
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx:163:              {isLoading ? 'Creating Account...' : 'Create Account'}
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-164-            </button>
+/Users/muhammadabdullah/cegm/frontend/src/pages/Signup.tsx-165-          </div>
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.tsx-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.tsx:3:import { Course } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.tsx:4:import { coursesApi, enrollmentsApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.tsx-5-import { useDebounce } from '../hooks/useDebounce'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Courses.tsx-6-import RefreshButton from '../components/common/RefreshButton'
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminGrades.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminGrades.tsx-2-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminGrades.tsx:3:import { Grade, Enrollment } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminGrades.tsx:4:import { gradesApi, enrollmentsApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminGrades.tsx-5-import { normalizePage } from '../utils/normalize'
+/Users/muhammadabdullah/cegm/frontend/src/pages/AdminGrades.tsx-6-
+--
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx-2-import { toast as hotToast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx:3:import { enrollmentsApi, configApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx-4-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx:5:import { Enrollment, PaginatedResponse } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx-6-
+/Users/muhammadabdullah/cegm/frontend/src/pages/Enrollments.tsx-7-const Enrollments: React.FC = () => {
+--
+/Users/muhammadabdullah/cegm/frontend/src/types/api.ts-84-  email: string
+/Users/muhammadabdullah/cegm/frontend/src/types/api.ts-85-  password: string
+/Users/muhammadabdullah/cegm/frontend/src/types/api.ts:86:  accountType: UserRole
+/Users/muhammadabdullah/cegm/frontend/src/types/api.ts-87-  username?: string
+/Users/muhammadabdullah/cegm/frontend/src/types/api.ts-88-}
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-2-import { Link, useLocation, useNavigate } from 'react-router-dom'
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-3-import { useAuth } from '../contexts/AuthContext'
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx:4:import { UserRole } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-5-import { toast } from 'react-hot-toast'
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-6-
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-68-          { name: 'Enrollments', href: '/enrollments' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-69-          { name: 'Grades', href: '/grades' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx:70:          { name: 'Profile', href: '/profile' }
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-71-        ]
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-72-      case UserRole.INSTRUCTOR:
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-76-          { name: 'Gradebook', href: '/instructor/gradebook' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-77-          { name: 'Grades', href: '/instructor/grades' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx:78:          { name: 'Profile', href: '/profile' }
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-79-        ]
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-80-      case UserRole.STAFF:
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-83-          { name: 'Users', href: '/staff/users' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-84-          { name: 'Support', href: '/staff/support' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx:85:          { name: 'Profile', href: '/profile' }
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-86-        ]
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-87-      case UserRole.ADMIN:
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-90-          { name: 'Users', href: '/admin/users' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-91-          { name: 'Courses', href: '/admin/courses' },
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx:92:          { name: 'Profile', href: '/profile' }
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-93-        ]
+/Users/muhammadabdullah/cegm/frontend/src/components/Layout.tsx-94-      default:
+--
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-1-import React, { createContext, useContext, useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx:2:import { User, UserRole } from '../types/api'
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx:3:import { authApi } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx:4:import { apiRequest } from '../services/api'
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-5-
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-6-interface AuthContextType {
+--
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-51-    setIsRefreshing(true)
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-52-    try {
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx:53:      const response = await apiRequest('/api/v1/auth/me', { 
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-54-        method: 'GET',
+/Users/muhammadabdullah/cegm/frontend/src/contexts/AuthContext.tsx-55-        headers: { 'X-Suppress-Error-Toast': 'true' }
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-1-import React, { useState, useEffect } from 'react'
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-2-import { requestTracker, RequestInfo } from '../../lib/requestTracker'
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx:3:import { api } from '../../lib/api'
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-4-
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-5-interface QaSanityData {
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-8-  seededGrades: number
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-9-  windowState: string
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx:10:  counts: {
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-11-    users: number
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-12-    courses: number
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-33-    setSanityLoading(true)
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-34-    try {
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx:35:      const response = await api.get('/api/v1/_qa-sanity')
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-36-      setSanityData(response.data)
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-37-    } catch (error) {
+--
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-107-              <div>Grades: {sanityData.seededGrades}</div>
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-108-              <div>Window: {sanityData.windowState}</div>
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx:109:              <div>Counts: U:{sanityData.counts.users} C:{sanityData.counts.courses} E:{sanityData.counts.enrollments}</div>
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-110-            </div>
+/Users/muhammadabdullah/cegm/frontend/src/components/common/QaConsole.tsx-111-          )}
+
+== BE mappings (GetMapping/PostMapping/PatchMapping) ==
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-430-
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-431-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt:432:@RequestMapping("/api/auth")
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-433-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-434-public class AuthController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-443-    private SsotConfigService ssotConfigService;
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-444-
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt:445:    @PostMapping("/signup")
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-446-    public ResponseEntity<ApiResponse<UserResponse>> signUp(@Valid @RequestBody SignUpRequest request) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-447-        User user = userService.signUp(request);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-450-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-451-
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt:452:    @PostMapping("/login")
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-453-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, 
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-454-                                                          HttpServletResponse response) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-476-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-477-
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt:478:    @PostMapping("/logout")
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-479-    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-480-        // Clear session cookie
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-489-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-490-
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt:491:    @GetMapping("/me")
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-492-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@RequestParam String username) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-493-        User user = userService.findByUsername(username);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-17- */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-18-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java:19:@RequestMapping("/api/v1/exports")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-20-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-21-public class ExportsController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-28-     * Subject to the same access controls as list endpoints.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-29-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java:30:    @PostMapping("/csv")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-31-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/ExportsController.java-32-    public ResponseEntity<?> exportToCsv(@RequestBody Map<String, Object> request) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-20- */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-21-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java:22:@RequestMapping("/api/v1/grades")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-23-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-24-public class GradesController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-31-     * Implements SSoT requirements for grade views.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-32-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java:33:    @GetMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-34-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-35-    public ResponseEntity<ApiResponse<Page<Grade>>> getGrades(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-61-     * Update grade - instructors limited to their courses.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-62-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java:63:    @PutMapping("/{id}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-64-    @PreAuthorize("hasRole('ADMIN') or " +
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-65-                  "(hasRole('INSTRUCTOR') and @gradeService.isInstructorGrade(#id, authentication.details))")
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-92-     * Get grade by ID.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-93-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java:94:    @GetMapping("/{id}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-95-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or " +
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-96-                  "(hasRole('STUDENT') and @gradeService.isStudentGrade(#id, authentication.details))")
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-103-     * Create new grade assignment.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-104-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java:105:    @PostMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-106-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/GradesController.java-107-    public ResponseEntity<ApiResponse<Grade>> createGrade(@RequestBody Map<String, Object> request) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-7-import org.springframework.security.access.prepost.PreAuthorize;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-8-import org.springframework.web.bind.annotation.GetMapping;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:9:import org.springframework.web.bind.annotation.RequestMapping;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-10-import org.springframework.web.bind.annotation.RestController;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-11-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-13-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-14-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:15:@RequestMapping("/api/v1/metrics")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-16-public class MetricsController {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-17-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-19-    private MetricsService metricsService;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-20-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:21:    @GetMapping("/users")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-22-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-23-    public ResponseEntity<Map<String, Object>> getUsersCount() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-26-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-27-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:28:    @GetMapping("/courses")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-29-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('INSTRUCTOR')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-30-    public ResponseEntity<Map<String, Object>> getCoursesCount() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-33-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-34-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:35:    @GetMapping("/enrollments")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-36-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-37-    public ResponseEntity<Map<String, Object>> getEnrollmentsCount() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-40-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-41-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:42:    @GetMapping("/grades")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-43-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('INSTRUCTOR')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-44-    public ResponseEntity<Map<String, Object>> getGradesCount() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-47-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-48-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java:49:    @GetMapping("/dashboard")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-50-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/MetricsController.java-51-    public ResponseEntity<Map<String, Object>> getDashboardMetrics() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-21- */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-22-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java:23:@RequestMapping("/api/v1/enrollments")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-24-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-25-public class EnrollmentsController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-32-     * Implements SSoT requirements for enrollment views.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-33-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java:34:    @GetMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-35-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or hasRole('STAFF')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-36-    public ResponseEntity<ApiResponse<Page<Enrollment>>> getEnrollments(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-70-     * Create new enrollment (student self-enroll where policy allows).
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-71-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java:72:    @PostMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-73-    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-74-    public ResponseEntity<ApiResponse<Enrollment>> createEnrollment(@RequestBody Map<String, Object> request) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-84-     * Valid transitions: PENDING -> APPROVED -> ACTIVE -> COMPLETED or PENDING -> REJECTED
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-85-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java:86:    @PutMapping("/{id}/status")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-87-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-88-    public ResponseEntity<ApiResponse<Enrollment>> updateEnrollmentStatus(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-111-     * Get enrollment by ID.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-112-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java:113:    @GetMapping("/{id}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-114-    @PreAuthorize("hasRole('ADMIN') or hasRole('INSTRUCTOR') or " +
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentsController.java-115-                  "(hasRole('STUDENT') and @enrollmentService.isStudentEnrollment(#id, authentication.details))")
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-10-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-11-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java:12:@RequestMapping("/api/v1/course-assignments")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-13-public class CourseAssignmentController {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-14-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java:15:    @PostMapping("/requests")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-16-    @PreAuthorize("hasRole('INSTRUCTOR')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-17-    public ResponseEntity<ApiResponse<Map<String, Object>>> requestCourseAssignment(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-35-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-36-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java:37:    @GetMapping("/requests")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-38-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseAssignmentController.java-39-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAssignmentRequests() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-18-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-19-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:20:@RequestMapping("/api/v1/courses")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-21-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-22-public class CourseController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-25-    private CourseService courseService;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-26-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:27:    @GetMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-28-    public ResponseEntity<ApiResponse<List<Course>>> getCourses(
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-29-            @RequestParam(required = false) Long ownerId,
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-44-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-45-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:46:    @GetMapping("/all")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-47-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-48-    public ResponseEntity<ApiResponse<Page<Course>>> getAllCourses(Pageable pageable) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-51-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-52-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:53:    @GetMapping("/{id}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-54-    public ResponseEntity<ApiResponse<Course>> getCourseById(@PathVariable Long id) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-55-        Course course = courseService.findById(id);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-57-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-58-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:59:    @GetMapping("/code/{code}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-60-    public ResponseEntity<ApiResponse<Course>> getCourseByCode(@PathVariable String code) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-61-        Course course = courseService.findByCode(code);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-63-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-64-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:65:    @GetMapping("/search")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-66-    public ResponseEntity<ApiResponse<List<Course>>> searchCourses(@RequestParam String name) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-67-        List<Course> courses = courseService.searchCoursesByName(name);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-69-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-70-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:71:    @PostMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-72-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-73-    public ResponseEntity<ApiResponse<Course>> createCourse(@Valid @RequestBody CourseCreateRequest request) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-76-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-77-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:78:    @PutMapping("/{id}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-79-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-80-    public ResponseEntity<ApiResponse<Course>> updateCourse(@PathVariable Long id, 
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-84-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-85-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:86:    @PutMapping("/{id}/archive")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-87-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-88-    public ResponseEntity<ApiResponse<Course>> archiveCourse(@PathVariable Long id) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-95-     * Admin only access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-96-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:97:    @PutMapping("/{id}/status")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-98-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-99-    public ResponseEntity<ApiResponse<Course>> changeCourseStatus(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-124-     * Admin access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-125-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java:126:    @GetMapping("/count")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-127-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/CourseController.java-128-    public ResponseEntity<ApiResponse<Map<String, Integer>>> getCoursesCount() {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-10-import org.springframework.http.ResponseEntity;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-11-import org.springframework.web.bind.annotation.GetMapping;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java:12:import org.springframework.web.bind.annotation.RequestMapping;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-13-import org.springframework.web.bind.annotation.RestController;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-14-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-17-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-18-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java:19:@RequestMapping("/api/v1")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-20-@Profile("dev") // Only available in dev environment
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-21-public class QaSanityController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-40-     * Returns current system state for verification
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-41-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java:42:    @GetMapping("/_qa-sanity")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-43-    public ResponseEntity<Map<String, Object>> qaSanityCheck() {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/QaSanityController.java-44-        Map<String, Object> response = new HashMap<>();
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-22-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-23-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:24:@RequestMapping("/api/v1/auth")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-25-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-26-public class AuthController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-35-    private SsotConfigService ssotConfigService;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-36-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:37:    @PostMapping("/signup")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-38-    public ResponseEntity<ApiResponse<UserResponse>> signUp(@Valid @RequestBody SignUpRequest request) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-39-        User user = userService.signUp(request);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-47-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-48-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:49:    @PostMapping("/login")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-50-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, 
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-51-                                                          HttpServletResponse response) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-82-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-83-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:84:    @PostMapping("/logout")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-85-    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-86-        // Clear session cookie using dev configuration
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-95-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-96-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:97:    @GetMapping("/me")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-98-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(HttpServletRequest request) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-99-        String token = extractTokenFromRequest(request);
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-117-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-118-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:119:    @PostMapping("/rotate")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-120-    public ResponseEntity<ApiResponse<String>> rotateSession(HttpServletRequest request, HttpServletResponse response) {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-121-        // Optional refresh rotation endpoint
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-153-     * Update current user's profile.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-154-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:155:    @PatchMapping("/me")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-156-    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-157-            @RequestBody Map<String, String> request, 
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-207-     * Change current user's password.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-208-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java:209:    @PostMapping("/me/password")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-210-    public ResponseEntity<ApiResponse<String>> changePassword(
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/AuthController.java-211-            @RequestBody Map<String, String> request, 
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-4-import org.springframework.http.ResponseEntity;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-5-import org.springframework.web.bind.annotation.GetMapping;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java:6:import org.springframework.web.bind.annotation.RequestMapping;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-7-import org.springframework.web.bind.annotation.RestController;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-8-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-12-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-13-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java:14:@RequestMapping("/api/v1")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-15-public class HealthController {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-16-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-24-    private String version;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-25-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java:26:    @GetMapping("/health")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-27-    public ResponseEntity<Map<String, Object>> health() {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/HealthController.java-28-        // Return application health status
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-11-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-12-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java:13:@RequestMapping("/api/v1/enrollment-window")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-14-public class EnrollmentWindowController {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-15-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-17-    private EnrollmentWindowService enrollmentWindowService;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-18-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java:19:    @GetMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-20-    public ResponseEntity<Map<String, Object>> getEnrollmentWindow() {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-21-        Map<String, Object> windowStatus = enrollmentWindowService.getEnrollmentWindowStatus();
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-23-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-24-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java:25:    @PutMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-26-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/EnrollmentWindowController.java-27-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateEnrollmentWindow(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-10-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-11-@Profile("dev")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java:12:@RequestMapping("/api/v1")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-13-public class DevConfigMetaController {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-14-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-20-  }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-21-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java:22:  @GetMapping("/config")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-23-  public ResponseEntity<?> config() { return ResponseEntity.ok(msg()); }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-24-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java:25:  @GetMapping("/config/meta")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-26-  public ResponseEntity<?> meta() { return ResponseEntity.ok(msg()); }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/DevConfigMetaController.java-27-}
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-26- */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-27-@RestController
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:28:@RequestMapping("/api/v1/users")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-29-@CrossOrigin
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-30-public class UsersController {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-40-     * Admin only access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-41-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:42:    @GetMapping
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-43-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-44-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getUsers(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-77-     * Admin only access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-78-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:79:    @PostMapping("/{id}/approve")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-80-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-81-    public ResponseEntity<ApiResponse<UserResponse>> approveUser(@PathVariable Long id) {
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-89-     * Admin only access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-90-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:91:    @PostMapping("/{id}/role")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-92-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-93-    public ResponseEntity<ApiResponse<UserResponse>> changeUserRole(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-130-     * Admin only access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-131-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:132:    @PutMapping("/{id}/status")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-133-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-134-    public ResponseEntity<ApiResponse<UserResponse>> changeUserStatus(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-156-     * Admin only access.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-157-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:158:    @GetMapping("/{id}/audit")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-159-    @PreAuthorize("hasRole('ADMIN')")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-160-    public ResponseEntity<ApiResponse<Object>> getUserAuditHistory(
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-173-     * Self-readable for the owner, admin can read any.
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-174-     */
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java:175:    @GetMapping("/{id}")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-176-    @PreAuthorize("hasRole('ADMIN') or (hasRole('STUDENT') and #id == authentication.details)")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/controller/UsersController.java-177-    public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {
+
+== Security configuration snippets ==
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java-71-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java-72-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java-73-    @SuppressWarnings("unchecked")
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java:74:    public List<String> getCorsAllowedOrigins() {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java-75-        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java-76-        if (security == null) throw new IllegalStateException("SSoT config missing 'security' section");
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/service/SsotConfigService.java-77-        Map<String, Object> cors = (Map<String, Object>) security.get("cors");
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-60-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-61-
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-62-    @SuppressWarnings("unchecked")
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt:63:    public List<String> getCorsAllowedOrigins() {
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-64-        Map<String, Object> security = (Map<String, Object>) ssotConfig.get("security");
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-65-        if (security == null) throw new IllegalStateException("SSoT config missing 'security' section");
+/Users/muhammadabdullah/cegm/backend/src/main/java/ssot_debug_snapshot.txt-66-        Map<String, Object> cors = (Map<String, Object>) security.get("cors");
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-10-import org.springframework.security.config.http.SessionCreationPolicy;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-11-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-12-import org.springframework.security.crypto.password.PasswordEncoder;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:13:import org.springframework.security.web.SecurityFilterChain;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-14-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:15:import org.springframework.web.cors.CorsConfiguration;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:16:import org.springframework.web.cors.CorsConfigurationSource;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:17:import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-18-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-19-import java.util.List;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-20-
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-38-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-39-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-40-    @Bean
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:41:    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-42-        http
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-43-            .csrf(csrf -> csrf.disable())
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:44:            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-45-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:46:            .authorizeHttpRequests(auth -> auth
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-47-                .requestMatchers("/api/v1/health", "/actuator/health", "/actuator/info").permitAll()
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-48-                .requestMatchers("/api/v1/_qa-sanity").permitAll() // QA sanity check (dev only)
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-49-                .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll()
+--
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-57-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-58-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-59-    @Bean
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:60:    public CorsConfigurationSource corsConfigurationSource() {
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:61:        CorsConfiguration configuration = new CorsConfiguration();
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-62-        // Load CORS allowed origins from SSoT
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:63:        configuration.setAllowedOrigins(ssotConfigService.getCorsAllowedOrigins());
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-64-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-65-        configuration.setAllowedHeaders(List.of("*"));
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-66-        configuration.setAllowCredentials(true);
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-67-
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:68:        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java:69:        source.registerCorsConfiguration("/**", configuration);
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-70-        return source;
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-71-    }
+/Users/muhammadabdullah/cegm/backend/src/main/java/com/cegm/lms/security/SecurityConfig.java-72-}
+
+== Sample curl results ==
+
+$ curl -i http://localhost:8080/
+
+$ curl -i http://localhost:8080/api/v1/courses?size=1
+
+$ curl -i http://localhost:8080/api/v1/enrollments?size=1
+
+$ curl -i http://localhost:8080/api/v1/courses/count
+
+$ curl -i http://localhost:8080/api/v1/enrollments/count
+
+$ curl -i http://localhost:8080/api/v1/enrollment-window
+
+$ curl -i http://localhost:8080/actuator/health
+
+$ curl -i http://localhost:8080/actuator/info

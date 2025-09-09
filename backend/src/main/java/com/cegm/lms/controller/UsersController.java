@@ -8,7 +8,6 @@ import com.cegm.lms.service.SessionManagementService;
 import com.cegm.lms.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Controller for user management operations.
@@ -151,22 +152,7 @@ public class UsersController {
         return ResponseEntity.ok(ApiResponse.success("User status updated successfully", userResponse));
     }
 
-    /**
-     * Get user audit history.
-     * Admin only access.
-     */
-    @GetMapping("/{id}/audit")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> getUserAuditHistory(
-            @PathVariable Long id,
-            @RequestParam(required = false) String after,
-            @RequestParam(defaultValue = "25") int limit) {
-        
-        // For now return empty audit history with proper structure
-        // TODO: Implement actual audit logging system
-        Object auditHistory = userService.getUserAuditHistory(id, after, limit);
-        return ResponseEntity.ok(ApiResponse.success(auditHistory));
-    }
+    
 
     /**
      * Get user by ID.
@@ -179,4 +165,5 @@ public class UsersController {
         UserResponse userResponse = userService.convertToResponse(user);
         return ResponseEntity.ok(ApiResponse.success(userResponse));
     }
+    
 }

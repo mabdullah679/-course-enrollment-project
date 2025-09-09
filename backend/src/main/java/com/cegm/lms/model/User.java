@@ -1,6 +1,8 @@
 package com.cegm.lms.model;
 
 import com.cegm.lms.model.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -13,6 +15,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,6 +31,7 @@ public class User {
     private String email;
 
     @NotBlank
+    @JsonIgnore // do not serialize password
     private String password;
 
     @NotBlank
@@ -55,9 +59,11 @@ public class User {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore // avoid User -> enrollments -> student -> ... recursion
     private List<Enrollment> enrollments;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore // avoid User -> grades -> enrollment -> student -> ...
     private List<Grade> grades;
 
     // Constructors

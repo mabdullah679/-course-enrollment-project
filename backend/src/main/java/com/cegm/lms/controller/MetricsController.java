@@ -1,13 +1,11 @@
 package com.cegm.lms.controller;
 
-import com.cegm.lms.dto.response.ApiResponse;
-import com.cegm.lms.service.MetricsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.cegm.lms.repository.CourseRepository;
+import com.cegm.lms.repository.EnrollmentRepository;
+import com.cegm.lms.repository.GradeRepository;
+import com.cegm.lms.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -15,41 +13,46 @@ import java.util.Map;
 @RequestMapping("/api/v1/metrics")
 public class MetricsController {
 
-    @Autowired
-    private MetricsService metricsService;
+    private final UserRepository userRepository;
+    private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final GradeRepository gradeRepository;
+
+    public MetricsController(UserRepository users, CourseRepository courses,
+                             EnrollmentRepository enrollments, GradeRepository grades) {
+        this.userRepository = users;
+        this.courseRepository = courses;
+        this.enrollmentRepository = enrollments;
+        this.gradeRepository = grades;
+    }
 
     @GetMapping("/users")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
-    public ResponseEntity<Map<String, Object>> getUsersCount() {
-        long count = metricsService.getUsersCount();
-        return ResponseEntity.ok(Map.of("count", count));
+    public ResponseEntity<Map<String, Long>> users() {
+        return ResponseEntity.ok(Map.of("count", userRepository.count()));
     }
 
     @GetMapping("/courses")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('INSTRUCTOR')")
-    public ResponseEntity<Map<String, Object>> getCoursesCount() {
-        long count = metricsService.getCoursesCount();
-        return ResponseEntity.ok(Map.of("count", count));
+    public ResponseEntity<Map<String, Long>> courses() {
+        return ResponseEntity.ok(Map.of("count", courseRepository.count()));
     }
 
     @GetMapping("/enrollments")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
-    public ResponseEntity<Map<String, Object>> getEnrollmentsCount() {
-        long count = metricsService.getEnrollmentsCount();
-        return ResponseEntity.ok(Map.of("count", count));
+    public ResponseEntity<Map<String, Long>> enrollments() {
+        return ResponseEntity.ok(Map.of("count", enrollmentRepository.count()));
     }
 
     @GetMapping("/grades")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF') or hasRole('INSTRUCTOR')")
-    public ResponseEntity<Map<String, Object>> getGradesCount() {
-        long count = metricsService.getGradesCount();
-        return ResponseEntity.ok(Map.of("count", count));
+    public ResponseEntity<Map<String, Long>> grades() {
+        return ResponseEntity.ok(Map.of("count", gradeRepository.count()));
     }
 
     @GetMapping("/dashboard")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
-    public ResponseEntity<Map<String, Object>> getDashboardMetrics() {
-        Map<String, Object> metrics = metricsService.getDashboardMetrics();
-        return ResponseEntity.ok(metrics);
+    public ResponseEntity<Map<String, Long>> dashboard() {
+        return ResponseEntity.ok(Map.of(
+            "users", userRepository.count(),
+            "courses", courseRepository.count(),
+            "enrollments", enrollmentRepository.count(),
+            "grades", gradeRepository.count()
+        ));
     }
 }

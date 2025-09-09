@@ -92,31 +92,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     initAuth()
   }, []) // Remove refreshUser dependency to prevent loops
-
-  const login = async (email: string, password: string) => {
+// inside your AuthContext where you already call authApi.login(...)
+  const login = async (email: string, password: string): Promise<void> => {
     try {
-      const response = await authApi.login({ email, password })
-      if (response.success && response.data) {
-        const { user: newUser } = response.data
+      const res = await authApi.login({ email, password })
+      if (res.success && res.data) {
+        // Backend uses cookie-based sessions; response.data.user contains the user
+        const { user: newUser } = res.data as any
         setUser(newUser)
         sessionStorage.setItem('user', JSON.stringify(newUser))
+        return
       }
-    } catch (error) {
-      throw error
+      throw new Error(res.message || 'Login failed')
+    } catch (err) {
+      throw err
     }
   }
 
   const logout = async () => {
-    try {
-      await authApi.logout()
-    } catch (error) {
-      // Continue with logout even if API call fails
-      console.error('Logout API call failed:', error)
-    } finally {
-      setUser(null)
-      sessionStorage.removeItem('user')
-    }
+    try { await authApi.logout() } catch {}
+    sessionStorage.removeItem('user')
+    sessionStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_token')
+    setUser(null)
   }
+
 
   const broadcastRoleChange = () => {
     const channel = new BroadcastChannel('auth')

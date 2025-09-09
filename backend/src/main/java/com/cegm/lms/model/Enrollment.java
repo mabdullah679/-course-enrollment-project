@@ -1,6 +1,8 @@
 package com.cegm.lms.model;
 
 import com.cegm.lms.model.enums.EnrollmentStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -13,23 +15,24 @@ import java.util.List;
 @Table(name = "enrollments", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"student_id", "course_id"})
 })
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Enrollment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER) // was LAZY
     @JoinColumn(name = "student_id", nullable = false)
     @NotNull
+    @JsonIgnoreProperties({ "enrollments", "grades", "password", "hibernateLazyInitializer", "handler" })
     private User student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER) // was LAZY
     @JoinColumn(name = "course_id", nullable = false)
     @NotNull
+    @JsonIgnoreProperties({ "enrollments", "hibernateLazyInitializer", "handler" })
     private Course course;
 
-    @Enumerated(EnumType.STRING)
-    @NotNull
+    @Enumerated(EnumType.STRING) @NotNull
     private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
 
     @CreationTimestamp
@@ -41,15 +44,12 @@ public class Enrollment {
     private LocalDateTime completedAt;
 
     @OneToMany(mappedBy = "enrollment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Grade> grades;
 
-    // Constructors
     public Enrollment() {}
+    public Enrollment(User student, Course course) { this.student = student; this.course = course; }
 
-    public Enrollment(User student, Course course) {
-        this.student = student;
-        this.course = course;
-    }
 
     // Getters and Setters
     public Long getId() { return id; }

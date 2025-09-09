@@ -1,7 +1,10 @@
 import { api } from '../lib/api'
 import { User, ApiResponse, AuthResponse, SignUpRequest, LoginRequest } from '../types/api'
 
-// Generic API request function
+/**
+ * Generic fetch-like helper on top of axios instance `api`.
+ * Keeps compatibility with places using RequestInit.
+ */
 export const apiRequest = async (url: string, options: RequestInit = {}): Promise<any> => {
   const method = (options.method || 'GET').toLowerCase()
   const data = options.body ? JSON.parse(options.body as string) : undefined
@@ -23,9 +26,10 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
     default:
       response = await api.get(url)
   }
-
   return response.data
 }
+
+/* ----------------------------- AUTH ----------------------------- */
 
 export const authApi = {
   signup: async (data: SignUpRequest): Promise<ApiResponse<User>> => {
@@ -49,28 +53,32 @@ export const authApi = {
   },
 
   rotateSession: async (): Promise<ApiResponse<string>> => {
-    const response = await api.post('/api/v1/auth/rotate-session')
+    const response = await api.post('/api/v1/auth/rotate')
     return response.data
   },
 
+  // Correct path (backend expects /api/v1/auth/me)
   updateProfile: async (data: { firstName?: string; lastName?: string; email?: string }): Promise<ApiResponse<User>> => {
-    const response = await api.patch('/api/v1/me', data)
+    const response = await api.patch('/api/v1/auth/me', data)
     return response.data
   },
 
+  // Correct path (backend expects /api/v1/auth/me/password)
   changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<ApiResponse<string>> => {
-    const response = await api.post('/api/v1/me/password', data)
+    const response = await api.post('/api/v1/auth/me/password', data)
     return response.data
   },
 }
+
+/* ---------------------------- COURSES --------------------------- */
 
 export const coursesApi = {
   getCourses: async (after?: number, size = 20, ownerId?: number, term?: string, status?: string) => {
     let url = `/api/v1/courses?size=${size}`
     if (after) url += `&after=${after}`
     if (ownerId) url += `&ownerId=${ownerId}`
-    if (term) url += `&term=${term}`
-    if (status) url += `&status=${status}`
+    if (term) url += `&term=${encodeURIComponent(term)}`
+    if (status) url += `&status=${encodeURIComponent(status)}`
     const response = await api.get(url)
     return response.data
   },
@@ -87,17 +95,17 @@ export const coursesApi = {
   },
 
   searchCourses: async (name: string) => {
-    const response = await api.get(`/api/v1/courses/search?name=${name}`)
+    const response = await api.get(`/api/v1/courses/search?name=${encodeURIComponent(name)}`)
     return response.data
   },
 
   createCourse: async (data: { name: string; courseCode: string; credits: number; status: string; description?: string }) => {
-    // Map frontend courseCode to backend code field
+    // Map frontend courseCode -> backend "code"
     const backendData = {
       name: data.name,
       code: data.courseCode,
       credits: data.credits,
-      description: data.description
+      description: data.description,
     }
     const response = await api.post('/api/v1/courses', backendData)
     return response.data
@@ -124,13 +132,23 @@ export const coursesApi = {
   },
 }
 
+/* ----------------------------- USERS ---------------------------- */
+
 export const usersApi = {
-  getUsers: async (after?: number, size = 20, q?: string, role?: string, status?: string, approved?: boolean, active?: boolean) => {
+  getUsers: async (
+    after?: number,
+    size = 20,
+    q?: string,
+    role?: string,
+    status?: string,
+    approved?: boolean,
+    active?: boolean
+  ) => {
     let url = `/api/v1/users?size=${size}`
     if (after) url += `&after=${after}`
     if (q) url += `&q=${encodeURIComponent(q)}`
-    if (role) url += `&role=${role}`
-    if (status) url += `&status=${status}`
+    if (role) url += `&role=${encodeURIComponent(role)}`
+    if (status) url += `&status=${encodeURIComponent(status)}`
     if (approved !== undefined) url += `&approved=${approved}`
     if (active !== undefined) url += `&active=${active}`
     const response = await api.get(url)
@@ -157,7 +175,7 @@ export const usersApi = {
 
   getUserAuditHistory: async (id: number, after?: string, limit = 25) => {
     let url = `/api/v1/users/${id}/audit?limit=${limit}`
-    if (after) url += `&after=${after}`
+    if (after) url += `&after=${encodeURIComponent(after)}`
     const response = await api.get(url)
     return response.data
   },
@@ -168,15 +186,19 @@ export const usersApi = {
   },
 }
 
+/* -------------------------- ENROLLMENTS ------------------------- */
+
 export const enrollmentsApi = {
-  getEnrollments: async (after?: number, size = 20, type?: string, semester?: string, courseId?: number, studentId?: number) => {
-    let url = `/api/v1/enrollments?size=${size}`
-    if (after) url += `&after=${after}`
-    if (type) url += `&type=${type}`
-    if (semester) url += `&semester=${semester}`
-    if (courseId) url += `&courseId=${courseId}`
-    if (studentId) url += `&studentId=${studentId}`
-    const response = await api.get(url)
+  // List (supports after/size/type/semester/courseId/studentId/status)
+  getEnrollments: async (after?: number, size = 20, type?: string, semester?: string, courseId?: number, studentId?: number, status?: string) => {
+    const params = new URLSearchParams({ size: String(size) })
+    if (after) params.append('after', String(after))
+    if (type) params.append('type', type)
+    if (semester) params.append('semester', semester)
+    if (courseId) params.append('courseId', String(courseId))
+    if (studentId) params.append('studentId', String(studentId))
+    if (status) params.append('status', status)
+    const response = await api.get(`/api/v1/enrollments?${params.toString()}`)
     return response.data
   },
 
@@ -185,21 +207,28 @@ export const enrollmentsApi = {
     return response.data
   },
 
-  updateEnrollmentStatus: async (id: number, status: string) => {
-    const response = await api.put(`/api/v1/enrollments/${id}/status`, { status })
-    return response.data
-  },
-
+  // Friendly helper used by Courses page to enroll current student in a course
   enrollInCourse: async (courseId: number) => {
     const response = await api.post('/api/v1/enrollments', { courseId })
     return response.data
   },
 
-  createEnrollment: async (data: { studentId: number; courseId: number; type: string; status?: string }) => {
-    const response = await api.post('/api/v1/enrollments', data)
+  // Create — backend expects { studentId, courseId, status? } (no "type")
+  createEnrollment: async (data: { studentId: number; courseId: number; status?: string }) => {
+    const payload: any = { studentId: data.studentId, courseId: data.courseId }
+    if (data.status) payload.status = data.status
+    const response = await api.post('/api/v1/enrollments', payload)
+    return response.data
+  },
+
+  // Update status
+  updateEnrollmentStatus: async (id: number, status: string) => {
+    const response = await api.put(`/api/v1/enrollments/${id}/status`, { status })
     return response.data
   },
 }
+
+/* ---------------------------- GRADES ---------------------------- */
 
 export const gradesApi = {
   getGrades: async (after?: number, size = 20, courseId?: number, studentId?: number, status?: string) => {
@@ -207,7 +236,7 @@ export const gradesApi = {
     if (after) url += `&after=${after}`
     if (courseId) url += `&courseId=${courseId}`
     if (studentId) url += `&studentId=${studentId}`
-    if (status) url += `&status=${status}`
+    if (status) url += `&status=${encodeURIComponent(status)}`
     const response = await api.get(url)
     return response.data
   },
@@ -228,6 +257,8 @@ export const gradesApi = {
   },
 }
 
+/* ----------------------------- CONFIG --------------------------- */
+
 export const configApi = {
   getMeta: async () => {
     const response = await api.get('/api/v1/config/meta')
@@ -239,11 +270,18 @@ export const configApi = {
     return response.data
   },
 
-  updateEnrollmentWindow: async (data: { state: string; term?: string; startDate?: string; endDate?: string }) => {
-    const response = await api.put('/api/v1/enrollment-window', data)
+  // Backend enum is ON/OFF; optional term/startDate/endDate (ISO 8601 strings)
+  updateEnrollmentWindow: async (data: { status: 'ON' | 'OFF'; term?: string; startDate?: string; endDate?: string }) => {
+    const payload: any = { status: data.status }
+    if (data.term) payload.term = data.term
+    if (data.startDate) payload.startDate = data.startDate
+    if (data.endDate) payload.endDate = data.endDate
+    const response = await api.put('/api/v1/enrollment-window', payload)
     return response.data
   },
 }
+
+/* ----------------------------- HEALTH --------------------------- */
 
 export const healthApi = {
   getHealth: async () => {
@@ -252,17 +290,25 @@ export const healthApi = {
   },
 }
 
+/* ----------------------- ENROLLMENT WINDOW ---------------------- */
+
 export const enrollmentWindowApi = {
   getEnrollmentWindow: async () => {
     const response = await api.get('/api/v1/enrollment-window')
     return response.data
   },
 
-  updateEnrollmentWindow: async (data: any) => {
-    const response = await api.put('/api/v1/enrollment-window', data)
+  updateEnrollmentWindow: async (data: { status: 'ON' | 'OFF'; term?: string; startDate?: string; endDate?: string }) => {
+    const payload: any = { status: data.status }
+    if (data.term) payload.term = data.term
+    if (data.startDate) payload.startDate = data.startDate
+    if (data.endDate) payload.endDate = data.endDate
+    const response = await api.put('/api/v1/enrollment-window', payload)
     return response.data
   },
 }
+
+/* ---------------------------- METRICS --------------------------- */
 
 export const metricsApi = {
   getUsersCount: async () => {
@@ -291,51 +337,60 @@ export const metricsApi = {
   },
 }
 
+/* --------------------------- ACTUATOR --------------------------- */
+
 export const actuatorApi = {
   getHealth: async () => {
     const response = await api.get('/actuator/health')
     return response.data
   },
-
   getInfo: async () => {
     const response = await api.get('/actuator/info')
     return response.data
   },
 }
 
+/* ----------------------------- EXPORTS -------------------------- */
+
 export const exportsApi = {
   exportUsers: async (filters?: any) => {
-    const response = await api.post('/api/v1/exports/csv', {
-      resource: 'users',
-      filters: filters || {}
-    }, { responseType: 'blob' })
+    const response = await api.post(
+      '/api/v1/exports/csv',
+      { resource: 'users', filters: filters || {} },
+      { responseType: 'blob' }
+    )
     return response.data
   },
 
   exportCourses: async (filters?: any) => {
-    const response = await api.post('/api/v1/exports/csv', {
-      resource: 'courses',
-      filters: filters || {}
-    }, { responseType: 'blob' })
+    const response = await api.post(
+      '/api/v1/exports/csv',
+      { resource: 'courses', filters: filters || {} },
+      { responseType: 'blob' }
+    )
     return response.data
   },
 
   exportEnrollments: async (filters?: any) => {
-    const response = await api.post('/api/v1/exports/csv', {
-      resource: 'enrollments',
-      filters: filters || {}
-    }, { responseType: 'blob' })
+    const response = await api.post(
+      '/api/v1/exports/csv',
+      { resource: 'enrollments', filters: filters || {} },
+      { responseType: 'blob' }
+    )
     return response.data
   },
 
   exportGrades: async (filters?: any) => {
-    const response = await api.post('/api/v1/exports/csv', {
-      resource: 'grades',
-      filters: filters || {}
-    }, { responseType: 'blob' })
+    const response = await api.post(
+      '/api/v1/exports/csv',
+      { resource: 'grades', filters: filters || {} },
+      { responseType: 'blob' }
+    )
     return response.data
   },
 }
+
+/* ------------------------ COURSE ASSIGNMENTS -------------------- */
 
 export const courseAssignmentsApi = {
   requestCourseAssignment: async (data: { instructorId: number; courseIds: number[]; semesterId?: string }) => {

@@ -106,7 +106,7 @@ const AdminConfiguration: React.FC = () => {
     
     try {
       const response = await enrollmentWindowApi.updateEnrollmentWindow({
-        status: windowData.state === 'OPEN' ? 'ON' : 'OFF',
+        state: windowData.state,
         term: windowData.term,
         startDate: windowData.window_open_date_est || windowData.startDate,
         endDate: windowData.window_close_date_est || windowData.endDate
