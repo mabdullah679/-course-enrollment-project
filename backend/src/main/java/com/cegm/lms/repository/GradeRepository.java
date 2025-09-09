@@ -31,4 +31,27 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
     
     @Query("SELECT AVG(g.score) FROM Grade g WHERE g.enrollment.id = :enrollmentId")
     Double findAverageScoreByEnrollmentId(@Param("enrollmentId") Long enrollmentId);
+    
+    @Query("SELECT g FROM Grade g " +
+           "JOIN FETCH g.student " +
+           "JOIN FETCH g.enrollment e " +
+           "JOIN FETCH e.course " +
+           "ORDER BY g.id")
+    Page<Grade> findAllWithDetails(Pageable pageable);
+    
+    @Query("SELECT g FROM Grade g " +
+           "JOIN FETCH g.student " +
+           "JOIN FETCH g.enrollment e " +
+           "JOIN FETCH e.course " +
+           "WHERE g.student.id = :studentId " +
+           "ORDER BY g.id")
+    Page<Grade> findByStudentIdWithDetails(@Param("studentId") Long studentId, Pageable pageable);
+    
+    @Query("SELECT g FROM Grade g " +
+           "JOIN FETCH g.student " +
+           "JOIN FETCH g.enrollment e " +
+           "JOIN FETCH e.course " +
+           "WHERE e.course.id = :courseId " +
+           "ORDER BY g.id")
+    Page<Grade> findByCourseIdWithDetails(@Param("courseId") Long courseId, Pageable pageable);
 }

@@ -283,15 +283,15 @@ const AdminGrades: React.FC = () => {
               <tr key={grade.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    {grade.student.firstName} {grade.student.lastName}
+                    {grade.student?.firstName || 'Unknown'} {grade.student?.lastName || 'Student'}
                   </div>
-                  <div className="text-sm text-gray-500">{grade.student.email}</div>
+                  <div className="text-sm text-gray-500">{grade.student?.email || 'No email'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    {grade.enrollment.course.name}
+                    {grade.enrollment?.course?.name || 'Unknown Course'}
                   </div>
-                  <div className="text-sm text-gray-500">{grade.enrollment.course.code}</div>
+                  <div className="text-sm text-gray-500">{grade.enrollment?.course?.code || 'No code'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{grade.score}%</div>
@@ -302,7 +302,7 @@ const AdminGrades: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(grade.createdAt).toLocaleDateString()}
+                  {new Date(grade.createdAt || grade.assignedAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button

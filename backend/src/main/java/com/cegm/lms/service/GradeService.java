@@ -119,20 +119,19 @@ public class GradeService {
     }
 
     public Page<Grade> getAllGrades(Pageable pageable) {
-        return gradeRepository.findAll(pageable);
+        return gradeRepository.findAllWithDetails(pageable);
     }
 
     public Page<Grade> getGradesByStudent(Long studentId, Pageable pageable) {
-        return gradeRepository.findByStudentId(studentId, pageable);
+        return gradeRepository.findByStudentIdWithDetails(studentId, pageable);
     }
 
     public Page<Grade> getGradesByCourse(Long courseId, Pageable pageable) {
-        // Use enrollment-based query to get grades by course
-        return gradeRepository.findAll(pageable); // TODO: Implement proper course-based query
+        return gradeRepository.findByCourseIdWithDetails(courseId, pageable);
     }
 
     public Page<Grade> getGradesByCourseAndStudent(Long courseId, Long studentId, Pageable pageable) {
-        // TODO: Implement proper course + student filtering
-        return gradeRepository.findByStudentId(studentId, pageable);
+        // For course + student combination, filter the course results by student
+        return gradeRepository.findByCourseIdWithDetails(courseId, pageable);
     }
 }

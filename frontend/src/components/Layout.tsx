@@ -147,9 +147,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <div className="relative">
                 <div className="flex items-center space-x-4">
                   <div className="text-sm">
-                    <div className="font-medium text-gray-900">
+                    <Link 
+                      to="/profile"
+                      className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
+                    >
                       {user.firstName} {user.lastName}
-                    </div>
+                    </Link>
                     {(user.role === UserRole.ADMIN || user.role === UserRole.STAFF) ? (
                       <Link 
                         to={getProfileBadgeRoute()}
@@ -205,9 +208,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="px-4">
-                <div className="text-base font-medium text-gray-800">
+                <Link 
+                  to="/profile"
+                  className="text-base font-medium text-gray-800 hover:text-blue-600 cursor-pointer"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   {user.firstName} {user.lastName}
-                </div>
+                </Link>
                 <div className="text-sm text-gray-500">{getRoleDisplayName(user.role)}</div>
               </div>
               <div className="mt-3 px-4">
