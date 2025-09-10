@@ -31,18 +31,17 @@ const AdminGrades: React.FC = () => {
     feedback: ''
   })
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
-  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null)
   
   // New picker flow state
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [availableStudents, setAvailableStudents] = useState<User[]>([])
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null)
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null)
+  const [courseEnrollments, setCourseEnrollments] = useState<Enrollment[]>([]) // Store enrollments for selected course
 
   useEffect(() => {
     fetchGrades(true)
-    fetchEnrollments()
     fetchCourses()
   }, [filters])
 
@@ -59,24 +58,39 @@ const AdminGrades: React.FC = () => {
     }
   }
 
-  const handleCourseSelection = (courseId: string) => {
+  const handleCourseSelection = async (courseId: string) => {
     const course = courses.find(c => c.id === parseInt(courseId))
     setSelectedCourse(course || null)
     setSelectedStudent(null) // Reset student selection
     
     if (course) {
-      // Filter enrollments to get students enrolled in the selected course
-      const enrolledStudents = enrollments
-        .filter(enrollment => enrollment.course.id === course.id && enrollment.status === 'ACTIVE')
-        .map(enrollment => enrollment.student)
-        .filter((student, index, self) => 
-          // Remove duplicates by student ID
-          index === self.findIndex(s => s.id === student.id)
-        )
-      
-      setAvailableStudents(enrolledStudents)
+      try {
+        // Fetch enrollments for the selected course using the same endpoint as Add Enrollment
+        const response = await enrollmentsApi.getEnrollments(undefined, 100, undefined, undefined, course.id)
+        if (response.success && response.data) {
+          const courseEnrollments = normalizePage<Enrollment>(response.data)
+          setCourseEnrollments(courseEnrollments) // Store for later use
+          
+          // Get enrolled students (ACTIVE status for grade-eligible enrollments)
+          const enrolledStudents = courseEnrollments
+            .filter(enrollment => enrollment.status === 'ACTIVE')
+            .map(enrollment => enrollment.student)
+            .filter((student, index, self) => 
+              // Remove duplicates by student ID
+              index === self.findIndex(s => s.id === student.id)
+            )
+          
+          setAvailableStudents(enrolledStudents)
+        }
+      } catch (error: any) {
+        console.error('Error fetching course enrollments:', error)
+        setAvailableStudents([])
+        setCourseEnrollments([])
+        toastHttpError(error, 'Failed to fetch enrolled students')
+      }
     } else {
       setAvailableStudents([])
+      setCourseEnrollments([])
     }
   }
 
@@ -84,25 +98,12 @@ const AdminGrades: React.FC = () => {
     const student = availableStudents.find(s => s.id === parseInt(studentId))
     setSelectedStudent(student || null)
     
-    // Find the enrollment for this student and course
+    // Find the enrollment for this student and course from the course-specific enrollments
     if (student && selectedCourse) {
-      const enrollment = enrollments.find(e => 
+      const enrollment = courseEnrollments.find(e => 
         e.student.id === student.id && e.course.id === selectedCourse.id
       )
       setSelectedEnrollment(enrollment || null)
-    }
-  }
-
-  const fetchEnrollments = async () => {
-    try {
-      const response = await enrollmentsApi.getEnrollments()
-      if (response.success && response.data) {
-        // Use normalize function to handle multiple response formats
-        const enrollmentData = normalizePage<Enrollment>(response.data)
-        setEnrollments(enrollmentData)
-      }
-    } catch (error: any) {
-      console.error('Error fetching enrollments:', error)
     }
   }
 
@@ -219,6 +220,7 @@ const AdminGrades: React.FC = () => {
     setSelectedStudent(null)
     setSelectedEnrollment(null)
     setAvailableStudents([])
+    setCourseEnrollments([])
     setFieldErrors({})
   }
 
