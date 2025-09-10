@@ -1,18 +1,31 @@
 import React, { useState, useEffect } from 'react'
 import { toast as hotToast } from 'react-hot-toast'
-import { gradesApi } from '../services/api'
+import { gradesApi, enrollmentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
-import { Grade, PaginatedResponse, UserRole } from '../types/api'
+import { Grade, PaginatedResponse, UserRole, Enrollment } from '../types/api'
+import { toastGroups } from '../lib/toast'
 
 const Grades: React.FC = () => {
   const { user } = useAuth()
   const [grades, setGrades] = useState<Grade[]>([])
+  const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([])
   const [loading, setLoading] = useState(true)
   const [hasNext, setHasNext] = useState(false)
   const [lastId, setLastId] = useState<number | undefined>(undefined)
+  
+  // Assign Grade Modal states
+  const [showAssignGradeModal, setShowAssignGradeModal] = useState(false)
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null)
+  const [newGrade, setNewGrade] = useState({
+    score: 0,
+    feedback: ''
+  })
 
   useEffect(() => {
     fetchGrades()
+    if (user?.role === UserRole.INSTRUCTOR) {
+      fetchPendingEnrollments()
+    }
   }, [])
 
   const fetchGrades = async (reset = false) => {
@@ -51,6 +64,68 @@ const Grades: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchPendingEnrollments = async () => {
+    try {
+      // Fetch enrollments that don't have grades yet (for instructor's courses)
+      const response = await enrollmentsApi.getEnrollments(
+        undefined, // lastId
+        50,       // limit
+        undefined, // type
+        'ACTIVE',  // status - only active enrollments
+        undefined, // courseId - let backend filter by instructor
+        undefined  // studentId
+      )
+      
+      if (response.success && response.data) {
+        const paginatedData = response.data as PaginatedResponse<Enrollment>
+        // Filter out enrollments that already have grades
+        const pending = paginatedData.content.filter(enrollment => 
+          !grades.some(grade => grade.enrollment.id === enrollment.id)
+        )
+        setPendingEnrollments(pending)
+      }
+    } catch (error: any) {
+      console.info('Pending enrollments check failed (possibly no backend support):', error)
+    }
+  }
+
+  const handleAssignGrade = async () => {
+    if (!selectedEnrollment) return
+
+    if (newGrade.score < 0 || newGrade.score > 100) {
+      toastGroups.form.error('Score must be between 0 and 100')
+      return
+    }
+
+    try {
+      const response = await gradesApi.createGrade({
+        enrollmentId: selectedEnrollment.id,
+        score: newGrade.score,
+        feedback: newGrade.feedback || undefined
+      })
+      
+      if (response.success) {
+        toastGroups.form.success('Grade assigned successfully')
+        setShowAssignGradeModal(false)
+        setSelectedEnrollment(null)
+        setNewGrade({ score: 0, feedback: '' })
+        
+        // Refresh grades and pending enrollments
+        await fetchGrades(true)
+        await fetchPendingEnrollments()
+      }
+    } catch (error: any) {
+      console.error('Error assigning grade:', error)
+      toastGroups.api.error(error.response?.data?.message || 'Failed to assign grade')
+    }
+  }
+
+  const openAssignGradeModal = (enrollment: Enrollment) => {
+    setSelectedEnrollment(enrollment)
+    setNewGrade({ score: 0, feedback: '' })
+    setShowAssignGradeModal(true)
   }
 
   const getScoreColor = (score: number) => {
@@ -117,8 +192,15 @@ const Grades: React.FC = () => {
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
           <p className="mt-2 text-sm text-gray-700">{getPageDescription()}</p>
+          {user?.role === UserRole.INSTRUCTOR && pendingEnrollments.length > 0 && (
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                {pendingEnrollments.length} Pending Grades
+              </span>
+            </div>
+          )}
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-3">
           <button
             type="button"
             onClick={() => fetchGrades(true)}
@@ -126,8 +208,57 @@ const Grades: React.FC = () => {
           >
             Refresh
           </button>
+          {user?.role === UserRole.INSTRUCTOR && pendingEnrollments.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (pendingEnrollments.length === 1) {
+                  openAssignGradeModal(pendingEnrollments[0])
+                } else {
+                  toastGroups.system.info('Select a student from the pending list below')
+                  // Scroll to pending section
+                  document.getElementById('pending-grades')?.scrollIntoView({ behavior: 'smooth' })
+                }
+              }}
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              Assign Grade
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Pending Grades Section for Instructors */}
+      {user?.role === UserRole.INSTRUCTOR && pendingEnrollments.length > 0 && (
+        <div id="pending-grades" className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h2 className="text-lg font-medium text-yellow-800 mb-3">Pending Grade Assignments</h2>
+          <div className="space-y-2">
+            {pendingEnrollments.map((enrollment) => (
+              <div key={enrollment.id} className="flex items-center justify-between bg-white p-3 rounded border">
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">
+                    {enrollment.student.firstName} {enrollment.student.lastName}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {enrollment.course.name} ({enrollment.course.code})
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    Pending
+                  </span>
+                  <button
+                    onClick={() => openAssignGradeModal(enrollment)}
+                    className="text-green-600 hover:text-green-800 text-sm font-medium"
+                  >
+                    Assign Grade
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grades List */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -234,6 +365,74 @@ const Grades: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Assign Grade Modal */}
+      {showAssignGradeModal && selectedEnrollment && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-2/3 max-w-lg shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Assign Grade: {selectedEnrollment.student.firstName} {selectedEnrollment.student.lastName}
+              </h3>
+              <div className="mb-4">
+                <div className="text-sm text-gray-600 mb-2">
+                  Course: {selectedEnrollment.course.name} ({selectedEnrollment.course.code})
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Score (0-100) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  value={newGrade.score}
+                  onChange={(e) => setNewGrade({ ...newGrade, score: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+                <div className="mt-1 text-xs text-gray-500">
+                  Letter Grade: {getLetterGrade(newGrade.score)}
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Feedback (Optional)
+                </label>
+                <textarea
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  rows={3}
+                  value={newGrade.feedback}
+                  onChange={(e) => setNewGrade({ ...newGrade, feedback: e.target.value })}
+                  placeholder="Provide feedback for the student..."
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssignGradeModal(false)
+                    setSelectedEnrollment(null)
+                    setNewGrade({ score: 0, feedback: '' })
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAssignGrade}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  Assign Grade
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
