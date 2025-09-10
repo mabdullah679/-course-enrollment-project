@@ -1,15 +1,27 @@
-GUI Auth: stability & flows (global)
+Sprint — GUI Auth Flows (3 Cycles)
 
-Shared client + credentials on all /api/v1/* calls.
+Goal: Prove end-to-end GUI flows using backend cookie auth.
 
-Session rotates on login/role change; multi-tab works.
+Cycles (repeat x3):
 
-Brand link routes by role; unauthorized routes blocked.
+Admin logs in → sees /admin dashboard.
 
-Denied login for unapproved accounts shows toast:
+Student self-signup → appears in Admin Users (pending if applicable).
 
-“Your account is pending approval for role {role}.”
+Admin approves Student → Student logs in → reaches /dashboard.
 
-Per-role UI and permissions are specified in sprint-all-roles-gui-auth.md.
+Evidence per cycle:
 
-Evidence: Cookie on protected calls; brand routing; pending-approval toast.
+Screenshot of Admin dashboard post-login.
+
+Screenshot of Users list showing the new user and approval action.
+
+Network pane showing cookie on a protected fetch.
+
+Student dashboard screenshot after approval.
+
+Notes:
+
+Use shared client. No manual cookie fiddling.
+
+If any protected request goes out without a cookie → STOP (cite guardrails).
