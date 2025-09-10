@@ -3,6 +3,7 @@ import { toast, toastHttpError } from '../lib/toast'
 import { Enrollment, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
 import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
 import { normalizePage } from '../utils/normalize'
+import { notifications } from '../lib/eventEmitter'
 
 interface EnrollmentCreateRequest {
   studentId: number
@@ -203,6 +204,17 @@ const AdminEnrollments: React.FC = () => {
       const response = await enrollmentsApi.updateEnrollmentStatus(enrollmentId, newStatus)
       if (response.success) {
         toast.success('Enrollment status updated successfully')
+        
+        // Find the enrollment to get details for notification
+        const enrollment = enrollments.find(e => e.id === enrollmentId)
+        if (enrollment && newStatus === 'APPROVED') {
+          notifications.enrollmentApproved(
+            enrollmentId,
+            `${enrollment.student.firstName} ${enrollment.student.lastName}`,
+            enrollment.course.name
+          )
+        }
+        
         setEnrollments(prev => prev.map(enrollment => 
           enrollment.id === enrollmentId 
             ? { ...enrollment, status: newStatus as any }
@@ -227,6 +239,14 @@ const AdminEnrollments: React.FC = () => {
       const response = await enrollmentsApi.rejectEnrollment(enrollmentToReject.id)
       if (response.success) {
         toast.success('Enrollment rejected.')
+        
+        // Emit notification event for future dashboards
+        notifications.enrollmentRejected(
+          enrollmentToReject.id,
+          `${enrollmentToReject.student.firstName} ${enrollmentToReject.student.lastName}`,
+          enrollmentToReject.course.name
+        )
+        
         setEnrollments(prev => prev.map(enrollment => 
           enrollment.id === enrollmentToReject.id 
             ? { ...enrollment, status: 'REJECTED' as any }

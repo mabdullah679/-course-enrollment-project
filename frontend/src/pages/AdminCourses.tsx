@@ -6,6 +6,23 @@ import { UserRole, Course, CourseCreateRequest } from '../types/api'
 import { useDebounce } from '../hooks/useDebounce'
 import { normalizePage } from '../utils/normalize'
 
+// Centralized course status enum and mapping
+const COURSE_STATUS = {
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED', 
+  DRAFT: 'DRAFT',
+  CLOSED: 'CLOSED'
+} as const
+
+type CourseStatus = keyof typeof COURSE_STATUS
+
+const COURSE_STATUS_LABELS: Record<CourseStatus, string> = {
+  ACTIVE: 'Active',
+  ARCHIVED: 'Archived',
+  DRAFT: 'Draft', 
+  CLOSED: 'Closed'
+}
+
 interface AuditEntry {
   id: number
   field: string
@@ -35,6 +52,8 @@ const AdminCourses: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showAuditModal, setShowAuditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showKebabMenu, setShowKebabMenu] = useState<number | null>(null)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   
   // Form states
@@ -45,7 +64,7 @@ const AdminCourses: React.FC = () => {
     status: 'ACTIVE',
     description: ''
   })
-  const [newStatus, setNewStatus] = useState<'ACTIVE' | 'ARCHIVED' | 'DRAFT' | 'CLOSED'>('ACTIVE')
+  const [newStatus, setNewStatus] = useState<CourseStatus>('ACTIVE')
   const [auditHistory, setAuditHistory] = useState<AuditEntry[]>([])
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
@@ -63,6 +82,17 @@ const AdminCourses: React.FC = () => {
       }
     }
   }, [debouncedSearchTerm, filters])
+
+  // Close kebab menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowKebabMenu(null)
+    }
+    if (showKebabMenu !== null) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showKebabMenu])
 
   const fetchCourses = async (reset = false) => {
     // Cancel previous request
@@ -254,6 +284,27 @@ const AdminCourses: React.FC = () => {
     }
   }
 
+  const handleDeleteCourse = async () => {
+    if (!selectedCourse) return
+
+    try {
+      const response = await coursesApi.deleteCourse(selectedCourse.id)
+      
+      if (response.success) {
+        toast.success('Course deleted.')
+        
+        // Remove course from list immediately
+        setCourses(prev => prev.filter(course => course.id !== selectedCourse.id))
+        
+        setShowDeleteModal(false)
+        setSelectedCourse(null)
+      }
+    } catch (error: any) {
+      console.error('Error deleting course:', error)
+      toastHttpError(error, 'Couldn\'t delete course. Please try again.')
+    }
+  }
+
   const handleViewAuditHistory = async (course: Course) => {
     setSelectedCourse(course)
     try {
@@ -305,14 +356,14 @@ const AdminCourses: React.FC = () => {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
+    switch (status as CourseStatus) {
+      case COURSE_STATUS.ACTIVE:
         return 'bg-green-100 text-green-800'
-      case 'ARCHIVED':
+      case COURSE_STATUS.ARCHIVED:
         return 'bg-yellow-100 text-yellow-800'
-      case 'DRAFT':
+      case COURSE_STATUS.DRAFT:
         return 'bg-blue-100 text-blue-800'
-      case 'CLOSED':
+      case COURSE_STATUS.CLOSED:
         return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -393,10 +444,9 @@ const AdminCourses: React.FC = () => {
               onChange={(e) => handleFilterChange('status', e.target.value)}
             >
               <option value="">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="ARCHIVED">Archived</option>
-              <option value="DRAFT">Draft</option>
-              <option value="CLOSED">Closed</option>
+              {Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -473,18 +523,49 @@ const AdminCourses: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleStatusClick(course)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                  >
-                    Edit Status
-                  </button>
-                  <button
-                    onClick={() => handleViewAuditHistory(course)}
-                    className="text-green-600 hover:text-green-900"
-                  >
-                    View History
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowKebabMenu(showKebabMenu === course.id ? null : course.id)}
+                      className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    
+                    {showKebabMenu === course.id && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-50 border">
+                        <div className="p-4 border-b">
+                          <div className="text-sm font-medium text-gray-900">{course.name}</div>
+                          <div className="text-xs text-gray-500">{course.code}</div>
+                          <div className="text-xs text-gray-500">{course.credits} credits</div>
+                          <div className="text-xs text-gray-500">{course.status}</div>
+                          <div className="text-xs text-gray-400 truncate max-w-full">{course.description}</div>
+                        </div>
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              handleStatusClick(course)
+                              setShowKebabMenu(null)
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedCourse(course)
+                              setShowDeleteModal(true)
+                              setShowKebabMenu(null)
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -581,12 +662,12 @@ const AdminCourses: React.FC = () => {
                         fieldErrors.status ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
                       }`}
                       value={newCourse.status}
-                      onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value as 'ACTIVE' | 'ARCHIVED' | 'CLOSED' })}
+                      onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value as CourseStatus })}
                       required
                     >
-                      <option value="ACTIVE">Active</option>
-                      <option value="ARCHIVED">Archived</option>
-                      <option value="CLOSED">Closed</option>
+                      {Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
                     </select>
                     {fieldErrors.status && (
                       <p className="mt-1 text-sm text-red-600">{fieldErrors.status}</p>
@@ -652,12 +733,11 @@ const AdminCourses: React.FC = () => {
                 <select
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as 'ACTIVE' | 'ARCHIVED' | 'DRAFT' | 'CLOSED')}
+                  onChange={(e) => setNewStatus(e.target.value as CourseStatus)}
                 >
-                  <option value="ACTIVE">Active</option>
-                  <option value="ARCHIVED">Archived</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="CLOSED">Closed</option>
+                  {Object.entries(COURSE_STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
                 </select>
               </div>
               <div className="flex space-x-3">
@@ -748,6 +828,47 @@ const AdminCourses: React.FC = () => {
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Course Confirmation Modal */}
+      {showDeleteModal && selectedCourse && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Confirm Deletion
+              </h3>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to delete the course{' '}
+                  <span className="font-medium">
+                    {selectedCourse.name} ({selectedCourse.code})
+                  </span>?
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setSelectedCourse(null)
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteCourse}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                >
+                  Delete
                 </button>
               </div>
             </div>

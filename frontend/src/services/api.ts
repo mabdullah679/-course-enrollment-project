@@ -134,6 +134,11 @@ export const coursesApi = {
     const response = await api.put(`/api/v1/courses/${id}/archive`)
     return response.data
   },
+
+  deleteCourse: async (id: number) => {
+    const response = await api.delete(`/api/v1/courses/${id}`)
+    return response.data
+  },
 }
 
 /* ----------------------------- USERS ---------------------------- */
