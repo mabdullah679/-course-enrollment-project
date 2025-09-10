@@ -40,6 +40,11 @@ const AdminGrades: React.FC = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null)
   const [courseEnrollments, setCourseEnrollments] = useState<Enrollment[]>([]) // Store enrollments for selected course
 
+  // Inline editing state
+  const [editingGradeId, setEditingGradeId] = useState<number | null>(null)
+  const [editingScore, setEditingScore] = useState<number>(0)
+  const [editingFeedback, setEditingFeedback] = useState<string>('')
+
   useEffect(() => {
     fetchGrades(true)
     fetchCourses()
@@ -241,6 +246,32 @@ const AdminGrades: React.FC = () => {
     }
   }
 
+  const handleStartEditing = (grade: Grade) => {
+    setEditingGradeId(grade.id)
+    setEditingScore(grade.score)
+    setEditingFeedback(grade.feedback || '')
+  }
+
+  const handleSaveEdit = async () => {
+    if (editingGradeId === null) return
+    
+    if (editingScore < 0 || editingScore > 100) {
+      toast.error('Score must be between 0 and 100')
+      return
+    }
+
+    await handleUpdateGrade(editingGradeId, editingScore, editingFeedback)
+    setEditingGradeId(null)
+    setEditingScore(0)
+    setEditingFeedback('')
+  }
+
+  const handleCancelEdit = () => {
+    setEditingGradeId(null)
+    setEditingScore(0)
+    setEditingFeedback('')
+  }
+
   if (loading) {
     return (
       <div className="p-6">
@@ -357,29 +388,73 @@ const AdminGrades: React.FC = () => {
                   <div className="text-sm text-gray-500">{grade.enrollment?.course?.code || 'No code'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{grade.score}%</div>
+                  {editingGradeId === grade.id ? (
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                      value={editingScore}
+                      onChange={(e) => setEditingScore(parseFloat(e.target.value) || 0)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveEdit()
+                        if (e.key === 'Escape') handleCancelEdit()
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <div className="text-sm font-medium text-gray-900">{grade.score}%</div>
+                  )}
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs truncate">
-                    {grade.feedback || 'No feedback'}
-                  </div>
+                  {editingGradeId === grade.id ? (
+                    <textarea
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                      rows={2}
+                      value={editingFeedback}
+                      onChange={(e) => setEditingFeedback(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey) handleSaveEdit()
+                        if (e.key === 'Escape') handleCancelEdit()
+                      }}
+                      placeholder="Optional feedback..."
+                    />
+                  ) : (
+                    <div className="text-sm text-gray-900 max-w-xs truncate">
+                      {grade.feedback || 'No feedback'}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(grade.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => {
-                      const newScore = prompt('Enter new score (0-100):', grade.score.toString())
-                      if (newScore && !isNaN(parseFloat(newScore))) {
-                        const score = Math.max(0, Math.min(100, parseFloat(newScore)))
-                        handleUpdateGrade(grade.id, score, grade.feedback)
-                      }
-                    }}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    Edit Score
-                  </button>
+                  {editingGradeId === grade.id ? (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSaveEdit}
+                        className="text-green-600 hover:text-green-900 text-xs px-2 py-1 border border-green-300 rounded hover:bg-green-50"
+                        title="Save (Enter)"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-600 hover:text-gray-900 text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                        title="Cancel (Esc)"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleStartEditing(grade)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      Edit
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
