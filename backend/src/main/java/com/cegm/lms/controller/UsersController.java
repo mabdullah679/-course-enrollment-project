@@ -56,18 +56,8 @@ public class UsersController {
         
         Page<User> users;
         
-        // Apply filters based on query parameters
-        if (q != null && !q.trim().isEmpty()) {
-            users = userService.searchUsers(q.trim(), pageable);
-        } else if (role != null) {
-            users = userService.getUsersByRole(role, pageable);
-        } else if (approved != null) {
-            users = userService.getUsersByApprovalStatus(approved, pageable);
-        } else if (active != null) {
-            users = userService.getUsersByActiveStatus(active, pageable);
-        } else {
-            users = userService.getAllUsers(pageable);
-        }
+        // Apply combined filters - now supports all filters together
+        users = userService.getUsersWithFilters(q, role, approved, active, pageable);
         
         Page<UserResponse> userResponses = users.map(userService::convertToResponse);
         return ResponseEntity.ok(ApiResponse.success(userResponses));

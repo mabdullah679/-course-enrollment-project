@@ -59,13 +59,17 @@ export const authApi = {
 
   // Correct path (backend expects /api/v1/auth/me)
   updateProfile: async (data: { firstName?: string; lastName?: string; email?: string }): Promise<ApiResponse<User>> => {
-    const response = await api.patch('/api/v1/auth/me', data)
+    const response = await api.patch('/api/v1/auth/me', data, {
+      meta: { successMessage: 'Profile updated.' }
+    })
     return response.data
   },
 
   // Correct path (backend expects /api/v1/auth/me/password)
   changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<ApiResponse<string>> => {
-    const response = await api.post('/api/v1/auth/me/password', data)
+    const response = await api.post('/api/v1/auth/me/password', data, {
+      meta: { successMessage: 'Password updated.' }
+    })
     return response.data
   },
 }

@@ -211,6 +211,20 @@ public class UserService {
     }
 
     /**
+     * Get users with combined filtering support.
+     * Supports text search across name/email/username + role + approved + active filters.
+     */
+    public Page<User> getUsersWithFilters(String query, UserRole role, Boolean approved, Boolean active, Pageable pageable) {
+        if (query != null && !query.trim().isEmpty()) {
+            // If there's a text query, use search with additional filters
+            return userRepository.findBySearchTermAndFilters(query.trim(), role, approved, active, pageable);
+        } else {
+            // No text query, just use the combination of role/approved/active filters
+            return userRepository.findByFilters(role, approved, active, pageable);
+        }
+    }
+
+    /**
      * Change user role with audit logging.
      */
     public User changeUserRole(Long userId, UserRole newRole) {

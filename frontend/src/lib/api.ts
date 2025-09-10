@@ -1,7 +1,16 @@
 import axios from 'axios'
 import { extractErrorDetails } from './errorMapping'
-import { toastError } from './toast'
+import { toastError, toast } from './toast'
 import { requestTracker } from './requestTracker'
+
+// Extend axios config to support custom meta fields
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    meta?: {
+      successMessage?: string
+    }
+  }
+}
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -41,7 +50,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor: record requests & show friendly errors
+// Response interceptor: record requests & show friendly errors + 204 success toasts
 api.interceptors.response.use(
   (response) => {
     if (import.meta.env.DEV) {
@@ -57,6 +66,13 @@ api.interceptors.response.use(
         timestamp: new Date(),
       })
     }
+
+    // Handle 204 success toasts
+    if (response.status === 204 && response.config?.meta?.successMessage) {
+      const message = response.config.meta.successMessage
+      toast.success(message)
+    }
+    
     return response
   },
   (error) => {

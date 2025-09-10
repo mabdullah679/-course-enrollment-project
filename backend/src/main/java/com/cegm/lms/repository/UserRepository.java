@@ -55,4 +55,35 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByEmailContainingIgnoreCaseOrUsernameContainingIgnoreCaseOrFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
             @Param("query") String email, @Param("query") String username, 
             @Param("query") String firstName, @Param("query") String lastName, Pageable pageable);
+    
+    /**
+     * Combined filter search with text query and additional filters.
+     */
+    @Query("SELECT u FROM User u WHERE " +
+           "(LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "AND (:role IS NULL OR u.role = :role) " +
+           "AND (:approved IS NULL OR u.approved = :approved) " +
+           "AND (:active IS NULL OR u.active = :active)")
+    Page<User> findBySearchTermAndFilters(
+            @Param("query") String query,
+            @Param("role") UserRole role,
+            @Param("approved") Boolean approved, 
+            @Param("active") Boolean active,
+            Pageable pageable);
+    
+    /**
+     * Combined filters without text search.
+     */
+    @Query("SELECT u FROM User u WHERE " +
+           "(:role IS NULL OR u.role = :role) " +
+           "AND (:approved IS NULL OR u.approved = :approved) " +
+           "AND (:active IS NULL OR u.active = :active)")
+    Page<User> findByFilters(
+            @Param("role") UserRole role,
+            @Param("approved") Boolean approved, 
+            @Param("active") Boolean active,
+            Pageable pageable);
 }
