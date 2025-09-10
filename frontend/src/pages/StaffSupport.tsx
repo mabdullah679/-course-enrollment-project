@@ -44,6 +44,7 @@ const StaffSupport: React.FC = () => {
         20,        // limit
         undefined, // search
         undefined, // role
+        undefined, // status
         false,     // approved - only unapproved
         undefined  // active
       )
