@@ -24,3 +24,8 @@ auth:
     secret: "${JWT_SECRET:dev-single-jwt-secret-key-at-least-32-chars-stable-fallback}"
   cookie:
     name: "cegm_dev_session"
+# Enable devtools restart watching additional paths (e.g., ssot definitions)
+spring:
+  devtools:
+    restart:
+      additional-paths: "../ssot"

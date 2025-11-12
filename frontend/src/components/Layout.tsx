@@ -89,6 +89,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           { name: 'Dashboard', href: '/admin' },
           { name: 'Users', href: '/admin/users' },
           { name: 'Courses', href: '/admin/courses' },
+          { name: 'Enrollments', href: '/admin/enrollments' },
           { name: 'Profile', href: '/profile' }
         ]
       default:

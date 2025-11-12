@@ -92,8 +92,18 @@ api.interceptors.response.use(
 
     const details = extractErrorDetails(error)
 
-    // only auto-logout if /auth/me 401 (session check)
-    if (error.response?.status === 401 && error.config?.url?.includes('/auth/me')) {
+    const isBrowser = typeof window !== 'undefined'
+    const isAuthMe = error.config?.url?.includes('/auth/me')
+    const status = error.response?.status
+    const onLoginRoute = isBrowser && window.location.pathname.startsWith('/login')
+    const hasStoredSession = isBrowser && (
+      !!sessionStorage.getItem('user') ||
+      !!sessionStorage.getItem('auth_token') ||
+      !!localStorage.getItem('auth_token')
+    )
+
+    // Only treat as session expiry if user had an active session
+    if (isAuthMe && (status === 401 || status === 403) && hasStoredSession) {
       sessionStorage.removeItem('user')
       sessionStorage.removeItem('auth_token')
       localStorage.removeItem('auth_token')
@@ -102,12 +112,19 @@ api.interceptors.response.use(
         ch.postMessage({ type: 'logout', reason: 'session_expired' })
         ch.close()
       }
-      window.location.href = '/login'
+      if (!onLoginRoute) {
+        window.location.href = '/login'
+      }
       return Promise.reject(error)
     }
 
     if (details.shouldShowField && details.field) return Promise.reject(error)
+    // Honor explicit suppression header (used during initial auth probe)
     if (error.config?.headers?.['X-Suppress-Error-Toast'] === 'true') return Promise.reject(error)
+    // Suppress errors on the login route until the user submits credentials
+    if (!hasStoredSession && onLoginRoute) {
+      return Promise.reject(error)
+    }
 
     if (details.message) toastError(details.message, details.code, details.requestId)
     return Promise.reject(error)

@@ -4,6 +4,7 @@ import com.cegm.lms.event.EnrollmentRejectedEvent;
 import com.cegm.lms.exception.DuplicateEnrollmentException;
 import com.cegm.lms.exception.CourseNotFoundException;
 import com.cegm.lms.exception.EnrollmentNotFoundException;
+import com.cegm.lms.exception.UnauthorizedException;
 import com.cegm.lms.exception.UserNotFoundException;
 import com.cegm.lms.model.Course;
 import com.cegm.lms.model.Enrollment;
@@ -47,20 +48,40 @@ public class EnrollmentService {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private EnrollmentWindowService enrollmentWindowService;
+
     /**
      * Create new enrollment with policy validation.
      */
     public Enrollment createEnrollment(Long studentId, Long courseId) {
+        enrollmentWindowService.assertEnrollmentWindowOpenForStudents();
+
         User student = userRepository.findById(studentId)
             .orElseThrow(() -> new UserNotFoundException("Student not found"));
         
         Course course = courseRepository.findById(courseId)
             .orElseThrow(() -> new CourseNotFoundException("Course not found"));
 
-        // Check for duplicate enrollment
-        if (ssotConfigService.getDuplicateEnrollmentErrorCode() == 409 &&
-            enrollmentRepository.existsByStudentIdAndCourseId(studentId, courseId)) {
-            throw new DuplicateEnrollmentException("Student already enrolled in this course");
+        var existingEnrollment = enrollmentRepository.findByStudentIdAndCourseId(studentId, courseId);
+        if (existingEnrollment.isPresent()) {
+            Enrollment current = existingEnrollment.get();
+            EnrollmentStatus status = current.getStatus();
+            if (status == EnrollmentStatus.REJECTED || status == EnrollmentStatus.DROPPED) {
+                current.setStatus(EnrollmentStatus.PENDING);
+                current.setCompletedAt(null);
+                current.setWithdrawalReason(null);
+                current.setWithdrawalRequestedAt(null);
+                current.setEnrolledAt(LocalDateTime.now());
+                Enrollment saved = enrollmentRepository.save(current);
+                auditLogService.log(studentId, "EnrollmentService", "ENROLLMENT_REOPENED",
+                    String.format("Student %s re-requested enrollment for course %s", student.getUsername(), course.getCode()));
+                return saved;
+            }
+
+            if (ssotConfigService.getDuplicateEnrollmentErrorCode() == 409) {
+                throw new DuplicateEnrollmentException("Student already enrolled in this course");
+            }
         }
 
         Enrollment enrollment = new Enrollment(student, course);
@@ -125,6 +146,42 @@ public class EnrollmentService {
         return rejectedEnrollment;
     }
 
+    public void deleteEnrollment(Long enrollmentId, Long studentId) {
+        Enrollment enrollment = findById(enrollmentId);
+        if (!enrollment.getStudent().getId().equals(studentId)) {
+            throw new UnauthorizedException("Cannot modify this enrollment");
+        }
+        if (enrollment.getStatus() == EnrollmentStatus.PENDING || enrollment.getStatus() == EnrollmentStatus.REJECTED ||
+                enrollment.getStatus() == EnrollmentStatus.DROPPED) {
+            enrollmentRepository.delete(enrollment);
+            auditLogService.log(studentId, "EnrollmentService", "ENROLLMENT_DELETED",
+                String.format("Enrollment %d removed by student", enrollmentId));
+        } else {
+            throw new IllegalStateException("Only pending, rejected, or dropped enrollments can be removed");
+        }
+    }
+
+    public Enrollment withdrawEnrollment(Long enrollmentId, Long studentId, String reason) {
+        Enrollment enrollment = findById(enrollmentId);
+        if (!enrollment.getStudent().getId().equals(studentId)) {
+            throw new UnauthorizedException("Cannot modify this enrollment");
+        }
+        if (enrollment.getStatus() != EnrollmentStatus.ACTIVE && enrollment.getStatus() != EnrollmentStatus.APPROVED) {
+            throw new IllegalStateException("Only active enrollments can be withdrawn");
+        }
+
+        enrollment.setStatus(EnrollmentStatus.DROPPED);
+        enrollment.setCompletedAt(LocalDateTime.now());
+        enrollment.setWithdrawalReason(reason);
+        enrollment.setWithdrawalRequestedAt(LocalDateTime.now());
+        Enrollment saved = enrollmentRepository.save(enrollment);
+
+        auditLogService.log(studentId, "EnrollmentService", "ENROLLMENT_WITHDRAWN",
+            String.format("Student %s requested withdrawal from course %s", enrollment.getStudent().getUsername(), enrollment.getCourse().getCode()));
+
+        return saved;
+    }
+
     /**
      * Validate enrollment state transitions per SSoT FSM.
      */
@@ -137,9 +194,11 @@ public class EnrollmentService {
             case ACTIVE:
                 return to == EnrollmentStatus.COMPLETED || to == EnrollmentStatus.DROPPED;
             case COMPLETED:
+                return false;
             case REJECTED:
+                return to == EnrollmentStatus.PENDING;
             case DROPPED:
-                return false; // Terminal states
+                return to == EnrollmentStatus.PENDING;
             default:
                 return false;
         }
@@ -181,8 +240,9 @@ public class EnrollmentService {
      * This is a placeholder implementation.
      */
     public Page<Enrollment> getAvailableEnrollments(Pageable pageable) {
-        // For now, return all active enrollments
-        // TODO: Implement based on enrollment window status and course availability
+        if (!enrollmentWindowService.isEnrollmentAllowedForStudents()) {
+            return Page.empty(pageable);
+        }
         return enrollmentRepository.findByStatus(EnrollmentStatus.ACTIVE, pageable);
     }
 
@@ -191,8 +251,9 @@ public class EnrollmentService {
      * This is a placeholder implementation.
      */
     public Page<Enrollment> getUnavailableEnrollments(Pageable pageable) {
-        // For now, return rejected and dropped enrollments
-        // TODO: Implement based on enrollment window status and course status
-        return enrollmentRepository.findAll(pageable); // Placeholder
+        if (enrollmentWindowService.isEnrollmentAllowedForStudents()) {
+            return Page.empty(pageable);
+        }
+        return enrollmentRepository.findAll(pageable);
     }
 }

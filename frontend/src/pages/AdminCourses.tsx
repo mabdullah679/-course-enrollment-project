@@ -25,11 +25,12 @@ const COURSE_STATUS_LABELS: Record<CourseStatus, string> = {
 
 interface AuditEntry {
   id: number
-  field: string
-  oldValue: string
-  newValue: string
-  changedBy: string
-  changedAt: string
+  serviceName: string
+  action: string
+  details: string
+  timestamp: string
+  userId?: number
+  correlationId?: string
 }
 
 const AdminCourses: React.FC = () => {
@@ -310,11 +311,21 @@ const AdminCourses: React.FC = () => {
     try {
       const response = await coursesApi.getCourseAuditHistory(course.id)
       if (response.success && response.data) {
-        setAuditHistory(response.data)
+        let auditData: AuditEntry[] = []
+        if (response.data.content) {
+          auditData = normalizePage<AuditEntry>(response.data)
+        } else if (Array.isArray(response.data)) {
+          auditData = response.data
+        }
+        setAuditHistory(auditData)
+      } else {
+        setAuditHistory([])
       }
       setShowAuditModal(true)
     } catch (error: any) {
       console.error('Error fetching course audit history:', error)
+      setAuditHistory([])
+      setShowAuditModal(true)
       toast.error('Failed to load audit history')
     }
   }
@@ -776,16 +787,13 @@ const AdminCourses: React.FC = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Field
+                          Action
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Old Value
+                          Details
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          New Value
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Changed By
+                          Service
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Date
@@ -796,19 +804,16 @@ const AdminCourses: React.FC = () => {
                       {auditHistory.map((entry) => (
                         <tr key={entry.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {entry.field}
+                            {entry.action}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={entry.details}>
+                            {entry.details || '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {entry.oldValue}
+                            {entry.serviceName}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {entry.newValue}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {entry.changedBy}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(entry.changedAt).toLocaleString()}
+                            {new Date(entry.timestamp).toLocaleString()}
                           </td>
                         </tr>
                       ))}

@@ -73,10 +73,10 @@ function AppRoutes() {
 
   return (
     <Layout>
-      <Routes>
-        {user.role === UserRole.STUDENT ? (
-          <>
-            <Route path="/" element={<Navigate to="/student" />} />
+        <Routes>
+          {user.role === UserRole.STUDENT ? (
+            <>
+              <Route path="/" element={<Navigate to="/student" />} />
             <Route path="/student" element={<Dashboard />} />
             <Route path="/student/courses" element={<Courses />} />
             <Route path="/student/enrollments" element={<Enrollments />} />
@@ -136,7 +136,7 @@ function AppRoutes() {
           </>
         )}
       </Routes>
-    </Layout>
+      </Layout>
   )
 }
 

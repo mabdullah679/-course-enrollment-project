@@ -43,6 +43,12 @@ public class Enrollment {
 
     private LocalDateTime completedAt;
 
+    @Column(name = "withdrawal_reason", length = 500)
+    private String withdrawalReason;
+
+    @Column(name = "withdrawal_requested_at")
+    private LocalDateTime withdrawalRequestedAt;
+
     @OneToMany(mappedBy = "enrollment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Grade> grades;
@@ -72,6 +78,12 @@ public class Enrollment {
 
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+
+    public String getWithdrawalReason() { return withdrawalReason; }
+    public void setWithdrawalReason(String withdrawalReason) { this.withdrawalReason = withdrawalReason; }
+
+    public LocalDateTime getWithdrawalRequestedAt() { return withdrawalRequestedAt; }
+    public void setWithdrawalRequestedAt(LocalDateTime withdrawalRequestedAt) { this.withdrawalRequestedAt = withdrawalRequestedAt; }
 
     public List<Grade> getGrades() { return grades; }
     public void setGrades(List<Grade> grades) { this.grades = grades; }

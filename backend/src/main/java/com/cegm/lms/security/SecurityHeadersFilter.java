@@ -20,28 +20,36 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
-        // Content Security Policy - restrictive policy for security
-        response.setHeader("Content-Security-Policy", 
-            "default-src 'self'; " +
-            "script-src 'self'; " +
-            "style-src 'self' 'unsafe-inline'; " +
-            "img-src 'self' data:; " +
-            "connect-src 'self' https://localhost:8080; " +
-            "frame-ancestors 'none'"
-        );
-        
-        // Referrer Policy - no referrer information sent
-        response.setHeader("Referrer-Policy", "no-referrer");
-        
-        // Permissions Policy - disable potentially dangerous features
-        response.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
-        
-        // X-Content-Type-Options - prevent MIME type sniffing
-        response.setHeader("X-Content-Type-Options", "nosniff");
-        
-        // X-Frame-Options - prevent clickjacking
-        response.setHeader("X-Frame-Options", "DENY");
-        
+        if (shouldApplyStrictHeaders(request)) {
+            // Content Security Policy - restrictive policy for security
+            response.setHeader("Content-Security-Policy",
+                "default-src 'self'; " +
+                "script-src 'self'; " +
+                "style-src 'self' 'unsafe-inline'; " +
+                "img-src 'self' data:; " +
+                "connect-src 'self' https://localhost:8080; " +
+                "frame-ancestors 'none'"
+            );
+
+            // Referrer Policy - no referrer information sent
+            response.setHeader("Referrer-Policy", "no-referrer");
+
+            // Permissions Policy - disable potentially dangerous features
+            response.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+
+            // X-Content-Type-Options - prevent MIME type sniffing
+            response.setHeader("X-Content-Type-Options", "nosniff");
+
+            // X-Frame-Options - prevent clickjacking
+            response.setHeader("X-Frame-Options", "DENY");
+        }
+
         filterChain.doFilter(request, response);
+    }
+
+    private boolean shouldApplyStrictHeaders(HttpServletRequest request) {
+        // H2 console requires relaxed CSP/frames so skip the strict header overrides
+        String uri = request.getRequestURI();
+        return uri == null || !uri.startsWith("/h2-console");
     }
 }

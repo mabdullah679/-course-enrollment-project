@@ -1,0 +1,188 @@
+.
+├── .env.local
+├── .githooks
+│   └── pre-commit
+├── .github
+│   └── workflows
+│       └── ci.yml
+├── .gitignore
+├── .logs
+│   ├── backend.log
+│   └── frontend.log
+├── .vscode
+│   └── settings.json
+├── admin_cookies.txt
+├── admin_parallel_cookies.txt
+├── backend
+│   ├── .mvn
+│   │   └── wrapper
+│   ├── admin_cookies.txt
+│   ├── admin_test_cookies.txt
+│   ├── alice_cookies.txt
+│   ├── cegm_dev.log
+│   ├── cegm_dev.log.2025-09-04.0.gz
+│   ├── cegm_dev.log.2025-09-05.0.gz
+│   ├── cegm_dev.log.2025-09-05.0365196012868802.tmp
+│   ├── cegm_dev.log.2025-09-05.1.gz
+│   ├── cegm_dev.log.2025-09-06.0.gz
+│   ├── cegm_dev.log.2025-09-06.03561535042436.tmp
+│   ├── cegm_dev.log.2025-09-06.0379942107864822.tmp
+│   ├── cegm_dev.log.2025-09-06.0380872025733585.tmp
+│   ├── cegm_dev.log.2025-09-06.0393171008837096.tmp
+│   ├── cegm_dev.log.2025-09-06.1.gz
+│   ├── cegm_dev.log.2025-09-06.1381000936647775.tmp
+│   ├── cegm_dev.log.2025-09-06.1393405380629572.tmp
+│   ├── cegm_dev.log.2025-09-06.2.gz
+│   ├── cegm_dev.log.2025-09-06.2381285185130974.tmp
+│   ├── cegm_dev.log.2025-09-06.3.gz
+│   ├── cegm_dev.log.2025-09-06.4.gz
+│   ├── cegm_dev.log.2025-09-07.0.gz
+│   ├── cegm_dev.log.2025-09-07.018810709489606.tmp
+│   ├── cegm_dev.log.2025-09-07.019181854799748.tmp
+│   ├── cegm_dev.log.2025-09-07.0313661454727.tmp
+│   ├── cegm_dev.log.2025-09-07.1.gz
+│   ├── cegm_dev.log.2025-09-07.118875041807468.tmp
+│   ├── cegm_dev.log.2025-09-07.120407699639768.tmp
+│   ├── cegm_dev.log.2025-09-08.0.gz
+│   ├── cegm_dev.log.2025-09-08.021850288786467.tmp
+│   ├── cegm_dev.log.2025-09-08.034530501557829.tmp
+│   ├── cegm_dev.log.2025-09-08.037597053439396.tmp
+│   ├── cegm_dev.log.2025-09-08.040818260774976.tmp
+│   ├── cegm_dev.log.2025-09-08.043746688636949.tmp
+│   ├── cegm_dev.log.2025-09-08.062855915010083.tmp
+│   ├── cegm_dev.log.2025-09-08.1.gz
+│   ├── cegm_dev.log.2025-09-08.122069205738898.tmp
+│   ├── cegm_dev.log.2025-09-08.138116773952111.tmp
+│   ├── cegm_dev.log.2025-09-08.2.gz
+│   ├── cegm_dev.log.2025-09-08.238700990804037.tmp
+│   ├── cegm_dev.log.2025-09-08.3.gz
+│   ├── cegm_dev.log.2025-09-09.0.gz
+│   ├── cegm_dev.log.2025-09-09.0121768840070790.tmp
+│   ├── cegm_dev.log.2025-09-09.1.gz
+│   ├── cegm_dev.log.2025-09-09.2.gz
+│   ├── cegm_dev.log.2025-09-09.3.gz
+│   ├── cegm_dev.log.2025-09-10.0.gz
+│   ├── cegm_dev.log.2025-09-11.0.gz
+│   ├── cookies_final.txt
+│   ├── cookies_test.txt
+│   ├── copilot-scan.txt
+│   ├── Dockerfile
+│   ├── mvnw
+│   ├── mvnw.cmd
+│   ├── pom.xml
+│   ├── pom.xml.bak
+│   ├── scripts
+│   │   └── start-backend.sh
+│   ├── signup_response.json
+│   ├── src
+│   │   ├── main
+│   │   └── test
+│   ├── student_cookies.txt
+│   ├── target
+│   │   ├── cegm-backend-0.0.1-SNAPSHOT.jar
+│   │   ├── cegm-backend-0.0.1-SNAPSHOT.jar.original
+│   │   ├── classes
+│   │   ├── generated-sources
+│   │   ├── generated-test-sources
+│   │   ├── maven-archiver
+│   │   ├── maven-status
+│   │   └── test-classes
+│   ├── terminal-cli-output.txt
+│   └── users_export.csv
+├── cegm_dev_context_dump_20250908_103641.txt
+├── cookies.txt
+├── dçclear
+├── docker-compose.yml
+├── docs
+│   ├── archive
+│   │   ├── prompt.md
+│   │   ├── sprint-multi-client-session.md
+│   │   └── sprint-student-gui-auth.md
+│   ├── main
+│   │   ├── acceptance-matrix.md
+│   │   ├── guardrails.md
+│   │   ├── instruction.md
+│   │   ├── sprint-admin-dashboard.md
+│   │   ├── sprint-all-roles-gui-auth.md
+│   │   ├── sprint-config-and-actuator.md
+│   │   ├── sprint-courses-management.md
+│   │   ├── sprint-delta-2025-09-05.md
+│   │   ├── sprint-gui-auth.md
+│   │   ├── sprint-instructor-gradebook.md
+│   │   ├── sprint-jwt-debug.md
+│   │   ├── sprint-ui-wiring-and-hardening.md
+│   │   └── sprint-users-management.md
+│   ├── qa-script.md
+│   ├── request-id-correlation.md
+│   └── toast-mapping.md
+├── frontend
+│   ├── .env.local
+│   ├── .env.local.bak
+│   ├── .vite
+│   │   └── deps_temp_4a31b729
+│   ├── Dockerfile
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.cjs
+│   ├── src
+│   │   ├── App.tsx
+│   │   ├── components
+│   │   ├── contexts
+│   │   ├── hooks
+│   │   ├── index.css
+│   │   ├── lib
+│   │   ├── main.tsx
+│   │   ├── pages
+│   │   ├── services
+│   │   ├── types
+│   │   ├── utils
+│   │   └── vite-env.d.ts
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   ├── vite.config.ts
+│   └── vite.config.ts.bak
+├── gui_admin_cookies.txt
+├── gui_cookies.txt
+├── gui_student_cookies.txt
+├── logs
+│   ├── backend.log
+│   ├── backend.run.log
+│   └── frontend.log
+├── most-recent.log
+├── package-lock.json
+├── project-tree.txt
+├── scripts
+│   ├── build.sh
+│   ├── logs
+│   │   ├── backend.log
+│   │   ├── build.log
+│   │   ├── frontend_dev.log
+│   │   └── frontend.log
+│   ├── run-local.sh
+│   ├── setup-database.sh
+│   ├── smoke-tests.sh
+│   ├── smoke.sh
+│   ├── start-backend.sh
+│   ├── start-dev.sh
+│   ├── start-frontend.sh
+│   ├── test-admin.sh
+│   ├── test-api.sh
+│   ├── test-complete-workflow.sh
+│   └── test-workflow-fixed.sh
+├── setup-test-env.sh
+├── sprint_deliverables_final.md
+├── sprint_evidence_report.md
+├── sprint-ui-wiring-and-hardening.md
+├── ssot
+│   ├── ssot.dev.yaml
+│   └── ssot.schema.json
+├── student_browser_b_cookies.txt
+├── student_cli_first_cookies.txt
+├── student_cookies.txt
+├── student_gui_second_cookies.txt
+├── student2_cookies.txt
+└── student3_cookies.txt
+
+39 directories, 147 files

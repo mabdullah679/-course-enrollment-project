@@ -18,18 +18,18 @@ public class AuditLogService {
 
     public AuditLog log(Long userId, String serviceName, String action, String details) {
         AuditLog auditLog = new AuditLog(userId, serviceName, action, details);
-            if (userId != null) {
-                auditLog.setUserId(userId);
-            }
-            return auditLogRepository.save(auditLog);
+        if (userId != null) {
+            auditLog.setUserId(userId);
+        }
+        return auditLogRepository.save(auditLog);
     }
 
     public AuditLog logError(Long userId, String serviceName, String errorCode, String details) {
         AuditLog auditLog = new AuditLog(userId, serviceName, "ERROR", details);
-            if (userId != null) {
-                auditLog.setUserId(userId);
-            }
-            auditLog.setErrorCode(errorCode);
+        if (userId != null) {
+            auditLog.setUserId(userId);
+        }
+        auditLog.setErrorCode(errorCode);
         return auditLogRepository.save(auditLog);
     }
 
@@ -45,6 +45,10 @@ public class AuditLogService {
 
     public Page<AuditLog> getLogsByUserId(Long userId, Pageable pageable) {
         return auditLogRepository.findByUserId(userId, pageable);
+    }
+
+    public Page<AuditLog> getLogsByCourseId(Long courseId, Pageable pageable) {
+        return auditLogRepository.findByCourseId(courseId, pageable);
     }
 
     public List<AuditLog> getLogsByServiceName(String serviceName) {
@@ -65,5 +69,11 @@ public class AuditLogService {
 
     public List<AuditLog> getErrorLogsByUserId(Long userId) {
         return auditLogRepository.findErrorLogsByUserId(userId);
+    }
+
+    public AuditLog logCourse(Long courseId, Long userId, String action, String details) {
+        AuditLog auditLog = new AuditLog(userId, "CourseService", action, details);
+        auditLog.setCourseId(courseId);
+        return auditLogRepository.save(auditLog);
     }
 }

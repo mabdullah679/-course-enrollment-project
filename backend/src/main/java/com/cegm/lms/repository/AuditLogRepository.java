@@ -20,9 +20,13 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     
     List<AuditLog> findByCorrelationId(String correlationId);
     
+    List<AuditLog> findByCourseId(Long courseId);
+    
     Page<AuditLog> findByUserId(Long userId, Pageable pageable);
     
     Page<AuditLog> findByServiceName(String serviceName, Pageable pageable);
+    
+    Page<AuditLog> findByCourseId(Long courseId, Pageable pageable);
     
     @Query("SELECT a FROM AuditLog a WHERE a.timestamp BETWEEN :startDate AND :endDate")
     List<AuditLog> findByTimestampBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { toast, toastHttpError } from '../lib/toast'
-import { Enrollment, User, Course, EnrollmentType, EnrollmentStatus } from '../types/api'
+import { Enrollment, User, Course, EnrollmentStatus } from '../types/api'
 import { enrollmentsApi, usersApi, coursesApi } from '../services/api'
 import { normalizePage } from '../utils/normalize'
 import { notifications } from '../lib/eventEmitter'
@@ -8,7 +8,6 @@ import { notifications } from '../lib/eventEmitter'
 interface EnrollmentCreateRequest {
   studentId: number
   courseId: number
-  type: EnrollmentType
   status?: EnrollmentStatus
 }
 
@@ -18,7 +17,7 @@ const AdminEnrollments: React.FC = () => {
   const [hasNext, setHasNext] = useState(false)
   const [lastId, setLastId] = useState<number | undefined>(undefined)
   const [filters, setFilters] = useState({
-    type: '',
+    status: '',
     semester: '',
     courseId: '',
     studentId: '',
@@ -30,7 +29,6 @@ const AdminEnrollments: React.FC = () => {
   const [newEnrollment, setNewEnrollment] = useState<EnrollmentCreateRequest>({
     studentId: 0,
     courseId: 0,
-    type: EnrollmentType.CREDIT,
     status: EnrollmentStatus.PENDING
   })
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -78,10 +76,11 @@ const AdminEnrollments: React.FC = () => {
       const response = await enrollmentsApi.getEnrollments(
         currentAfter,
         20,
-        filters.type || undefined,
+        undefined,
         filters.semester || undefined,
         filters.courseId ? parseInt(filters.courseId) : undefined,
-        filters.studentId ? parseInt(filters.studentId) : undefined
+        filters.studentId ? parseInt(filters.studentId) : undefined,
+        filters.status || undefined
       )
       
       if (response.success && response.data) {
@@ -159,7 +158,6 @@ const AdminEnrollments: React.FC = () => {
       const enrollmentData = {
         studentId: newEnrollment.studentId,
         courseId: newEnrollment.courseId,
-        type: newEnrollment.type,
         status: newEnrollment.status
       }
       
@@ -171,7 +169,6 @@ const AdminEnrollments: React.FC = () => {
         setNewEnrollment({
           studentId: 0,
           courseId: 0,
-          type: EnrollmentType.CREDIT,
           status: EnrollmentStatus.PENDING
         })
         setFieldErrors({})
@@ -285,16 +282,9 @@ const AdminEnrollments: React.FC = () => {
     }
   }
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'CREDIT':
-        return 'bg-green-100 text-green-800'
-      case 'AUDIT':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
+  const actionableStatuses: EnrollmentStatus[] = ['PENDING', 'APPROVED', 'ACTIVE', 'REJECTED']
+  const hasActions = (enrollment: Enrollment) => actionableStatuses.includes(enrollment.status as EnrollmentStatus)
+  const showActionsColumn = enrollments.some(hasActions)
 
   if (loading && enrollments.length === 0) {
     return (
@@ -335,18 +325,19 @@ const AdminEnrollments: React.FC = () => {
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Type</label>
+            <label className="block text-sm font-medium text-gray-700">Status</label>
             <select
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
             >
-              <option value="">All Types</option>
+              <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>
               <option value="APPROVED">Approved</option>
               <option value="ACTIVE">Active</option>
               <option value="COMPLETED">Completed</option>
               <option value="DROPPED">Dropped</option>
+              <option value="REJECTED">Rejected</option>
             </select>
           </div>
           <div>
@@ -405,17 +396,16 @@ const AdminEnrollments: React.FC = () => {
                 Course
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Enrolled
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {showActionsColumn && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -434,11 +424,6 @@ const AdminEnrollments: React.FC = () => {
                   <div className="text-sm text-gray-500">{enrollment.course.code}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(enrollment.type)}`}>
-                    {enrollment.type}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(enrollment.status)}`}>
                     {enrollment.status}
                   </span>
@@ -446,58 +431,68 @@ const AdminEnrollments: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(enrollment.enrolledAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {enrollment.status === 'PENDING' && (
-                    <>
-                      <button
-                        onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'APPROVED')}
-                        className="text-green-600 hover:text-green-900 mr-3"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleRejectClick(enrollment)}
-                        className="text-red-600 hover:text-red-900 inline-flex items-center"
-                      >
-                        Reject
+                {showActionsColumn && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {enrollment.status === 'PENDING' && (
+                      <>
                         <button
-                          className="ml-1 text-gray-400 hover:text-gray-600"
-                          onMouseEnter={() => setShowRejectInfo(true)}
-                          onMouseLeave={() => setShowRejectInfo(false)}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowRejectInfo(!showRejectInfo)
-                          }}
+                          onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'APPROVED')}
+                          className="text-green-600 hover:text-green-900 mr-3"
                         >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
+                          Approve
                         </button>
-                        {showRejectInfo && (
-                          <div className="absolute z-10 p-2 bg-gray-800 text-white text-xs rounded shadow-lg max-w-xs -mt-8 ml-8">
-                            This will confirm the rejection, and this enrollment request will need to be resubmitted.
-                          </div>
-                        )}
+                        <button
+                          onClick={() => handleRejectClick(enrollment)}
+                          className="text-red-600 hover:text-red-900 inline-flex items-center"
+                        >
+                          Reject
+                          <button
+                            className="ml-1 text-gray-400 hover:text-gray-600"
+                            onMouseEnter={() => setShowRejectInfo(true)}
+                            onMouseLeave={() => setShowRejectInfo(false)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowRejectInfo(!showRejectInfo)
+                            }}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          {showRejectInfo && (
+                            <div className="absolute z-10 p-2 bg-gray-800 text-white text-xs rounded shadow-lg max-w-xs -mt-8 ml-8">
+                              This will confirm the rejection, and this enrollment request will need to be resubmitted.
+                            </div>
+                          )}
+                        </button>
+                      </>
+                    )}
+                    {enrollment.status === 'APPROVED' && (
+                      <button
+                        onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'ACTIVE')}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Activate
                       </button>
-                    </>
-                  )}
-                  {enrollment.status === 'APPROVED' && (
-                    <button
-                      onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'ACTIVE')}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      Activate
-                    </button>
-                  )}
-                  {enrollment.status === 'ACTIVE' && (
-                    <button
-                      onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'COMPLETED')}
-                      className="text-purple-600 hover:text-purple-900"
-                    >
-                      Complete
-                    </button>
-                  )}
-                </td>
+                    )}
+                    {enrollment.status === 'ACTIVE' && (
+                      <button
+                        onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'COMPLETED')}
+                        className="text-purple-600 hover:text-purple-900"
+                      >
+                        Complete
+                      </button>
+                    )}
+                    {enrollment.status === 'REJECTED' && (
+                      <button
+                        onClick={() => handleUpdateEnrollmentStatus(enrollment.id, 'PENDING')}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Reopen
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -579,25 +574,6 @@ const AdminEnrollments: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Type <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 sm:text-sm ${
-                        fieldErrors.type ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
-                      }`}
-                      value={newEnrollment.type}
-                      onChange={(e) => setNewEnrollment({ ...newEnrollment, type: e.target.value as EnrollmentType })}
-                      required
-                    >
-                      <option value={EnrollmentType.CREDIT}>Credit</option>
-                      <option value={EnrollmentType.AUDIT}>Audit</option>
-                    </select>
-                    {fieldErrors.type && (
-                      <p className="mt-1 text-sm text-red-600">{fieldErrors.type}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
                       Status <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -625,7 +601,6 @@ const AdminEnrollments: React.FC = () => {
                       setNewEnrollment({
                         studentId: 0,
                         courseId: 0,
-                        type: EnrollmentType.CREDIT,
                         status: EnrollmentStatus.PENDING
                       })
                       setFieldErrors({})

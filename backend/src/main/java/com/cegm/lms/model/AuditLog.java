@@ -15,6 +15,9 @@ public class AuditLog {
 
     private Long userId;
 
+    @Column(name = "course_id")
+    private Long courseId;
+
     @NotBlank
     private String serviceName;
 
@@ -48,6 +51,9 @@ public class AuditLog {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public Long getCourseId() { return courseId; }
+    public void setCourseId(Long courseId) { this.courseId = courseId; }
 
     public String getServiceName() { return serviceName; }
     public void setServiceName(String serviceName) { this.serviceName = serviceName; }

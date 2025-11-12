@@ -2,14 +2,17 @@ package com.cegm.lms.controller;
 
 import com.cegm.lms.dto.request.CourseCreateRequest;
 import com.cegm.lms.dto.response.ApiResponse;
+import com.cegm.lms.model.AuditLog;
 import com.cegm.lms.model.Course;
 import com.cegm.lms.service.CourseService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,8 +32,20 @@ public class CourseController {
             @RequestParam(required = false) Long ownerId,
             @RequestParam(required = false) String term,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean enrolled,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+
+        if (Boolean.TRUE.equals(enrolled)) {
+            Long currentUserId = getAuthenticatedUserId(authentication);
+            if (currentUserId == null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Student session required", "FORBIDDEN"));
+            }
+            List<Course> studentCourses = courseService.findCoursesForStudent(currentUserId);
+            return ResponseEntity.ok(ApiResponse.success(studentCourses));
+        }
         
         List<Course> courses;
         if (ownerId != null || term != null || status != null) {
@@ -129,5 +144,22 @@ public class CourseController {
         int count = courseService.getCoursesCount();
         Map<String, Integer> result = Map.of("count", count);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Page<AuditLog>>> getCourseAuditHistory(@PathVariable Long id, Pageable pageable) {
+        // Ensure course exists (throws if missing)
+        courseService.findById(id);
+        Page<AuditLog> logs = courseService.getCourseAuditLogs(id, pageable);
+        return ResponseEntity.ok(ApiResponse.success(logs));
+    }
+
+    private Long getAuthenticatedUserId(Authentication authentication) {
+        if (authentication == null) {
+            return null;
+        }
+        Object details = authentication.getDetails();
+        return details instanceof Long ? (Long) details : null;
     }
 }

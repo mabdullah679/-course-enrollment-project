@@ -8,23 +8,24 @@ import { User, ApiResponse, AuthResponse, SignUpRequest, LoginRequest } from '..
 export const apiRequest = async (url: string, options: RequestInit = {}): Promise<any> => {
   const method = (options.method || 'GET').toLowerCase()
   const data = options.body ? JSON.parse(options.body as string) : undefined
+  const headers = (options as any).headers || {}
 
   let response
   switch (method) {
     case 'post':
-      response = await api.post(url, data)
+      response = await api.post(url, data, { headers })
       break
     case 'put':
-      response = await api.put(url, data)
+      response = await api.put(url, data, { headers })
       break
     case 'patch':
-      response = await api.patch(url, data)
+      response = await api.patch(url, data, { headers })
       break
     case 'delete':
-      response = await api.delete(url)
+      response = await api.delete(url, { headers })
       break
     default:
-      response = await api.get(url)
+      response = await api.get(url, { headers })
   }
   return response.data
 }
@@ -126,7 +127,7 @@ export const coursesApi = {
   },
 
   getCourseAuditHistory: async (id: number) => {
-    const response = await api.get(`/api/v1/courses/${id}/audit`)
+    const response = await api.get(`/api/v1/courses/${id}/audit?size=50&sort=timestamp,desc`)
     return response.data
   },
 
@@ -239,6 +240,16 @@ export const enrollmentsApi = {
   // Reject enrollment with dedicated endpoint
   rejectEnrollment: async (id: number) => {
     const response = await api.post(`/api/v1/enrollments/${id}/reject`)
+    return response.data
+  },
+
+  deleteEnrollment: async (id: number) => {
+    const response = await api.delete(`/api/v1/enrollments/${id}`)
+    return response.data
+  },
+
+  withdrawEnrollment: async (id: number, reason: string) => {
+    const response = await api.post(`/api/v1/enrollments/${id}/withdraw`, { reason })
     return response.data
   },
 }

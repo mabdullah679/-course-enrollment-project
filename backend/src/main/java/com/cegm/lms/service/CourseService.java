@@ -2,9 +2,15 @@ package com.cegm.lms.service;
 
 import com.cegm.lms.dto.request.CourseCreateRequest;
 import com.cegm.lms.exception.CourseNotFoundException;
+import com.cegm.lms.model.AuditLog;
 import com.cegm.lms.model.Course;
+import com.cegm.lms.model.Enrollment;
 import com.cegm.lms.model.enums.CourseStatus;
+import com.cegm.lms.model.enums.EnrollmentStatus;
 import com.cegm.lms.repository.CourseRepository;
+import com.cegm.lms.repository.EnrollmentRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,16 +18,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class CourseService {
+    private static final Logger log = LoggerFactory.getLogger(CourseService.class);
 
     @Autowired
     private CourseRepository courseRepository;
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
 
     public Course createCourse(CourseCreateRequest request) {
         if (courseRepository.existsByCode(request.getCode())) {
@@ -36,8 +47,9 @@ public class CourseService {
         course.setStatus(CourseStatus.ACTIVE);
 
         Course savedCourse = courseRepository.save(course);
-        auditLogService.log(null, "CourseService", "COURSE_CREATED", 
-                          "Course created: " + savedCourse.getCode());
+        log.info("Course created: {}", savedCourse.getCode());
+        auditLogService.logCourse(savedCourse.getId(), null, "COURSE_CREATED",
+                String.format("Course %s (%s) created", savedCourse.getName(), savedCourse.getCode()));
 
         return savedCourse;
     }
@@ -57,8 +69,9 @@ public class CourseService {
         course.setCredits(request.getCredits());
 
         Course updatedCourse = courseRepository.save(course);
-        auditLogService.log(null, "CourseService", "COURSE_UPDATED", 
-                          "Course updated: " + updatedCourse.getCode());
+        log.info("Course updated: {}", updatedCourse.getCode());
+        auditLogService.logCourse(updatedCourse.getId(), null, "COURSE_UPDATED",
+                String.format("Course %s updated", updatedCourse.getCode()));
 
         return updatedCourse;
     }
@@ -68,8 +81,9 @@ public class CourseService {
         course.setStatus(CourseStatus.ARCHIVED);
         
         Course archivedCourse = courseRepository.save(course);
-        auditLogService.log(null, "CourseService", "COURSE_ARCHIVED", 
-                          "Course archived: " + archivedCourse.getCode());
+        log.info("Course archived: {}", archivedCourse.getCode());
+        auditLogService.logCourse(archivedCourse.getId(), null, "COURSE_ARCHIVED",
+                String.format("Course %s archived", archivedCourse.getCode()));
 
         return archivedCourse;
     }
@@ -100,6 +114,17 @@ public class CourseService {
         return courseRepository.findByStatusAndNameContainingIgnoreCase(CourseStatus.ACTIVE, name);
     }
 
+    public List<Course> findCoursesForStudent(Long studentId) {
+        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
+        return enrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.APPROVED
+                        || enrollment.getStatus() == EnrollmentStatus.ACTIVE
+                        || enrollment.getStatus() == EnrollmentStatus.COMPLETED)
+                .map(Enrollment::getCourse)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
     /**
      * Change course status.
      */
@@ -115,7 +140,9 @@ public class CourseService {
         auditLogService.logWithCorrelation(null, "CourseService", "COURSE_STATUS_CHANGED", 
                           String.format("Course status changed from %s to %s for course: %s", 
                                       oldStatus, newStatus, course.getCode()), requestId);
-        
+        auditLogService.logCourse(savedCourse.getId(), null, "COURSE_STATUS_CHANGED",
+                String.format("Status changed from %s to %s", oldStatus, newStatus));
+
         return savedCourse;
     }
 
@@ -124,5 +151,9 @@ public class CourseService {
      */
     public int getCoursesCount() {
         return (int) courseRepository.count();
+    }
+
+    public Page<AuditLog> getCourseAuditLogs(Long courseId, Pageable pageable) {
+        return auditLogService.getLogsByCourseId(courseId, pageable);
     }
 }

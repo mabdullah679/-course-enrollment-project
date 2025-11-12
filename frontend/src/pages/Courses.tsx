@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { Course } from '../types/api'
-import { coursesApi, enrollmentsApi } from '../services/api'
+import { coursesApi, enrollmentsApi, configApi } from '../services/api'
 import { useDebounce } from '../hooks/useDebounce'
 import RefreshButton from '../components/common/RefreshButton'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -15,10 +15,36 @@ const Courses: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [showEnrolledOnly, setShowEnrolledOnly] = useState(false)
+  const [enrollmentWindow, setEnrollmentWindow] = useState<'OPEN' | 'CLOSED'>('CLOSED')
+  const [windowRequired, setWindowRequired] = useState(false)
+  const [windowDetails, setWindowDetails] = useState<{ startDate?: string; endDate?: string; term?: string } | null>(null)
 
   useEffect(() => {
     fetchCourses(true)
   }, [debouncedSearchTerm, showEnrolledOnly])
+
+  useEffect(() => {
+    loadEnrollmentWindow()
+  }, [])
+
+  const loadEnrollmentWindow = async () => {
+    try {
+      const response = await configApi.getMeta()
+      if (response.success && response.data) {
+        const details = response.data.enrollmentWindowDetails || {}
+        const state = (details.state || response.data.enrollmentWindow || 'CLOSED') as 'OPEN' | 'CLOSED'
+        setEnrollmentWindow(state)
+        setWindowRequired(Boolean(response.data.enrollmentWindowRequired))
+        setWindowDetails({
+          startDate: details.startDate,
+          endDate: details.endDate,
+          term: details.term
+        })
+      }
+    } catch (error) {
+      console.info('Unable to load enrollment window metadata, defaulting to CLOSED')
+    }
+  }
 
   const fetchCourses = async (reset = false) => {
     setLoading(true)
@@ -64,6 +90,11 @@ const Courses: React.FC = () => {
 
   const handleEnroll = async (courseId: number) => {
     try {
+      if (windowRequired && enrollmentWindow === 'CLOSED') {
+        toast.error('Enrollment window is closed')
+        return
+      }
+
       const response = await enrollmentsApi.enrollInCourse(courseId)
       if (response.success) {
         toast.success('Enrollment request submitted successfully')
@@ -98,6 +129,14 @@ const Courses: React.FC = () => {
     }
   }
 
+  const windowClosed = windowRequired && enrollmentWindow === 'CLOSED'
+  const formatDisplayDate = (value?: string) => {
+    if (!value) return null
+    if (value.includes('/')) return value
+    const parsed = new Date(value)
+    return isNaN(parsed.getTime()) ? null : parsed.toLocaleDateString()
+  }
+
   if (loading && courses.length === 0) {
     return (
       <div className="p-6">
@@ -114,6 +153,20 @@ const Courses: React.FC = () => {
           <p className="mt-2 text-sm text-gray-700">
             Browse and enroll in available courses.
           </p>
+          <div className="mt-2 space-y-1">
+            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              enrollmentWindow === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              Enrollment Window: {enrollmentWindow}
+            </span>
+            {windowRequired && enrollmentWindow === 'CLOSED' && (
+              <div className="text-xs text-gray-500">
+                {windowDetails?.startDate
+                  ? `Enrollment reopens ${formatDisplayDate(windowDetails.startDate)}.`
+                  : 'Enrollment will reopen when your administrator opens the window.'}
+              </div>
+            )}
+          </div>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <RefreshButton onClick={handleRefresh} />
@@ -147,51 +200,70 @@ const Courses: React.FC = () => {
         </div>
       </div>
 
-      {/* Course Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course) => (
-          <div key={course.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">{course.name}</h3>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
-                  {course.status}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">{course.code}</p>
-              <p className="text-sm text-gray-700 mb-4">
-                {course.description || 'No description available'}
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">{course.credits} credits</span>
-                {course.status === 'ACTIVE' && !showEnrolledOnly && (
-                  <button
-                    onClick={() => handleEnroll(course.id)}
-                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Enroll
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {courses.length === 0 && !loading && (
+      {windowClosed && !showEnrolledOnly ? (
         <EmptyState
-          title={showEnrolledOnly ? 'No enrolled courses' : 'No courses found'}
-          description={showEnrolledOnly ? 'You are not enrolled in any courses yet.' : 'No courses match your search criteria.'}
+          title="Enrollment window closed"
+          description="Course catalog access will resume once the window opens. Use the 'Enrolled courses only' filter to review your current classes."
           icon={
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01m-6.938 4h13.856C19.403 20 20 19.403 20 18.5V5.5C20 4.672 19.328 4 18.5 4h-13C4.672 4 4 4.672 4 5.5v13c0 .828.672 1.5 1.5 1.5z" />
             </svg>
           }
         />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.map((course) => (
+              <div key={course.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{course.name}</h3>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
+                      {course.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">{course.code}</p>
+                  <p className="text-sm text-gray-700 mb-4">
+                    {course.description || 'No description available'}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">{course.credits} credits</span>
+                    {course.status === 'ACTIVE' && !showEnrolledOnly && (
+                      windowClosed ? (
+                        <span className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-500">
+                          Coming soon
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleEnroll(course.id)}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          Enroll
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {courses.length === 0 && !loading && (
+            <EmptyState
+              title={showEnrolledOnly ? 'No enrolled courses' : 'No courses found'}
+              description={showEnrolledOnly ? 'You are not enrolled in any courses yet.' : 'No courses match your search criteria.'}
+              icon={
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              }
+            />
+          )}
+        </>
       )}
 
       {/* Load More */}
-      {hasNext && !showEnrolledOnly && (
+      {hasNext && !showEnrolledOnly && !windowClosed && (
         <div className="mt-6 text-center">
           <button
             onClick={() => fetchCourses(false)}

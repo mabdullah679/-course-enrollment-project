@@ -60,9 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       console.error('Failed to refresh user:', error)
-      // Only logout if this was a session expiry (401 on /auth/me)
-      if (error.response?.status === 401) {
-        logout()
+      const status = error.response?.status
+      if (status === 401 || status === 403) {
+        sessionStorage.removeItem('user')
+        setUser(null)
       }
     } finally {
       setIsRefreshing(false)
@@ -95,6 +96,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 // inside your AuthContext where you already call authApi.login(...)
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      // Clear any stale header-based auth that could conflict with cookie auth
+      sessionStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_token')
       const res = await authApi.login({ email, password })
       if (res.success && res.data) {
         // Backend uses cookie-based sessions; response.data.user contains the user

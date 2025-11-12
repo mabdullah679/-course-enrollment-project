@@ -64,88 +64,87 @@ public class DataSeeder implements CommandLineRunner {
     }
     
     private void seedUsers() {
-        // Check if admin already exists (idempotent)
-        if (userRepository.findByEmail("admin@cegm.edu").isPresent()) {
-            logger.info("Admin user already exists, skipping user seeding");
-            return;
+        logger.info("Seeding default users (idempotent)...");
+
+        // Admin
+        if (userRepository.findByEmail("admin@cegm.edu").isEmpty()) {
+            User adminUser = new User();
+            adminUser.setUsername("admin");
+            adminUser.setEmail("admin@cegm.edu");
+            adminUser.setFirstName("Admin");
+            adminUser.setLastName("User");
+            adminUser.setPassword(passwordEncoder.encode("admin123"));
+            adminUser.setRole(UserRole.ADMIN);
+            adminUser.setApproved(true);
+            adminUser.setActive(true);
+            adminUser.setCreatedAt(LocalDateTime.now());
+            userRepository.save(adminUser);
+            logger.info("Created admin user: admin@cegm.edu");
         }
-        
-        logger.info("Seeding default users...");
-        
-        // Create default admin user
-        User adminUser = new User();
-        adminUser.setUsername("admin");
-        adminUser.setEmail("admin@cegm.edu");
-        adminUser.setFirstName("Admin");
-        adminUser.setLastName("User");
-        adminUser.setPassword(passwordEncoder.encode("admin123"));
-        adminUser.setRole(UserRole.ADMIN);
-        adminUser.setApproved(true);
-        adminUser.setActive(true);
-        adminUser.setCreatedAt(LocalDateTime.now());
-        
-        userRepository.save(adminUser);
-        logger.info("Created admin user: admin@cegm.edu");
-        
-        // Create sample instructor
-        User instructorUser = new User();
-        instructorUser.setUsername("instructor1");
-        instructorUser.setEmail("instructor@cegm.edu");
-        instructorUser.setFirstName("John");
-        instructorUser.setLastName("Instructor");
-        instructorUser.setPassword(passwordEncoder.encode("instructor123"));
-        instructorUser.setRole(UserRole.INSTRUCTOR);
-        instructorUser.setApproved(true);
-        instructorUser.setActive(true);
-        instructorUser.setCreatedAt(LocalDateTime.now());
-        
-        userRepository.save(instructorUser);
-        logger.info("Created instructor user: instructor@cegm.edu");
-        
-        // Create sample staff
-        User staffUser = new User();
-        staffUser.setUsername("staff1");
-        staffUser.setEmail("staff@cegm.edu");
-        staffUser.setFirstName("Jane");
-        staffUser.setLastName("Staff");
-        staffUser.setPassword(passwordEncoder.encode("staff123"));
-        staffUser.setRole(UserRole.STAFF);
-        staffUser.setApproved(true);
-        staffUser.setActive(true);
-        staffUser.setCreatedAt(LocalDateTime.now());
-        
-        userRepository.save(staffUser);
-        logger.info("Created staff user: staff@cegm.edu");
-        
-        // Create sample student (approved for testing)
-        User studentUser = new User();
-        studentUser.setUsername("student1");
-        studentUser.setEmail("student@cegm.edu");
-        studentUser.setFirstName("Bob");
-        studentUser.setLastName("Student");
-        studentUser.setPassword(passwordEncoder.encode("student123"));
-        studentUser.setRole(UserRole.STUDENT);
-        studentUser.setApproved(true); // Approved for testing
-        studentUser.setActive(true);
-        studentUser.setCreatedAt(LocalDateTime.now());
-        
-        userRepository.save(studentUser);
-        logger.info("Created approved student user: student@cegm.edu");
-        
-        // Create a pending student for testing approval workflow
-        User pendingStudentUser = new User();
-        pendingStudentUser.setUsername("pending1");
-        pendingStudentUser.setEmail("pending@cegm.edu");
-        pendingStudentUser.setFirstName("Alice");
-        pendingStudentUser.setLastName("Pending");
-        pendingStudentUser.setPassword(passwordEncoder.encode("pending123"));
-        pendingStudentUser.setRole(UserRole.STUDENT);
-        pendingStudentUser.setApproved(false); // Pending approval
-        pendingStudentUser.setActive(true);
-        pendingStudentUser.setCreatedAt(LocalDateTime.now());
-        
-        userRepository.save(pendingStudentUser);
-        logger.info("Created pending student user: pending@cegm.edu");
+
+        // Instructor
+        if (userRepository.findByEmail("instructor@cegm.edu").isEmpty()) {
+            User instructorUser = new User();
+            instructorUser.setUsername("instructor1");
+            instructorUser.setEmail("instructor@cegm.edu");
+            instructorUser.setFirstName("John");
+            instructorUser.setLastName("Instructor");
+            instructorUser.setPassword(passwordEncoder.encode("instructor123"));
+            instructorUser.setRole(UserRole.INSTRUCTOR);
+            instructorUser.setApproved(true);
+            instructorUser.setActive(true);
+            instructorUser.setCreatedAt(LocalDateTime.now());
+            userRepository.save(instructorUser);
+            logger.info("Created instructor user: instructor@cegm.edu");
+        }
+
+        // Staff
+        if (userRepository.findByEmail("staff@cegm.edu").isEmpty()) {
+            User staffUser = new User();
+            staffUser.setUsername("staff1");
+            staffUser.setEmail("staff@cegm.edu");
+            staffUser.setFirstName("Jane");
+            staffUser.setLastName("Staff");
+            staffUser.setPassword(passwordEncoder.encode("staff123"));
+            staffUser.setRole(UserRole.STAFF);
+            staffUser.setApproved(true);
+            staffUser.setActive(true);
+            staffUser.setCreatedAt(LocalDateTime.now());
+            userRepository.save(staffUser);
+            logger.info("Created staff user: staff@cegm.edu");
+        }
+
+        // Approved Student
+        if (userRepository.findByEmail("student@cegm.edu").isEmpty()) {
+            User studentUser = new User();
+            studentUser.setUsername("student1");
+            studentUser.setEmail("student@cegm.edu");
+            studentUser.setFirstName("Bob");
+            studentUser.setLastName("Student");
+            studentUser.setPassword(passwordEncoder.encode("student123"));
+            studentUser.setRole(UserRole.STUDENT);
+            studentUser.setApproved(true); // Approved for testing
+            studentUser.setActive(true);
+            studentUser.setCreatedAt(LocalDateTime.now());
+            userRepository.save(studentUser);
+            logger.info("Created approved student user: student@cegm.edu");
+        }
+
+        // Pending Student
+        if (userRepository.findByEmail("pending@cegm.edu").isEmpty()) {
+            User pendingStudentUser = new User();
+            pendingStudentUser.setUsername("pending1");
+            pendingStudentUser.setEmail("pending@cegm.edu");
+            pendingStudentUser.setFirstName("Alice");
+            pendingStudentUser.setLastName("Pending");
+            pendingStudentUser.setPassword(passwordEncoder.encode("pending123"));
+            pendingStudentUser.setRole(UserRole.STUDENT);
+            pendingStudentUser.setApproved(false); // Pending approval
+            pendingStudentUser.setActive(true);
+            pendingStudentUser.setCreatedAt(LocalDateTime.now());
+            userRepository.save(pendingStudentUser);
+            logger.info("Created pending student user: pending@cegm.edu");
+        }
     }
     
     private void seedCourses() {

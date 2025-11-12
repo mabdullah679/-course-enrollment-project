@@ -22,6 +22,37 @@ interface EnrollmentWindow {
   today_date_est?: string
 }
 
+const parseDateValue = (value?: string): Date | null => {
+  if (!value) return null
+
+  if (value.includes('/')) {
+    const [month, day, year] = value.split('/')
+    const iso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    const parsed = new Date(iso)
+    return isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  // Treat YYYY-MM-DD as local date (avoid TZ shifts)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+
+  const parsed = new Date(value)
+  return isNaN(parsed.getTime()) ? null : parsed
+}
+
+const stripTime = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+const formatDisplayDate = (value?: string) => {
+  if (!value) return ''
+  if (value.includes('/')) return value
+  const parsed = new Date(value)
+  return isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString()
+}
+
 const AdminConfiguration: React.FC = () => {
   const [tiles, setTiles] = useState<HealthTile[]>([
     {
@@ -75,60 +106,36 @@ const AdminConfiguration: React.FC = () => {
   useEffect(() => {
     refreshAllTiles()
     fetchEnrollmentWindow()
-    generateSuggestions()
   }, [])
 
-  const generateSuggestions = () => {
-    // Generate suggestions based on current date
-    const now = new Date()
-    const est = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}))
-    
-    // Format date as YYYY-MM-DD for HTML date inputs
-    const today = est.toISOString().split('T')[0]
-    
-    // End date is today + 13 days (14-day window inclusive)
+  const buildSuggestions = (baseIso?: string | null) => {
+    const sourceDate = baseIso ? parseDateValue(baseIso) : null
+    const est = stripTime(new Date((sourceDate || new Date()).toLocaleString("en-US", {timeZone: "America/New_York"})))
+    const formatInputDate = (date: Date) => date.toISOString().split('T')[0]
+    const today = formatInputDate(est)
+
     const endDate = new Date(est)
-    endDate.setDate(endDate.getDate() + 13)
-    const suggestedEndDate = endDate.toISOString().split('T')[0]
-    
-    // Generate term suggestion based on current month
+    endDate.setDate(endDate.getDate() + 13) // inclusive 14 days
+    const suggestedEndDate = formatInputDate(endDate)
+
     const month = est.getMonth()
     const year = est.getFullYear()
-    let suggestedTerm = ''
-    
-    if (month >= 0 && month <= 4) { // Jan-May: Spring
-      suggestedTerm = `Spring ${year}`
-    } else if (month >= 5 && month <= 7) { // Jun-Aug: Summer
-      suggestedTerm = `Summer ${year}`
-    } else { // Sep-Dec: Fall
-      suggestedTerm = `Fall ${year}`
-    }
-    
-    setSuggestions({
+    const suggestedTerm = month <= 4 ? `Spring ${year}` : month <= 7 ? `Summer ${year}` : `Fall ${year}`
+
+    return {
       term: suggestedTerm,
       startDate: today,
       endDate: suggestedEndDate
-    })
+    }
   }
 
   const getDefaultEnrollmentWindow = (): EnrollmentWindow => {
-    if (!suggestions) {
-      generateSuggestions()
-      // Return basic defaults if suggestions not ready
-      const today = new Date().toISOString().split('T')[0]
-      return {
-        state: 'CLOSED',
-        term: '',
-        startDate: today,
-        endDate: today
-      }
-    }
-    
+    const baseSuggestions = suggestions || buildSuggestions()
     return {
-      state: 'CLOSED', // Default to CLOSED as per requirements
-      term: '', // Leave empty so user can use suggestions
-      startDate: suggestions.startDate,
-      endDate: suggestions.endDate
+      state: 'CLOSED',
+      term: '',
+      startDate: baseSuggestions.startDate,
+      endDate: baseSuggestions.endDate
     }
   }
 
@@ -141,26 +148,37 @@ const AdminConfiguration: React.FC = () => {
         const windowData = response.data
         
         // If startDate/endDate are in MM/DD/YYYY format, convert to YYYY-MM-DD
-        if (windowData.startDate && windowData.startDate.includes('/')) {
-          const [month, day, year] = windowData.startDate.split('/')
-          windowData.startDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        const normalizeInputDate = (value?: string) => {
+          if (!value) return ''
+          if (value.includes('/')) {
+            const [month, day, year] = value.split('/')
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+          }
+          return value
         }
-        if (windowData.endDate && windowData.endDate.includes('/')) {
-          const [month, day, year] = windowData.endDate.split('/')
-          windowData.endDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        }
+
+        windowData.startDate = normalizeInputDate(windowData.startDate)
+        windowData.endDate = normalizeInputDate(windowData.endDate)
+        windowData.window_open_date_est = normalizeInputDate(windowData.window_open_date_est)
+        windowData.window_close_date_est = normalizeInputDate(windowData.window_close_date_est)
+        windowData.today_date_est = normalizeInputDate(windowData.today_date_est)
         
         setEnrollmentWindow(windowData)
+        setSuggestions(buildSuggestions(windowData.startDate || windowData.today_date_est))
       } else {
         // No saved window exists, use defaults as per requirements
-        setEnrollmentWindow(getDefaultEnrollmentWindow())
+        const defaults = getDefaultEnrollmentWindow()
+        setEnrollmentWindow(defaults)
+        setSuggestions(buildSuggestions(defaults.startDate))
       }
     } catch (error: any) {
       console.error('Error fetching enrollment window:', error)
       toastHttpError(error, 'Failed to fetch enrollment window')
       
       // Use default values on error per requirements
-      setEnrollmentWindow(getDefaultEnrollmentWindow())
+      const defaults = getDefaultEnrollmentWindow()
+      setEnrollmentWindow(defaults)
+      setSuggestions(buildSuggestions(defaults.startDate))
     } finally {
       setWindowLoading(false)
     }
@@ -180,8 +198,8 @@ const AdminConfiguration: React.FC = () => {
       const response = await enrollmentWindowApi.updateEnrollmentWindow({
         status: windowData.state === 'OPEN' ? 'ON' : 'OFF',
         term: windowData.term,
-        startDate: windowData.window_open_date_est || windowData.startDate,
-        endDate: windowData.window_close_date_est || windowData.endDate
+        startDate: windowData.startDate || windowData.window_open_date_est,
+        endDate: windowData.endDate || windowData.window_close_date_est
       })
       
       if (response.success) {
@@ -200,16 +218,20 @@ const AdminConfiguration: React.FC = () => {
 
   const validateEnrollmentWindow = (windowData: EnrollmentWindow): Record<string, string> => {
     const errors: Record<string, string> = {}
-    const today = windowData.today_date_est || new Date().toISOString().split('T')[0]
-    
-    const openDate = windowData.window_open_date_est || windowData.startDate
-    const closeDate = windowData.window_close_date_est || windowData.endDate
-    
-    // Block past terms/opens
-    if (openDate && openDate < today) {
+    const todayDate = stripTime(parseDateValue(windowData.today_date_est) || new Date())
+    const openDate = (() => {
+      const parsed = parseDateValue(windowData.startDate || windowData.window_open_date_est)
+      return parsed ? stripTime(parsed) : null
+    })()
+    const closeDate = (() => {
+      const parsed = parseDateValue(windowData.endDate || windowData.window_close_date_est)
+      return parsed ? stripTime(parsed) : null
+    })()
+
+    if (openDate && openDate < todayDate) {
       errors.startDate = 'Cannot set enrollment window open date in the past'
     }
-    
+
     if (closeDate && openDate && closeDate <= openDate) {
       errors.endDate = 'End date must be after start date'
     }
@@ -218,15 +240,18 @@ const AdminConfiguration: React.FC = () => {
   }
 
   const getEnrollmentWindowWarnings = (windowData: EnrollmentWindow): { message: string; color: string } | null => {
-    const openDate = windowData.window_open_date_est || windowData.startDate
-    const closeDate = windowData.window_close_date_est || windowData.endDate
+    const open = (() => {
+      const parsed = parseDateValue(windowData.startDate || windowData.window_open_date_est)
+      return parsed ? stripTime(parsed) : null
+    })()
+    const close = (() => {
+      const parsed = parseDateValue(windowData.endDate || windowData.window_close_date_est)
+      return parsed ? stripTime(parsed) : null
+    })()
     
-    if (!openDate || !closeDate) return null
-    
-    const open = new Date(openDate)
-    const close = new Date(closeDate)
+    if (!open || !close) return null
     const diffTime = close.getTime() - open.getTime()
-    const daysOpen = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    const daysOpen = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
     
     if (daysOpen < 14) {
       return {
@@ -681,19 +706,12 @@ const AdminConfiguration: React.FC = () => {
                       windowErrors.startDate ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
                     }`}
                     value={enrollmentWindow.startDate}
-                    onChange={(e) => setEnrollmentWindow({ ...enrollmentWindow, startDate: e.target.value })}
+                    onChange={(e) => setEnrollmentWindow({ 
+                      ...enrollmentWindow, 
+                      startDate: e.target.value,
+                      window_open_date_est: e.target.value
+                    })}
                   />
-                  {suggestions && suggestions.startDate !== enrollmentWindow.startDate && (
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={() => setEnrollmentWindow({ ...enrollmentWindow, startDate: suggestions.startDate })}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
-                      >
-                        Suggested: Today ({new Date(suggestions.startDate).toLocaleDateString()})
-                      </button>
-                    </div>
-                  )}
                   {windowErrors.startDate && (
                     <p className="mt-1 text-sm text-red-600">{windowErrors.startDate}</p>
                   )}
@@ -708,19 +726,12 @@ const AdminConfiguration: React.FC = () => {
                       windowErrors.endDate ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
                     }`}
                     value={enrollmentWindow.endDate}
-                    onChange={(e) => setEnrollmentWindow({ ...enrollmentWindow, endDate: e.target.value })}
+                    onChange={(e) => setEnrollmentWindow({ 
+                      ...enrollmentWindow, 
+                      endDate: e.target.value,
+                      window_close_date_est: e.target.value
+                    })}
                   />
-                  {suggestions && suggestions.endDate !== enrollmentWindow.endDate && (
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={() => setEnrollmentWindow({ ...enrollmentWindow, endDate: suggestions.endDate })}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
-                      >
-                        Suggested: 14-day window ({new Date(suggestions.endDate).toLocaleDateString()})
-                      </button>
-                    </div>
-                  )}
                   {windowErrors.endDate && (
                     <p className="mt-1 text-sm text-red-600">{windowErrors.endDate}</p>
                   )}
