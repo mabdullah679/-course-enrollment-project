@@ -24,3 +24,19 @@ target/
 *.cookie
 logs/
 docs/evidence/*-raw/*
+
+# Session cookie jars / curl output from manual testing (contain live session tokens)
+*cookie*.txt
+*cookie*.jar
+*.jar
+!.mvn/wrapper/*.jar
+
+# Local H2 dev database and traces
+backend/data/
+*.mv.db
+*.trace.db
+
+# Backups, local dumps, OS
+*.bak
+.logs/
+.DS_Store
