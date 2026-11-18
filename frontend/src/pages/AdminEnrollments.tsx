@@ -282,7 +282,12 @@ const AdminEnrollments: React.FC = () => {
     }
   }
 
-  const actionableStatuses: EnrollmentStatus[] = ['PENDING', 'APPROVED', 'ACTIVE', 'REJECTED']
+  const actionableStatuses: EnrollmentStatus[] = [
+    EnrollmentStatus.PENDING,
+    EnrollmentStatus.APPROVED,
+    EnrollmentStatus.ACTIVE,
+    EnrollmentStatus.REJECTED,
+  ]
   const hasActions = (enrollment: Enrollment) => actionableStatuses.includes(enrollment.status as EnrollmentStatus)
   const showActionsColumn = enrollments.some(hasActions)
 

@@ -17,6 +17,7 @@ export enum EnrollmentStatus {
   APPROVED = 'APPROVED', 
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
+  REJECTED = 'REJECTED', // exists in backend EnrollmentStatus (PENDING -> REJECTED)
   DROPPED = 'DROPPED'
 }
 

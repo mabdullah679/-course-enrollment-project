@@ -142,7 +142,18 @@ public class UsersController {
         return ResponseEntity.ok(ApiResponse.success("User status updated successfully", userResponse));
     }
 
-    
+    /**
+     * Get a user's audit history (keyset paginated, newest first).
+     * Admin only access.
+     */
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> getUserAuditHistory(
+            @PathVariable Long id,
+            @RequestParam(required = false) String after,
+            @RequestParam(defaultValue = "25") int limit) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserAuditHistory(id, after, limit)));
+    }
 
     /**
      * Get user by ID.

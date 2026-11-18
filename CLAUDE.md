@@ -3,9 +3,9 @@
 Spring Boot 3.3 (Java 17) REST backend + React 18 / Vite / Tailwind frontend for a course-enrollment LMS (roles STUDENT, INSTRUCTOR, ADMIN, STAFF). Global rules: `~/.claude/CLAUDE.md`. Repo facts only below (verified 2026-11-18).
 
 ## Commands
-- Backend: `cd backend && ./mvnw -B test` needs JDK 17 (host JDK 27 not tried). Verified via Docker: `docker run --rm -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-17 mvn -B test`. Baseline: 16 tests, 10 pass, 6 error (all `UsersControllerIntegrationTest`: `@WebMvcTest` loads `CegmLmsApplication`, whose field-injected `UserRepository` has no bean).
+- Backend: `cd backend && ./mvnw -B test` needs JDK 17 (host JDK 27 not tried). Verified via Docker: `docker run --rm -v "$PWD/backend:/app" -w /app maven:3.9-eclipse-temurin-17 mvn -B test`. 18 tests, all pass (2026-11-18; was 10/16 before the CI-red fix).
 - Run backend: `mvn spring-boot:run` (H2 file db `backend/data/`, port 8080, dev profile). Health: `GET /api/v1/health` (note `/api/health` returns 403).
-- Frontend: `cd frontend && npm ci && npm run dev` (port 3000, proxies `/api` to 8080). `npx vite build` passes; `npx tsc --noEmit` fails with 7 type errors (`EnrollmentStatus` vs "ACTIVE"/"APPROVED"/"REJECTED" in `AdminEnrollments.tsx`, `Enrollments.tsx`, plus one in `AdminConfiguration.tsx`). `npm run lint` has no ESLint config and cannot run.
+- Frontend: `cd frontend && npm ci && npm run dev` (port 3000, proxies `/api` to 8080). `npx vite build` passes; `npx tsc --noEmit` passes (7 pre-existing errors fixed 2026-11-18). `npm run lint` has no ESLint config and cannot run.
 
 ## Layout
 `backend/src/main/java/com/cegm/lms/` (controller, service, model, security, config), `frontend/src/` (pages, components, services), `ssot/` (YAML config + schema read by the backend), `scripts/` (manual shell tests, need a running stack), `docs/` (sprint docs, handoff, QA script), `.githooks/pre-commit`.

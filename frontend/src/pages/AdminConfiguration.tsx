@@ -46,13 +46,6 @@ const stripTime = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
-const formatDisplayDate = (value?: string) => {
-  if (!value) return ''
-  if (value.includes('/')) return value
-  const parsed = new Date(value)
-  return isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString()
-}
-
 const AdminConfiguration: React.FC = () => {
   const [tiles, setTiles] = useState<HealthTile[]>([
     {

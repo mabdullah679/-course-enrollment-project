@@ -52,9 +52,9 @@ Base paths implemented by the controllers in [backend/src/main/java/com/cegm/lms
 
 ## Tests
 
-- Backend: `cd backend && ./mvnw -B test` (or the Docker command in [CLAUDE.md](CLAUDE.md)). 16 tests, no external services. **Current result: 10 pass, 6 error**, all in `UsersControllerIntegrationTest`: the Spring context fails to load in that `@WebMvcTest` because `CegmLmsApplication` injects `UserRepository` and no such bean exists in the web slice. Not fixed in the hygiene pass.
-- Frontend: `npx vite build` passes. `npx tsc --noEmit` reports 7 type errors (enrollment status values), so `npm run build` (which runs `tsc` first) fails today. There is no ESLint config, so `npm run lint` cannot run. No UI test suite exists.
-- CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs backend compile + tests, frontend type-check + build, and gitleaks. The known failures above make the backend and frontend jobs red until fixed.
+- Backend: `cd backend && ./mvnw -B test` (or the Docker command in [CLAUDE.md](CLAUDE.md)). 18 tests, no external services. **Current result: 18 pass** (2026-11-18). `UsersControllerIntegrationTest` is a `@WebMvcTest` slice that imports the real `SecurityConfig` and `RequestInterceptorConfig` (slices skip `@Configuration` classes) and mocks the other web-layer collaborators.
+- Frontend: `npx tsc --noEmit` and `npx vite build` pass. There is no ESLint config, so `npm run lint` cannot run. No UI test suite exists.
+- CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs backend compile + tests, frontend type-check + build, and gitleaks.
 - [scripts/](scripts/) holds manual shell tests against a running stack; they were not run in the hygiene pass.
 
 ## Layout

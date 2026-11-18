@@ -18,9 +18,9 @@ What was observed working against a running back end: logging in with a valid ac
 Main API areas under /api/v1: auth, users, courses, course-assignments, enrollments, enrollment-window, grades, config, exports, metrics, and an open health check.
 
 Tests and their honest state:
-- Back end: 16 tests, 10 pass, 6 fail. All 6 failures are in UsersControllerIntegrationTest because the test setup cannot start the Spring context (the app class needs a UserRepository that the web-only test slice does not provide). Not fixed in this cleanup.
-- Front end: the vite build works, but the type check (tsc) reports 7 errors about enrollment status values, so npm run build fails today. There is no lint configuration and no UI test suite.
-- The GitHub check runs backend compile and tests, front end type check and build, and a secrets scan. Because of the failures above the back end and front end checks are red until those are fixed.
+- Back end: 18 tests, all pass (2026-11-18). The six that used to fail were fixed by moving the start-up user seeding out of the main app class and giving the web-only test the real security setup plus mocks for the services it needs.
+- Front end: the type check (tsc) and the vite build both pass. There is no lint configuration and no UI test suite.
+- The GitHub check runs backend compile and tests, front end type check and build, and a secrets scan.
 - The shell scripts in the scripts folder need a running system and were not run in this cleanup.
 
 Where things are: backend (Java API), frontend (React site), ssot (one shared YAML config and its schema), docs (handoff notes, future work, QA script, sprint notes), scripts, docker-compose.yml, and .githooks/pre-commit which you can enable with git config core.hooksPath .githooks.

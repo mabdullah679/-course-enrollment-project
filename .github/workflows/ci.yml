@@ -1,8 +1,6 @@
 name: CI
 
 # Free GitHub-hosted runners only. Runs the same commands documented in README.md / CLAUDE.md.
-# Known baseline (2026-11-18): backend tests and frontend type-check are RED (see README "Tests").
-# They are left failing on purpose rather than skipped or weakened.
 
 on:
   pull_request:
