@@ -16,6 +16,7 @@ target/
 # Env & local config
 .env
 .env.*
+!.env.example
 *.local
 *.DS_Store
 

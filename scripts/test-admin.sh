@@ -1,4 +1,6 @@
 #!/bin/bash
+: "${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD (see .env.example)}"
+: "${SEED_STUDENT_PASSWORD:?set SEED_STUDENT_PASSWORD (see .env.example)}"
 
 # CEGM LMS Admin Test Script
 # Tests admin functionality and complete user workflow
@@ -19,7 +21,7 @@ ADMIN_SIGNUP=$(curl -s -w "HTTP %{http_code}" -X POST \
     "lastName": "User", 
     "email": "admin@cegm.edu",
     "username": "admin",
-    "password": "admin123",
+    "password": "'"$SEED_ADMIN_PASSWORD"'",
     "accountType": "ADMIN"
   }' \
   "${API_V1}/auth/signup")
@@ -36,7 +38,7 @@ STUDENT_SIGNUP=$(curl -s -w "HTTP %{http_code}" -X POST \
     "lastName": "Student", 
     "email": "jane.student@example.com",
     "username": "janestudent",
-    "password": "student123",
+    "password": "'"$SEED_STUDENT_PASSWORD"'",
     "accountType": "STUDENT"
   }' \
   "${API_V1}/auth/signup")
@@ -58,7 +60,7 @@ ADMIN_LOGIN=$(curl -s -c admin_cookies.txt -w "HTTP %{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@cegm.edu",
-    "password": "admin123"
+    "password": "'"$SEED_ADMIN_PASSWORD"'"
   }' \
   "${API_V1}/auth/login")
 
@@ -99,7 +101,7 @@ if [ -n "$STUDENT_ID" ]; then
       -H "Content-Type: application/json" \
       -d '{
         "email": "jane.student@example.com",
-        "password": "student123"
+        "password": "'"$SEED_STUDENT_PASSWORD"'"
       }' \
       "${API_V1}/auth/login")
 

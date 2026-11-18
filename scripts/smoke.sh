@@ -7,9 +7,9 @@ API=$BE/api/v1
 CJ=/tmp/cegm.cookies
 
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@cegm.edu}"
-ADMIN_PASS="${ADMIN_PASS:-admin123}"
+ADMIN_PASS="${ADMIN_PASS:-${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD or ADMIN_PASS}}"
 STUDENT_EMAIL="${STUDENT_EMAIL:-student@cegm.edu}"
-STUDENT_PASS="${STUDENT_PASS:-student123}"
+STUDENT_PASS="${STUDENT_PASS:-${SEED_STUDENT_PASSWORD:?set SEED_STUDENT_PASSWORD or STUDENT_PASS}}"
 
 pass(){ printf "✅ %s\n" "$1"; }
 fail(){ printf "❌ %s\n" "$1"; exit 1; }

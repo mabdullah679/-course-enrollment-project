@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +47,9 @@ public class DataSeeder implements CommandLineRunner {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private Environment environment;
     
     @Override
     public void run(String... args) throws Exception {
@@ -68,18 +72,20 @@ public class DataSeeder implements CommandLineRunner {
 
         // Admin
         if (userRepository.findByEmail("admin@cegm.edu").isEmpty()) {
+          SeedPasswords.resolve(environment, SeedPasswords.ADMIN_VAR, "admin", logger).ifPresent(adminPw -> {
             User adminUser = new User();
             adminUser.setUsername("admin");
             adminUser.setEmail("admin@cegm.edu");
             adminUser.setFirstName("Admin");
             adminUser.setLastName("User");
-            adminUser.setPassword(passwordEncoder.encode("admin123"));
+            adminUser.setPassword(passwordEncoder.encode(adminPw));
             adminUser.setRole(UserRole.ADMIN);
             adminUser.setApproved(true);
             adminUser.setActive(true);
             adminUser.setCreatedAt(LocalDateTime.now());
             userRepository.save(adminUser);
             logger.info("Created admin user: admin@cegm.edu");
+          });
         }
 
         // Instructor
@@ -116,18 +122,20 @@ public class DataSeeder implements CommandLineRunner {
 
         // Approved Student
         if (userRepository.findByEmail("student@cegm.edu").isEmpty()) {
+          SeedPasswords.resolve(environment, SeedPasswords.STUDENT_VAR, "student", logger).ifPresent(studentPw -> {
             User studentUser = new User();
             studentUser.setUsername("student1");
             studentUser.setEmail("student@cegm.edu");
             studentUser.setFirstName("Bob");
             studentUser.setLastName("Student");
-            studentUser.setPassword(passwordEncoder.encode("student123"));
+            studentUser.setPassword(passwordEncoder.encode(studentPw));
             studentUser.setRole(UserRole.STUDENT);
             studentUser.setApproved(true); // Approved for testing
             studentUser.setActive(true);
             studentUser.setCreatedAt(LocalDateTime.now());
             userRepository.save(studentUser);
             logger.info("Created approved student user: student@cegm.edu");
+          });
         }
 
         // Pending Student

@@ -20,7 +20,14 @@ Nothing external is required: no cloud, no SMTP, no external database (the Postg
 1. Backend: `cd backend && ./mvnw spring-boot:run` (first start seeds demo users and courses).
 2. Check it: `curl http://localhost:8080/api/v1/health` returns `{"status":"UP",...}`.
 3. Frontend: `cd frontend && npm ci && npm run dev`, open `http://localhost:3000`.
-4. Sign in with a seeded demo account: `admin@cegm.edu` / `admin123`, `student@cegm.edu` / `student123`, `instructor@cegm.edu` / `instructor123` (set in [DataSeeder.java](backend/src/main/java/com/cegm/lms/config/DataSeeder.java); demo only).
+4. Seeded admin/student passwords are NOT in the code. Export them before step 1 (see [.env.example](.env.example)); if a variable is unset, that user is not created and a WARN names the variable. Pull the owner's dev values from AWS SSM Parameter Store (us-east-1, SecureString) without printing them:
+
+   ```
+   export SEED_ADMIN_PASSWORD="$(aws ssm get-parameter --region us-east-1 --with-decryption --name /mab-site/dev/course-enrollment/admin-password --query Parameter.Value --output text)"
+   export SEED_STUDENT_PASSWORD="$(aws ssm get-parameter --region us-east-1 --with-decryption --name /mab-site/dev/course-enrollment/student-password --query Parameter.Value --output text)"
+   ```
+
+   Then sign in as `admin@cegm.edu` or `student@cegm.edu` with those values (set in [DataSeeder.java](backend/src/main/java/com/cegm/lms/config/DataSeeder.java) and [DefaultUserInitializer.java](backend/src/main/java/com/cegm/lms/config/DefaultUserInitializer.java)). `instructor@cegm.edu` and the staff/pending demo users still use hard-coded demo passwords in DataSeeder (not yet moved). For docker compose, put the two variables in a local `.env` (gitignored). The `scripts/*.sh` helpers read the same two variables.
 
 If a port is taken, change it in the two files named under Prerequisites; the frontend proxy target must match the backend port. Do not use `/api/health` as a health probe: it returns 403 (only `/api/v1/health` is open).
 

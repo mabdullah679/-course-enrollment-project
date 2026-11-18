@@ -37,7 +37,7 @@ This script verifies all acceptance criteria from PHASE 1 and PHASE 2 implementa
 **Acceptance**: Console shows last 10 requestIds + endpoint + status
 
 ### 3. Verify Dashboard Error Storm Fix
-1. Login as admin: `admin@cegm.edu` / `admin123`
+1. Login as admin: `admin@cegm.edu` / the value of `SEED_ADMIN_PASSWORD` (see README)
 2. Navigate to Admin Dashboard
 3. Observe tile loading and any error toasts
 4. Refresh page multiple times quickly

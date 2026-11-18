@@ -1,4 +1,6 @@
 #!/bin/bash
+: "${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD (see .env.example)}"
+: "${SEED_STUDENT_PASSWORD:?set SEED_STUDENT_PASSWORD (see .env.example)}"
 
 # CEGM LMS Complete Authentication and Admin Workflow Test
 # Tests full auth flow with seeded admin user and user management
@@ -16,7 +18,7 @@ ADMIN_LOGIN=$(curl -s -c admin_cookies.txt -w "\nHTTP %{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@cegm.edu",
-    "password": "admin123"
+    "password": "'"$SEED_ADMIN_PASSWORD"'"
   }' \
   "${API_V1}/auth/login")
 
@@ -48,7 +50,7 @@ STUDENT_SIGNUP=$(curl -s -w "\nHTTP %{http_code}" -X POST \
     "lastName": "NewStudent", 
     "email": "alice.newstudent@example.com",
     "username": "alicestudent",
-    "password": "student123",
+    "password": "'"$SEED_STUDENT_PASSWORD"'",
     "accountType": "STUDENT"
   }' \
   "${API_V1}/auth/signup")
@@ -67,7 +69,7 @@ STUDENT_LOGIN_FAIL=$(curl -s -w "\nHTTP %{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "email": "alice.newstudent@example.com",
-    "password": "student123"
+    "password": "'"$SEED_STUDENT_PASSWORD"'"
   }' \
   "${API_V1}/auth/login")
 
@@ -89,7 +91,7 @@ if [ -n "$STUDENT_ID" ]; then
       -H "Content-Type: application/json" \
       -d '{
         "email": "alice.newstudent@example.com",
-        "password": "student123"
+        "password": "'"$SEED_STUDENT_PASSWORD"'"
       }' \
       "${API_V1}/auth/login")
 
@@ -138,7 +140,7 @@ if [ -n "$STUDENT_ID" ]; then
       -H "Content-Type: application/json" \
       -d '{
         "email": "alice.newstudent@example.com",
-        "password": "student123"
+        "password": "'"$SEED_STUDENT_PASSWORD"'"
       }' \
       "${API_V1}/auth/login")
 
