@@ -10,6 +10,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cegm.lms.model.AuditLog;
+
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -123,5 +127,34 @@ class UserServiceTest {
                                                    contains("Approved status changed from false to true"), eq("req_67890"));
         verify(auditLogService).logWithCorrelation(eq(1L), eq("UsersController"), eq("STATUS_CHANGE"), 
                                                    contains("Active status changed from true to false"), eq("req_67890"));
+    }
+
+    private AuditLog audit(long id) {
+        AuditLog a = new AuditLog();
+        a.setId(id);
+        return a;
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getUserAuditHistory_paginatesNewestFirstWithKeysetCursor() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(auditLogService.getLogsByUserId(1L)).thenReturn(List.of(audit(1), audit(2), audit(3), audit(4), audit(5)));
+
+        Map<String, Object> first = (Map<String, Object>) userService.getUserAuditHistory(1L, null, 2);
+        assertEquals(List.of(5L, 4L), ((List<AuditLog>) first.get("data")).stream().map(AuditLog::getId).toList());
+        assertEquals(true, first.get("hasNext"));
+        assertEquals("4", first.get("cursor"));
+
+        Map<String, Object> last = (Map<String, Object>) userService.getUserAuditHistory(1L, "2", 2);
+        assertEquals(List.of(1L), ((List<AuditLog>) last.get("data")).stream().map(AuditLog::getId).toList());
+        assertEquals(false, last.get("hasNext"));
+        assertEquals("", last.get("cursor"));
+    }
+
+    @Test
+    void getUserAuditHistory_rejectsNonNumericCursor() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        assertThrows(IllegalArgumentException.class, () -> userService.getUserAuditHistory(1L, "abc", 5));
     }
 }

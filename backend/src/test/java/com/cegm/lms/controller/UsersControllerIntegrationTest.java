@@ -1,14 +1,21 @@
 package com.cegm.lms.controller;
 
+import com.cegm.lms.config.RequestInterceptorConfig;
 import com.cegm.lms.model.User;
 import com.cegm.lms.model.enums.UserRole;
+import com.cegm.lms.security.JwtTokenProvider;
+import com.cegm.lms.security.SecurityConfig;
+import com.cegm.lms.service.AuditLogService;
 import com.cegm.lms.service.UserService;
 import com.cegm.lms.service.SessionManagementService;
+import com.cegm.lms.service.SsotConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,7 +29,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+// @WebMvcTest slices skip @Configuration classes, so without this import the real security rules
+// (@EnableMethodSecurity / @PreAuthorize) and the X-Request-Id interceptor would NOT be under test.
 @WebMvcTest(UsersController.class)
+@Import({SecurityConfig.class, RequestInterceptorConfig.class})
 class UsersControllerIntegrationTest {
 
     @Autowired
@@ -34,8 +44,25 @@ class UsersControllerIntegrationTest {
     @MockBean
     private SessionManagementService sessionManagementService;
 
+    // Collaborator of the web-layer beans a @WebMvcTest slice loads (GlobalExceptionHandler,
+    // SecurityConfig, JwtAuthenticationFilter); the slice does not scan @Service beans.
+    @MockBean
+    private SsotConfigService ssotConfigService;
+
+    @MockBean
+    private AuditLogService auditLogService;
+
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void stubMapping() {
+        // UserService is a mock here; use the real (pure) entity->DTO mapping.
+        when(userService.convertToResponse(any(User.class))).thenCallRealMethod();
+    }
 
     @Test
     @WithMockUser(roles = "ADMIN")

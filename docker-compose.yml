@@ -25,6 +25,9 @@ services:
       - DEV_COOKIE_NAME=cegm_session_dev
       - DEV_JWT_STUDENT_SECRET=cegm_student_jwt_secret_dev_12345
       - DEV_JWT_ADMIN_SECRET=cegm_admin_jwt_secret_dev_67890
+      # No defaults: unset => that seeded user is NOT created (WARN logged). Values come from .env (see .env.example).
+      - SEED_ADMIN_PASSWORD
+      - SEED_STUDENT_PASSWORD
     ports:
       - "8080:8080"
     depends_on:

@@ -1,4 +1,6 @@
 #!/bin/bash
+: "${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD (see .env.example)}"
+: "${SEED_STUDENT_PASSWORD:?set SEED_STUDENT_PASSWORD (see .env.example)}"
 
 # CEGM LMS Complete Workflow Test Script
 # Tests the complete authentication flow with seeded admin user and comprehensive user management
@@ -11,7 +13,7 @@ echo
 echo "1. Admin Login (using seeded admin@cegm.edu):"
 ADMIN_RESPONSE=$(curl -s -c admin_cookies.txt -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@cegm.edu", "password": "admin123"}' \
+  -d '{"email": "admin@cegm.edu", "password": "'"$SEED_ADMIN_PASSWORD"'"}' \
   -w "HTTP %{http_code}")
 echo "$ADMIN_RESPONSE"
 

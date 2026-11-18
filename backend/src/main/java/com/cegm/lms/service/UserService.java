@@ -289,17 +289,30 @@ public class UserService {
     }
 
     /**
-     * Get user audit history with pagination.
-     * TODO: Implement actual audit history retrieval from audit service.
+     * Get a user's audit history, newest first, with keyset pagination on the audit row id.
+     * {@code after} is the id of the last row of the previous page (null/blank for the first page).
      */
     public Object getUserAuditHistory(Long userId, String after, int limit) {
-        // For now return empty structure that matches expected format
-        // TODO: Implement proper audit history retrieval
-        return java.util.Map.of(
-            "data", java.util.List.of(),
-            "hasNext", false,
-            "cursor", ""
-        );
+        findById(userId); // 404 for unknown users rather than an empty page
+        int pageSize = Math.max(1, Math.min(limit, 100));
+        Long afterId = null;
+        if (after != null && !after.isBlank()) {
+            try {
+                afterId = Long.parseLong(after.trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid cursor: " + after);
+            }
+        }
+        final Long cursorId = afterId;
+        java.util.List<com.cegm.lms.model.AuditLog> rows = auditLogService.getLogsByUserId(userId).stream()
+                .filter(l -> cursorId == null || l.getId() < cursorId)
+                .sorted(java.util.Comparator.comparing(com.cegm.lms.model.AuditLog::getId).reversed())
+                .limit(pageSize + 1L)
+                .toList();
+        boolean hasNext = rows.size() > pageSize;
+        java.util.List<com.cegm.lms.model.AuditLog> page = hasNext ? rows.subList(0, pageSize) : rows;
+        String cursor = hasNext ? String.valueOf(page.get(page.size() - 1).getId()) : "";
+        return java.util.Map.of("data", page, "hasNext", hasNext, "cursor", cursor);
     }
 
     /**
